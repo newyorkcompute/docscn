@@ -98,7 +98,7 @@ npm run db:studio     # open Drizzle Studio using .env.local
   link shareable, and private artifacts are owner-only.
 - Review threads and revision history around each artifact.
 - SDK contracts shaped for future publish APIs, MCP tools, skills, and agents.
-- CLI package reserved for future `npx docscn publish artifact.html`.
+- Minimal CLI publishing flow for local API-key testing.
 
 ## Self-Hosting Direction
 
@@ -115,18 +115,27 @@ open-source, self-hostable architecture:
 
 Copy `.env.example` to `.env.local` when wiring real services later.
 
-## Future CLI
+## CLI Publishing
 
-API keys can already publish artifacts against a local server:
+Create an API key at `/settings/api-keys`, then publish a local HTML artifact
+against your running app:
 
 ```bash
-curl -X POST http://localhost:3000/api/artifacts \
-  -H "Authorization: Bearer docscn_sk_..." \
-  -H "Content-Type: application/json" \
-  -d @artifact-payload.json
+DOCSCN_API_KEY=docscn_sk_... npm run cli -- publish artifact.html
 ```
 
-The CLI package is intentionally small in the MVP. The planned shape is:
+Useful options:
+
+```bash
+npm run cli -- publish report.html \
+  --url http://localhost:3000 \
+  --title "Launch readiness report" \
+  --visibility unlisted \
+  --kind custom-html \
+  --author "Cursor agent"
+```
+
+The future package shape is still:
 
 ```bash
 npx docscn publish artifact.html

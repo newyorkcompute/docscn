@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "dev": "nx dev web",
+    "cli": "nx build cli && node dist/packages/cli/src/index.js",
     "build": "nx run-many -t build -p web,db,storage,sdk,cli,config",
     "lint": "nx run-many -t lint -p web,ui,db,storage,sdk,cli,config",
     "typecheck": "tsc -p apps/web/tsconfig.json --noEmit",
