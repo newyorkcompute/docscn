@@ -9,12 +9,12 @@
   ],
   "scripts": {
     "dev": "nx dev web",
-    "build": "nx run-many -t build -p web,db,sdk,cli,config",
-    "lint": "nx run-many -t lint -p web,ui,db,sdk,cli,config",
+    "build": "nx run-many -t build -p web,db,storage,sdk,cli,config",
+    "lint": "nx run-many -t lint -p web,ui,db,storage,sdk,cli,config",
     "typecheck": "tsc -p apps/web/tsconfig.json --noEmit",
     "format": "nx format:write",
     "format:check": "nx format:check",
-    "db:up": "docker compose up -d postgres",
+    "db:up": "docker compose up -d postgres minio minio-init",
     "db:down": "docker compose down",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "dotenv -e .env.local -- drizzle-kit migrate",
@@ -76,6 +76,7 @@
   },
   "nx": {},
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1045.0",
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

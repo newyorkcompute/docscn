@@ -26,6 +26,7 @@ apps/
 packages/
   ui/         Shared shadcn-inspired UI primitives
   db/         Drizzle/Postgres schema, migrations, repository, mock fallback
+  storage/    S3-compatible artifact HTML storage adapter
   sdk/        Public contracts for artifacts, publishing, comments, revisions
   cli/        Future npx docscn publish artifact.html experience
   config/     Shared configuration and environment contracts
@@ -49,13 +50,14 @@ npm run typecheck
 npm run format
 ```
 
-## Database
+## Database And Storage
 
-docscn uses Drizzle ORM with Postgres. The app is safe to run without a
-database: if `DATABASE_URL` is missing, it falls back to in-process published
-artifacts plus the AI-native seed examples.
+docscn uses Drizzle ORM with Postgres for metadata and S3-compatible object
+storage for revision HTML. The app is safe to run without configured services:
+if `DATABASE_URL` is missing, it falls back to in-process published artifacts
+plus the AI-native seed examples.
 
-To use Postgres locally:
+To use Postgres and MinIO locally:
 
 ```bash
 cp .env.example .env.local
@@ -68,11 +70,15 @@ The Docker Compose database is exposed at
 `postgres://docscn:docscn@localhost:5433/docscn` to avoid conflicts with an
 existing local Postgres on port `5432`.
 
+MinIO is exposed at `http://localhost:9000`, with its console at
+`http://localhost:9001`. The `minio-init` service creates the
+`docscn-artifacts` bucket used by the S3 adapter.
+
 Database commands:
 
 ```bash
-npm run db:up         # start local Docker Postgres
-npm run db:down       # stop local Docker Postgres
+npm run db:up         # start local Docker Postgres + MinIO
+npm run db:down       # stop local Docker services
 npm run db:generate   # create migrations from packages/db/src/lib/schema.ts
 npm run db:migrate    # apply migrations using .env.local
 npm run db:studio     # open Drizzle Studio using .env.local

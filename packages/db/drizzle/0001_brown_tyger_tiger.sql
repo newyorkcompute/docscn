@@ -1,0 +1,1 @@
+ALTER TABLE "artifact_revisions" ADD COLUMN "html_object_key" text;

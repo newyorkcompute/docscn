@@ -8,6 +8,13 @@
       "when": 1778690732949,
       "tag": "0000_silent_pandemic",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778700493666,
+      "tag": "0001_brown_tyger_tiger",
+      "breakpoints": true
     }
   ]
 }

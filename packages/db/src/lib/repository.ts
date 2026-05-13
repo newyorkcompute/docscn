@@ -15,6 +15,7 @@ import type {
   UpdateReviewThreadStatusInput,
 } from '@docscn/sdk';
 import { slugifyArtifactTitle } from '@docscn/sdk';
+import { getArtifactStorage } from '@docscn/storage';
 import { getDb, isDatabaseConfigured } from './client';
 import {
   artifactRevisions,
@@ -31,6 +32,46 @@ import {
 
 const runtimeArtifacts: Artifact[] = [];
 const runtimeThreads: ReviewThread[] = [];
+
+async function storeRevisionHtml(input: {
+  artifactId: string;
+  revisionId: string;
+  html: string;
+}): Promise<{ html: string; htmlObjectKey?: string }> {
+  const storage = getArtifactStorage();
+
+  if (!storage) {
+    return { html: input.html };
+  }
+
+  const objectRef = await storage.putHtml(input);
+
+  return {
+    html: '',
+    htmlObjectKey: objectRef.key,
+  };
+}
+
+async function readRevisionHtml(input: {
+  html: string;
+  htmlObjectKey: string | null;
+}) {
+  if (!input.htmlObjectKey) {
+    return input.html;
+  }
+
+  const storage = getArtifactStorage();
+
+  if (!storage) {
+    return input.html;
+  }
+
+  try {
+    return await storage.getHtml(input.htmlObjectKey);
+  } catch {
+    return input.html;
+  }
+}
 
 function createActorFromName(
   name: string,
@@ -87,37 +128,45 @@ function createPublishedArtifact(input: CreateArtifactInput): Artifact {
   };
 }
 
-function mapArtifactRows(
+async function mapArtifactRows(
   artifactRows: (typeof artifacts.$inferSelect)[],
   revisionRows: (typeof artifactRevisions.$inferSelect)[],
-): Artifact[] {
-  return artifactRows.map((artifact) => ({
-    id: artifact.id,
-    slug: artifact.slug,
-    currentRevisionId: artifact.currentRevisionId,
-    metadata: {
-      title: artifact.title,
-      description: artifact.description,
-      author: artifact.author,
-      createdAt: artifact.createdAt,
-      visibility: artifact.visibility,
-      kind: artifact.kind,
-      tags: artifact.tags,
-      source: artifact.source,
-    },
-    revisions: revisionRows
-      .filter((revision) => revision.artifactId === artifact.id)
-      .sort((a, b) => a.version - b.version)
-      .map<ArtifactRevision>((revision) => ({
-        id: revision.id,
-        version: revision.version,
-        summary: revision.summary,
-        html: revision.html,
-        createdAt: revision.createdAt,
-        author: revision.author,
-        changeRequestIds: revision.changeRequestIds,
-      })),
-  }));
+): Promise<Artifact[]> {
+  return Promise.all(
+    artifactRows.map(async (artifact) => ({
+      id: artifact.id,
+      slug: artifact.slug,
+      currentRevisionId: artifact.currentRevisionId,
+      metadata: {
+        title: artifact.title,
+        description: artifact.description,
+        author: artifact.author,
+        createdAt: artifact.createdAt,
+        visibility: artifact.visibility,
+        kind: artifact.kind,
+        tags: artifact.tags,
+        source: artifact.source,
+      },
+      revisions: await Promise.all(
+        revisionRows
+          .filter((revision) => revision.artifactId === artifact.id)
+          .sort((a, b) => a.version - b.version)
+          .map<Promise<ArtifactRevision>>(async (revision) => ({
+            id: revision.id,
+            version: revision.version,
+            summary: revision.summary,
+            html: await readRevisionHtml({
+              html: revision.html,
+              htmlObjectKey: revision.htmlObjectKey,
+            }),
+            htmlObjectKey: revision.htmlObjectKey ?? undefined,
+            createdAt: revision.createdAt,
+            author: revision.author,
+            changeRequestIds: revision.changeRequestIds,
+          })),
+      ),
+    })),
+  );
 }
 
 function mapThreadRows(
@@ -190,7 +239,7 @@ export async function findArtifact(
     .from(artifactRevisions)
     .where(eq(artifactRevisions.artifactId, artifact.id));
 
-  return mapArtifactRows([artifact], revisionRows)[0];
+  return (await mapArtifactRows([artifact], revisionRows))[0];
 }
 
 export async function listReviewThreads(
@@ -241,6 +290,13 @@ export async function publishArtifact(input: CreateArtifactInput): Promise<{
   }
 
   const db = getDb();
+  const storedRevision = await storeRevisionHtml({
+    artifactId: artifact.id,
+    revisionId: revision.id,
+    html: revision.html,
+  });
+
+  revision.htmlObjectKey = storedRevision.htmlObjectKey;
   await db.insert(artifacts).values({
     id: artifact.id,
     slug: artifact.slug,
@@ -259,7 +315,8 @@ export async function publishArtifact(input: CreateArtifactInput): Promise<{
     artifactId: artifact.id,
     version: revision.version,
     summary: revision.summary,
-    html: revision.html,
+    html: storedRevision.html,
+    htmlObjectKey: storedRevision.htmlObjectKey,
     createdAt: revision.createdAt,
     author: revision.author,
     changeRequestIds: revision.changeRequestIds,
@@ -452,12 +509,20 @@ export async function createArtifactRevision(
   }
 
   const db = getDb();
+  const storedRevision = await storeRevisionHtml({
+    artifactId: artifact.id,
+    revisionId: revision.id,
+    html: revision.html,
+  });
+
+  revision.htmlObjectKey = storedRevision.htmlObjectKey;
   await db.insert(artifactRevisions).values({
     id: revision.id,
     artifactId: artifact.id,
     version: revision.version,
     summary: revision.summary,
-    html: revision.html,
+    html: storedRevision.html,
+    htmlObjectKey: storedRevision.htmlObjectKey,
     createdAt: revision.createdAt,
     author: revision.author,
     changeRequestIds: revision.changeRequestIds,

@@ -48,6 +48,7 @@ export interface ArtifactRevision {
   version: number;
   summary: string;
   html: string;
+  htmlObjectKey?: string;
   createdAt: string;
   author: Actor;
   changeRequestIds: string[];

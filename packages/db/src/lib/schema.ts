@@ -33,6 +33,7 @@ export const artifactRevisions = pgTable('artifact_revisions', {
   version: integer('version').notNull(),
   summary: text('summary').notNull(),
   html: text('html').notNull(),
+  htmlObjectKey: text('html_object_key'),
   createdAt: timestamp('created_at', {
     mode: 'string',
     withTimezone: true,
