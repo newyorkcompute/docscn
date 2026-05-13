@@ -6,9 +6,12 @@ import type {
   Artifact,
   ArtifactRevision,
   CreateArtifactInput,
+  CreateReviewCommentInput,
+  CreateReviewThreadInput,
   PublishResult,
   ReviewComment,
   ReviewThread,
+  SubmitRevisionInput,
 } from '@docscn/sdk';
 import { slugifyArtifactTitle } from '@docscn/sdk';
 import { getDb, isDatabaseConfigured } from './client';
@@ -28,15 +31,24 @@ import {
 const runtimeArtifacts: Artifact[] = [];
 const runtimeThreads: ReviewThread[] = [];
 
-function createPublishActor(input: CreateArtifactInput): Actor {
-  const trimmedName = input.authorName.trim() || 'Agent';
-
+function createActorFromName(
+  name: string,
+  role: Actor['role'] = 'human',
+): Actor {
+  const trimmedName = name.trim() || 'Agent';
   return {
     id: `actor-${slugifyArtifactTitle(trimmedName) || 'agent'}`,
     name: trimmedName,
-    role: input.source === 'web' ? 'human' : 'agent',
+    role,
     avatarFallback: trimmedName.slice(0, 2).toUpperCase() || 'AI',
   };
+}
+
+function createPublishActor(input: CreateArtifactInput): Actor {
+  return createActorFromName(
+    input.authorName,
+    input.source === 'web' ? 'human' : 'agent',
+  );
 }
 
 function createPublishedArtifact(input: CreateArtifactInput): Artifact {
@@ -94,6 +106,7 @@ function mapArtifactRows(
     },
     revisions: revisionRows
       .filter((revision) => revision.artifactId === artifact.id)
+      .sort((a, b) => a.version - b.version)
       .map<ArtifactRevision>((revision) => ({
         id: revision.id,
         version: revision.version,
@@ -260,6 +273,167 @@ export async function publishArtifact(input: CreateArtifactInput): Promise<{
       revisionId: revision.id,
     },
   };
+}
+
+export async function createReviewThread(
+  input: CreateReviewThreadInput,
+): Promise<ReviewThread> {
+  const now = new Date().toISOString();
+  const thread: ReviewThread = {
+    id: `thread-${randomUUID()}`,
+    artifactId: input.artifactId,
+    revisionId: input.revisionId,
+    status: input.status,
+    title: input.title.trim(),
+    requestedChange: input.requestedChange?.trim() || undefined,
+    anchor: input.anchor,
+    comments: [
+      {
+        id: `comment-${randomUUID()}`,
+        body: input.body.trim(),
+        author: createActorFromName(input.authorName),
+        createdAt: now,
+        role: 'human',
+      },
+    ],
+  };
+
+  if (!isDatabaseConfigured()) {
+    runtimeThreads.unshift(thread);
+    return thread;
+  }
+
+  const db = getDb();
+  await db.insert(reviewThreads).values({
+    id: thread.id,
+    artifactId: thread.artifactId,
+    revisionId: thread.revisionId,
+    status: thread.status,
+    title: thread.title,
+    anchor: thread.anchor,
+    requestedChange: thread.requestedChange,
+  });
+
+  const firstComment = thread.comments[0];
+  if (firstComment) {
+    await db.insert(reviewComments).values({
+      id: firstComment.id,
+      threadId: thread.id,
+      body: firstComment.body,
+      author: firstComment.author,
+      createdAt: firstComment.createdAt,
+      role: firstComment.role,
+    });
+  }
+
+  return thread;
+}
+
+export async function createReviewComment(
+  input: CreateReviewCommentInput,
+): Promise<ReviewComment> {
+  const comment: ReviewComment = {
+    id: `comment-${randomUUID()}`,
+    body: input.body.trim(),
+    author: createActorFromName(input.authorName, input.role ?? 'human'),
+    createdAt: new Date().toISOString(),
+    role: input.role ?? 'human',
+  };
+
+  if (!isDatabaseConfigured()) {
+    const thread =
+      runtimeThreads.find((candidate) => candidate.id === input.threadId) ??
+      getMockArtifacts()
+        .flatMap((artifact) => getMockReviewThreads(artifact.id))
+        .find((candidate) => candidate.id === input.threadId);
+    thread?.comments.push(comment);
+    return comment;
+  }
+
+  const db = getDb();
+  await db.insert(reviewComments).values({
+    id: comment.id,
+    threadId: input.threadId,
+    body: comment.body,
+    author: comment.author,
+    createdAt: comment.createdAt,
+    role: comment.role,
+  });
+
+  return comment;
+}
+
+export async function createArtifactRevision(
+  input: SubmitRevisionInput,
+): Promise<ArtifactRevision | undefined> {
+  const artifact = await findArtifact(input.artifactId);
+
+  if (!artifact) {
+    return undefined;
+  }
+
+  const revision: ArtifactRevision = {
+    id: `revision-${randomUUID()}`,
+    version:
+      artifact.revisions.reduce(
+        (highestVersion, current) => Math.max(highestVersion, current.version),
+        0,
+      ) + 1,
+    summary: input.summary.trim(),
+    html: input.html,
+    createdAt: new Date().toISOString(),
+    author: createActorFromName(
+      input.authorName,
+      input.source === 'web' ? 'human' : 'agent',
+    ),
+    changeRequestIds: input.resolvedThreadIds ?? [],
+  };
+
+  if (!isDatabaseConfigured()) {
+    artifact.revisions.push(revision);
+    artifact.currentRevisionId = revision.id;
+
+    for (const thread of runtimeThreads) {
+      if (input.resolvedThreadIds?.includes(thread.id)) {
+        thread.status = 'resolved';
+      }
+    }
+
+    for (const thread of getMockReviewThreads(artifact.id)) {
+      if (input.resolvedThreadIds?.includes(thread.id)) {
+        thread.status = 'resolved';
+      }
+    }
+
+    return revision;
+  }
+
+  const db = getDb();
+  await db.insert(artifactRevisions).values({
+    id: revision.id,
+    artifactId: artifact.id,
+    version: revision.version,
+    summary: revision.summary,
+    html: revision.html,
+    createdAt: revision.createdAt,
+    author: revision.author,
+    changeRequestIds: revision.changeRequestIds,
+  });
+  await db
+    .update(artifacts)
+    .set({ currentRevisionId: revision.id })
+    .where(eq(artifacts.id, artifact.id));
+
+  if (input.resolvedThreadIds?.length) {
+    for (const threadId of input.resolvedThreadIds) {
+      await db
+        .update(reviewThreads)
+        .set({ status: 'resolved' })
+        .where(eq(reviewThreads.id, threadId));
+    }
+  }
+
+  return revision;
 }
 
 export async function getAgentFeedbackBundle(

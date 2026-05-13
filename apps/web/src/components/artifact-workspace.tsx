@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Bot,
   Clock3,
@@ -22,11 +23,32 @@ export function ArtifactWorkspace({
   threads: ReviewThread[];
   artifactId: string;
 }) {
+  const router = useRouter();
   const [selectedRevisionId, setSelectedRevisionId] = useState(
     initialArtifact?.currentRevisionId,
   );
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewBody, setReviewBody] = useState('');
+  const [requestedChange, setRequestedChange] = useState('');
+  const [reviewAuthor, setReviewAuthor] = useState('Sid');
+  const [reviewStatus, setReviewStatus] = useState<'open' | 'needs-revision'>(
+    'needs-revision',
+  );
+  const [commentBodies, setCommentBodies] = useState<Record<string, string>>(
+    {},
+  );
+  const [revisionSummary, setRevisionSummary] = useState('');
+  const [revisionHtml, setRevisionHtml] = useState('');
+  const [revisionAuthor, setRevisionAuthor] = useState('Cursor agent');
+  const [resolvedThreadIds, setResolvedThreadIds] = useState<string[]>([]);
+  const [pendingAction, setPendingAction] = useState<string | undefined>();
+  const [actionError, setActionError] = useState<string | undefined>();
 
   const artifact = initialArtifact;
+
+  useEffect(() => {
+    setSelectedRevisionId(initialArtifact?.currentRevisionId);
+  }, [initialArtifact?.currentRevisionId]);
 
   const selectedRevision = useMemo<ArtifactRevision | undefined>(
     () =>
@@ -35,6 +57,136 @@ export function ArtifactWorkspace({
       ) ?? artifact?.revisions[0],
     [artifact, selectedRevisionId],
   );
+
+  useEffect(() => {
+    setRevisionHtml(selectedRevision?.html ?? '');
+  }, [selectedRevision?.id, selectedRevision?.html]);
+
+  async function refreshAfterAction() {
+    router.refresh();
+  }
+
+  async function createThread(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (
+      !artifact ||
+      !selectedRevision ||
+      !reviewTitle.trim() ||
+      !reviewBody.trim()
+    ) {
+      return;
+    }
+
+    setPendingAction('thread');
+    setActionError(undefined);
+
+    try {
+      const response = await fetch(`/api/artifacts/${artifact.id}/threads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          revisionId: selectedRevision.id,
+          title: reviewTitle,
+          body: reviewBody,
+          authorName: reviewAuthor,
+          status: reviewStatus,
+          requestedChange,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Could not create review thread.');
+      }
+
+      setReviewTitle('');
+      setReviewBody('');
+      setRequestedChange('');
+      await refreshAfterAction();
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : 'Review action failed.',
+      );
+    } finally {
+      setPendingAction(undefined);
+    }
+  }
+
+  async function addComment(threadId: string) {
+    const body = commentBodies[threadId]?.trim();
+    if (!body) {
+      return;
+    }
+
+    setPendingAction(`comment-${threadId}`);
+    setActionError(undefined);
+
+    try {
+      const response = await fetch(`/api/review-threads/${threadId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          body,
+          authorName: reviewAuthor,
+          role: 'human',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Could not add comment.');
+      }
+
+      setCommentBodies((current) => ({ ...current, [threadId]: '' }));
+      await refreshAfterAction();
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : 'Comment failed.',
+      );
+    } finally {
+      setPendingAction(undefined);
+    }
+  }
+
+  async function submitRevision(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (
+      !artifact ||
+      !revisionSummary.trim() ||
+      !revisionHtml.includes('<html')
+    ) {
+      return;
+    }
+
+    setPendingAction('revision');
+    setActionError(undefined);
+
+    try {
+      const response = await fetch(`/api/artifacts/${artifact.id}/revisions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          summary: revisionSummary,
+          html: revisionHtml,
+          authorName: revisionAuthor,
+          source: 'web',
+          resolvedThreadIds,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Could not submit revision.');
+      }
+
+      setRevisionSummary('');
+      setResolvedThreadIds([]);
+      await refreshAfterAction();
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : 'Revision failed.',
+      );
+    } finally {
+      setPendingAction(undefined);
+    }
+  }
 
   if (!artifact || !selectedRevision) {
     return (
@@ -117,11 +269,67 @@ export function ArtifactWorkspace({
         </div>
 
         <aside className="space-y-5">
+          {actionError ? (
+            <Card className="border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+              {actionError}
+            </Card>
+          ) : null}
+
           <Card className="p-5">
             <div className="flex items-center gap-2">
               <PanelRightOpen className="h-4 w-4 text-primary" />
               <h2 className="font-semibold">Review threads</h2>
             </div>
+            <form className="mt-5 space-y-3" onSubmit={createThread}>
+              <input
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                placeholder="Thread title"
+                value={reviewTitle}
+                onChange={(event) => setReviewTitle(event.target.value)}
+              />
+              <textarea
+                className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                placeholder="What should change?"
+                value={reviewBody}
+                onChange={(event) => setReviewBody(event.target.value)}
+              />
+              <textarea
+                className="min-h-16 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
+                placeholder="Agent-readable requested change (optional)"
+                value={requestedChange}
+                onChange={(event) => setRequestedChange(event.target.value)}
+              />
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                  placeholder="Reviewer"
+                  value={reviewAuthor}
+                  onChange={(event) => setReviewAuthor(event.target.value)}
+                />
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                  value={reviewStatus}
+                  onChange={(event) =>
+                    setReviewStatus(
+                      event.target.value as 'open' | 'needs-revision',
+                    )
+                  }
+                >
+                  <option value="needs-revision">needs revision</option>
+                  <option value="open">open</option>
+                </select>
+              </div>
+              <Button
+                className="w-full"
+                disabled={pendingAction === 'thread'}
+                size="sm"
+                type="submit"
+              >
+                {pendingAction === 'thread'
+                  ? 'Creating thread...'
+                  : 'Create thread'}
+              </Button>
+            </form>
             <div className="mt-5 space-y-4">
               {threads.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
@@ -168,6 +376,30 @@ export function ArtifactWorkspace({
                         </div>
                       ))}
                     </div>
+                    <div className="mt-4 space-y-2">
+                      <textarea
+                        className="min-h-16 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
+                        placeholder="Reply to this thread"
+                        value={commentBodies[thread.id] ?? ''}
+                        onChange={(event) =>
+                          setCommentBodies((current) => ({
+                            ...current,
+                            [thread.id]: event.target.value,
+                          }))
+                        }
+                      />
+                      <Button
+                        disabled={pendingAction === `comment-${thread.id}`}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                        onClick={() => addComment(thread.id)}
+                      >
+                        {pendingAction === `comment-${thread.id}`
+                          ? 'Adding reply...'
+                          : 'Add reply'}
+                      </Button>
+                    </div>
                   </div>
                 ))
               )}
@@ -179,6 +411,65 @@ export function ArtifactWorkspace({
               <GitCommitHorizontal className="h-4 w-4 text-primary" />
               <h2 className="font-semibold">Revision history</h2>
             </div>
+            <form className="mt-5 space-y-3" onSubmit={submitRevision}>
+              <input
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                placeholder="Revision summary"
+                value={revisionSummary}
+                onChange={(event) => setRevisionSummary(event.target.value)}
+              />
+              <input
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                placeholder="Author / agent"
+                value={revisionAuthor}
+                onChange={(event) => setRevisionAuthor(event.target.value)}
+              />
+              <textarea
+                className="min-h-40 w-full rounded-md border border-input bg-black/40 px-3 py-2 font-mono text-xs outline-none ring-ring focus:ring-2"
+                value={revisionHtml}
+                onChange={(event) => setRevisionHtml(event.target.value)}
+              />
+              {threads.filter((thread) => thread.status !== 'resolved')
+                .length ? (
+                <div className="space-y-2 rounded-lg border border-border bg-secondary/30 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Mark threads resolved by this revision
+                  </p>
+                  {threads
+                    .filter((thread) => thread.status !== 'resolved')
+                    .map((thread) => (
+                      <label
+                        className="flex items-start gap-2 text-xs text-muted-foreground"
+                        key={thread.id}
+                      >
+                        <input
+                          className="mt-0.5"
+                          checked={resolvedThreadIds.includes(thread.id)}
+                          type="checkbox"
+                          onChange={(event) => {
+                            setResolvedThreadIds((current) =>
+                              event.target.checked
+                                ? [...current, thread.id]
+                                : current.filter((id) => id !== thread.id),
+                            );
+                          }}
+                        />
+                        <span>{thread.title}</span>
+                      </label>
+                    ))}
+                </div>
+              ) : null}
+              <Button
+                className="w-full"
+                disabled={pendingAction === 'revision'}
+                size="sm"
+                type="submit"
+              >
+                {pendingAction === 'revision'
+                  ? 'Submitting revision...'
+                  : 'Submit revision'}
+              </Button>
+            </form>
             <div className="mt-5 space-y-4">
               {artifact.revisions
                 .slice()
@@ -187,6 +478,7 @@ export function ArtifactWorkspace({
                   <button
                     className="block w-full rounded-xl border border-border bg-secondary/30 p-4 text-left transition hover:border-primary/50"
                     key={revision.id}
+                    type="button"
                     onClick={() => setSelectedRevisionId(revision.id)}
                   >
                     <div className="flex items-center justify-between gap-3">

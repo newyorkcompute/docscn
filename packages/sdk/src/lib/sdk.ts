@@ -105,6 +105,33 @@ export interface CreateRevisionInput {
   source: IntegrationSource;
 }
 
+export interface SubmitRevisionInput {
+  artifactId: string;
+  html: string;
+  summary: string;
+  authorName: string;
+  source: IntegrationSource;
+  resolvedThreadIds?: string[];
+}
+
+export interface CreateReviewThreadInput {
+  artifactId: string;
+  revisionId: string;
+  title: string;
+  body: string;
+  authorName: string;
+  status: ReviewThreadStatus;
+  requestedChange?: string;
+  anchor?: ReviewAnchor;
+}
+
+export interface CreateReviewCommentInput {
+  threadId: string;
+  body: string;
+  authorName: string;
+  role?: ActorRole;
+}
+
 export interface PublishResult {
   artifactId: string;
   slug: string;
