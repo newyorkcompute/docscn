@@ -1,10 +1,14 @@
-import { randomUUID } from 'node:crypto';
-import { eq, or } from 'drizzle-orm';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { and, eq, or } from 'drizzle-orm';
 import type {
   Actor,
   AgentFeedbackBundle,
+  ApiKey,
+  ApiKeyPrincipal,
   Artifact,
   ArtifactRevision,
+  CreatedApiKey,
+  CreateApiKeyInput,
   CreateArtifactInput,
   CreateReviewCommentInput,
   CreateReviewThreadInput,
@@ -18,6 +22,7 @@ import { slugifyArtifactTitle } from '@docscn/sdk';
 import { getArtifactStorage } from '@docscn/storage';
 import { getDb, isDatabaseConfigured } from './client';
 import {
+  apiKeys,
   artifactRevisions,
   artifacts,
   reviewComments,
@@ -32,6 +37,7 @@ import {
 
 const runtimeArtifacts: Artifact[] = [];
 const runtimeThreads: ReviewThread[] = [];
+const apiKeyTokenPrefix = 'docscn_sk_';
 
 interface ArtifactAccessOptions {
   includeUnlisted?: boolean;
@@ -113,6 +119,26 @@ function createActorFromName(
     name: trimmedName,
     role,
     avatarFallback: trimmedName.slice(0, 2).toUpperCase() || 'AI',
+  };
+}
+
+function hashApiKey(token: string) {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+function createApiKeyToken() {
+  return `${apiKeyTokenPrefix}${randomBytes(32).toString('base64url')}`;
+}
+
+function mapApiKeyRow(row: typeof apiKeys.$inferSelect): ApiKey {
+  return {
+    id: row.id,
+    userId: row.userId,
+    name: row.name,
+    keyPrefix: row.keyPrefix,
+    createdAt: row.createdAt,
+    lastUsedAt: row.lastUsedAt ?? undefined,
+    revokedAt: row.revokedAt ?? undefined,
   };
 }
 
@@ -223,6 +249,104 @@ function mapThreadRows(
         role: comment.role,
       })),
   }));
+}
+
+export async function createApiKey(
+  input: CreateApiKeyInput,
+): Promise<CreatedApiKey> {
+  if (!isDatabaseConfigured()) {
+    throw new Error('DATABASE_URL is required to create API keys.');
+  }
+
+  const token = createApiKeyToken();
+  const now = new Date().toISOString();
+  const row = {
+    id: `api-key-${randomUUID()}`,
+    userId: input.userId,
+    name: input.name.trim(),
+    keyPrefix: token.slice(0, 18),
+    keyHash: hashApiKey(token),
+    createdAt: now,
+    lastUsedAt: null,
+    revokedAt: null,
+  };
+
+  await getDb().insert(apiKeys).values(row);
+
+  return {
+    apiKey: mapApiKeyRow(row),
+    token,
+  };
+}
+
+export async function listApiKeys(userId: string): Promise<ApiKey[]> {
+  if (!isDatabaseConfigured()) {
+    return [];
+  }
+
+  const rows = await getDb()
+    .select()
+    .from(apiKeys)
+    .where(eq(apiKeys.userId, userId));
+
+  return rows.map(mapApiKeyRow);
+}
+
+export async function revokeApiKey(input: {
+  apiKeyId: string;
+  userId: string;
+}): Promise<ApiKey | undefined> {
+  if (!isDatabaseConfigured()) {
+    return undefined;
+  }
+
+  const revokedAt = new Date().toISOString();
+  await getDb()
+    .update(apiKeys)
+    .set({ revokedAt })
+    .where(
+      and(eq(apiKeys.id, input.apiKeyId), eq(apiKeys.userId, input.userId)),
+    );
+
+  const rows = await getDb()
+    .select()
+    .from(apiKeys)
+    .where(
+      and(eq(apiKeys.id, input.apiKeyId), eq(apiKeys.userId, input.userId)),
+    )
+    .limit(1);
+
+  return rows[0] ? mapApiKeyRow(rows[0]) : undefined;
+}
+
+export async function verifyApiKey(
+  token: string,
+): Promise<ApiKeyPrincipal | undefined> {
+  if (!isDatabaseConfigured() || !token.startsWith(apiKeyTokenPrefix)) {
+    return undefined;
+  }
+
+  const rows = await getDb()
+    .select()
+    .from(apiKeys)
+    .where(eq(apiKeys.keyHash, hashApiKey(token)))
+    .limit(1);
+  const row = rows[0];
+
+  if (!row || row.revokedAt) {
+    return undefined;
+  }
+
+  await getDb()
+    .update(apiKeys)
+    .set({ lastUsedAt: new Date().toISOString() })
+    .where(eq(apiKeys.id, row.id));
+
+  return {
+    apiKeyId: row.id,
+    userId: row.userId,
+    name: row.name,
+  };
 }
 
 export async function listArtifacts(

@@ -24,6 +24,11 @@ export async function SiteHeader() {
           <Link href="/publish" className="hover:text-foreground">
             publish
           </Link>
+          {session ? (
+            <Link href="/settings/api-keys" className="hover:text-foreground">
+              api keys
+            </Link>
+          ) : null}
           <a
             href="https://github.com/newyorkcompute/docscn"
             className="hover:text-foreground"

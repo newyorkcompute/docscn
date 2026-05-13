@@ -141,6 +141,32 @@ export interface UpdateReviewThreadStatusInput {
   status: ReviewThreadStatus;
 }
 
+export interface ApiKey {
+  id: string;
+  userId: string;
+  name: string;
+  keyPrefix: string;
+  createdAt: string;
+  lastUsedAt?: string;
+  revokedAt?: string;
+}
+
+export interface CreateApiKeyInput {
+  userId: string;
+  name: string;
+}
+
+export interface CreatedApiKey {
+  apiKey: ApiKey;
+  token: string;
+}
+
+export interface ApiKeyPrincipal {
+  apiKeyId: string;
+  userId: string;
+  name: string;
+}
+
 export interface PublishResult {
   artifactId: string;
   slug: string;

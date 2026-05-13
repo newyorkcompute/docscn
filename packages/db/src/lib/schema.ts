@@ -69,6 +69,28 @@ export const verification = pgTable('verification', {
   updatedAt: timestamp('updated_at', { withTimezone: true }),
 });
 
+export const apiKeys = pgTable('api_keys', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  keyPrefix: text('key_prefix').notNull(),
+  keyHash: text('key_hash').notNull().unique(),
+  createdAt: timestamp('created_at', {
+    mode: 'string',
+    withTimezone: true,
+  }).notNull(),
+  lastUsedAt: timestamp('last_used_at', {
+    mode: 'string',
+    withTimezone: true,
+  }),
+  revokedAt: timestamp('revoked_at', {
+    mode: 'string',
+    withTimezone: true,
+  }),
+});
+
 export const artifacts = pgTable('artifacts', {
   id: text('id').primaryKey(),
   slug: text('slug').notNull().unique(),

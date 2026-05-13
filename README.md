@@ -89,6 +89,7 @@ npm run db:studio     # open Drizzle Studio using .env.local
 - Polished dark-mode-first landing page for `docscn.ai`.
 - Dashboard with AI-native artifact examples.
 - Better Auth email/password foundation with owner-aware artifact publishing.
+- Hashed API keys for agent and CLI publishing through `Authorization: Bearer`.
 - Publish Artifact flow backed by `/api/artifacts`, with Drizzle/Postgres when
   configured and a local runtime fallback otherwise.
 - Sandboxed artifact viewer using iframe `srcDoc`.
@@ -115,6 +116,15 @@ open-source, self-hostable architecture:
 Copy `.env.example` to `.env.local` when wiring real services later.
 
 ## Future CLI
+
+API keys can already publish artifacts against a local server:
+
+```bash
+curl -X POST http://localhost:3000/api/artifacts \
+  -H "Authorization: Bearer docscn_sk_..." \
+  -H "Content-Type: application/json" \
+  -d @artifact-payload.json
+```
 
 The CLI package is intentionally small in the MVP. The planned shape is:
 

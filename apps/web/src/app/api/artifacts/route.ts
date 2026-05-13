@@ -8,7 +8,7 @@ import {
   type IntegrationSource,
   visibilityOptions,
 } from '@docscn/sdk';
-import { getRequestSession } from '../../../lib/session';
+import { getRequestPrincipal, hasBearerToken } from '../../../lib/publisher';
 
 function isString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -59,19 +59,27 @@ function parseCreateArtifactInput(
 }
 
 export async function GET(request: Request) {
-  const session = await getRequestSession(request);
+  const principal = await getRequestPrincipal(request);
+
+  if (!principal && hasBearerToken(request)) {
+    return NextResponse.json({ error: 'Invalid API key.' }, { status: 401 });
+  }
 
   return NextResponse.json({
-    artifacts: await listArtifacts({ viewerUserId: session?.user.id }),
+    artifacts: await listArtifacts({ viewerUserId: principal?.userId }),
   });
 }
 
 export async function POST(request: Request) {
-  const session = await getRequestSession(request);
+  const principal = await getRequestPrincipal(request);
 
-  if (!session) {
+  if (!principal) {
     return NextResponse.json(
-      { error: 'Sign in to publish artifacts.' },
+      {
+        error: hasBearerToken(request)
+          ? 'Invalid API key.'
+          : 'Sign in to publish artifacts.',
+      },
       { status: 401 },
     );
   }
@@ -89,8 +97,11 @@ export async function POST(request: Request) {
 
   const published = await publishArtifact({
     ...input,
-    authorName: session.user.name || input.authorName,
-    ownerUserId: session.user.id,
+    authorName:
+      principal.kind === 'session'
+        ? principal.name || input.authorName
+        : input.authorName,
+    ownerUserId: principal.userId,
   });
 
   return NextResponse.json(published, { status: 201 });
