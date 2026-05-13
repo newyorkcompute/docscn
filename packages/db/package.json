@@ -7,6 +7,8 @@
   "types": "./src/index.d.ts",
   "dependencies": {
     "@docscn/sdk": "0.0.1",
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.7",
     "tslib": "^2.3.0"
   }
 }

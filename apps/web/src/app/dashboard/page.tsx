@@ -1,13 +1,15 @@
-import { getArtifacts } from '@docscn/db';
+import { listArtifacts } from '@docscn/db';
 import { DashboardClient } from '../../components/dashboard-client';
 import { SiteHeader } from '../../components/site-header';
 
-export default function DashboardPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function DashboardPage() {
   return (
     <>
       <SiteHeader />
       <main>
-        <DashboardClient artifacts={getArtifacts()} />
+        <DashboardClient artifacts={await listArtifacts()} />
       </main>
     </>
   );

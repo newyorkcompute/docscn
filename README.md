@@ -25,7 +25,7 @@ apps/
   web/        Next.js app for docscn.ai
 packages/
   ui/         Shared shadcn-inspired UI primitives
-  db/         Mock repository now, future Drizzle/Postgres package
+  db/         Drizzle/Postgres schema, migrations, repository, mock fallback
   sdk/        Public contracts for artifacts, publishing, comments, revisions
   cli/        Future npx docscn publish artifact.html experience
   config/     Shared configuration and environment contracts
@@ -49,11 +49,41 @@ npm run typecheck
 npm run format
 ```
 
+## Database
+
+docscn uses Drizzle ORM with Postgres. The app is safe to run without a
+database: if `DATABASE_URL` is missing, it falls back to in-process published
+artifacts plus the AI-native seed examples.
+
+To use Postgres locally:
+
+```bash
+cp .env.example .env.local
+npm run db:up
+npm run db:migrate
+npm run dev
+```
+
+The Docker Compose database is exposed at
+`postgres://docscn:docscn@localhost:5433/docscn` to avoid conflicts with an
+existing local Postgres on port `5432`.
+
+Database commands:
+
+```bash
+npm run db:up         # start local Docker Postgres
+npm run db:down       # stop local Docker Postgres
+npm run db:generate   # create migrations from packages/db/src/lib/schema.ts
+npm run db:migrate    # apply migrations using .env.local
+npm run db:studio     # open Drizzle Studio using .env.local
+```
+
 ## MVP Features
 
 - Polished dark-mode-first landing page for `docscn.ai`.
 - Dashboard with AI-native artifact examples.
-- Lightweight local Publish Artifact flow for pasted/uploaded HTML.
+- Publish Artifact flow backed by `/api/artifacts`, with Drizzle/Postgres when
+  configured and a local runtime fallback otherwise.
 - Sandboxed artifact viewer using iframe `srcDoc`.
 - Artifact metadata: title, description, author/agent, date, visibility, source.
 - Review threads and revision history around each artifact.
@@ -62,7 +92,7 @@ npm run format
 
 ## Self-Hosting Direction
 
-The MVP uses mock/local data, but the boundaries are designed for an
+The MVP now includes the first persistence layer and remains designed for an
 open-source, self-hostable architecture:
 
 - Postgres with Drizzle ORM.

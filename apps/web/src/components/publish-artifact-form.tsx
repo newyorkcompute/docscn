@@ -7,10 +7,10 @@ import {
   artifactKinds,
   type ArtifactKind,
   type ArtifactVisibility,
+  type PublishResult,
   visibilityOptions,
 } from '@docscn/sdk';
 import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
-import { publishLocalArtifact } from '../lib/local-artifacts';
 
 const starterHtml = `<!doctype html>
 <html>
@@ -45,6 +45,8 @@ export function PublishArtifactForm() {
   const [visibility, setVisibility] = useState<ArtifactVisibility>('unlisted');
   const [kind, setKind] = useState<ArtifactKind>('custom-html');
   const [html, setHtml] = useState(starterHtml);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [error, setError] = useState<string | undefined>();
 
   const canPublish = useMemo(
     () =>
@@ -54,22 +56,47 @@ export function PublishArtifactForm() {
     [description, html, title],
   );
 
-  function publish() {
+  async function publish() {
     if (!canPublish) {
       return;
     }
 
-    const { result } = publishLocalArtifact({
-      title,
-      description,
-      html,
-      visibility,
-      authorName,
-      source: 'web',
-      kind,
-    });
+    setIsPublishing(true);
+    setError(undefined);
 
-    router.push(result.url);
+    try {
+      const response = await fetch('/api/artifacts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          html,
+          visibility,
+          authorName,
+          source: 'web',
+          kind,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Artifact publish failed.');
+      }
+
+      const payload = (await response.json()) as { result: PublishResult };
+      router.push(payload.result.url);
+      router.refresh();
+    } catch (publishError) {
+      setError(
+        publishError instanceof Error
+          ? publishError.message
+          : 'Artifact publish failed.',
+      );
+    } finally {
+      setIsPublishing(false);
+    }
   }
 
   async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -192,13 +219,21 @@ export function PublishArtifactForm() {
           />
         </label>
 
+        {error ? (
+          <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
+
         <Button
           className="w-full"
-          disabled={!canPublish}
+          disabled={!canPublish || isPublishing}
           size="lg"
           onClick={publish}
         >
-          Generate shareable artifact page
+          {isPublishing
+            ? 'Publishing artifact...'
+            : 'Generate shareable artifact page'}
         </Button>
       </Card>
     </Shell>

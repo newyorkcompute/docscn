@@ -7,12 +7,14 @@ import {
   PanelsTopLeft,
   RefreshCcw,
 } from 'lucide-react';
-import { getArtifacts } from '@docscn/db';
+import { listArtifacts } from '@docscn/db';
 import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
 import { SiteHeader } from '../components/site-header';
 
-export default function Index() {
-  const artifacts = getArtifacts();
+export const dynamic = 'force-dynamic';
+
+export default async function Index() {
+  const artifacts = await listArtifacts();
 
   return (
     <>

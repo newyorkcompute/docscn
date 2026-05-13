@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: docscn-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: docscn
+      POSTGRES_PASSWORD: docscn
+      POSTGRES_DB: docscn
+    ports:
+      - '5433:5432'
+    volumes:
+      - docscn_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U docscn -d docscn']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  docscn_postgres_data:

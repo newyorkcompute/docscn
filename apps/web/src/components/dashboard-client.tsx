@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowUpRight,
@@ -10,20 +9,8 @@ import {
 } from 'lucide-react';
 import type { Artifact } from '@docscn/sdk';
 import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
-import { readLocalArtifacts } from '../lib/local-artifacts';
 
 export function DashboardClient({ artifacts }: { artifacts: Artifact[] }) {
-  const [localArtifacts, setLocalArtifacts] = useState<Artifact[]>([]);
-
-  useEffect(() => {
-    setLocalArtifacts(readLocalArtifacts());
-  }, []);
-
-  const allArtifacts = useMemo(
-    () => [...localArtifacts, ...artifacts],
-    [artifacts, localArtifacts],
-  );
-
   return (
     <Shell className="space-y-8 py-10">
       <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
@@ -45,7 +32,7 @@ export function DashboardClient({ artifacts }: { artifacts: Artifact[] }) {
       <section className="grid gap-4 md:grid-cols-3">
         <Card className="p-5">
           <Sparkles className="h-5 w-5 text-primary" />
-          <p className="mt-4 text-3xl font-semibold">{allArtifacts.length}</p>
+          <p className="mt-4 text-3xl font-semibold">{artifacts.length}</p>
           <p className="text-sm text-muted-foreground">published artifacts</p>
         </Card>
         <Card className="p-5">
@@ -63,7 +50,7 @@ export function DashboardClient({ artifacts }: { artifacts: Artifact[] }) {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        {allArtifacts.map((artifact) => (
+        {artifacts.map((artifact) => (
           <Link key={artifact.id} href={`/artifacts/${artifact.slug}`}>
             <Card className="group h-full p-6 transition hover:border-primary/50 hover:bg-card">
               <div className="flex items-start justify-between gap-4">

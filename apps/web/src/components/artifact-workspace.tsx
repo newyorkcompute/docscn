@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Bot,
@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import type { Artifact, ArtifactRevision, ReviewThread } from '@docscn/sdk';
 import { Badge, Button, Card, Eyebrow, Shell, cn } from '@docscn/ui';
-import { getLocalArtifact } from '../lib/local-artifacts';
 import { ArtifactFrame } from './artifact-frame';
 
 export function ArtifactWorkspace({
@@ -23,20 +22,11 @@ export function ArtifactWorkspace({
   threads: ReviewThread[];
   artifactId: string;
 }) {
-  const [localArtifact, setLocalArtifact] = useState<Artifact | undefined>();
   const [selectedRevisionId, setSelectedRevisionId] = useState(
     initialArtifact?.currentRevisionId,
   );
 
-  useEffect(() => {
-    if (!initialArtifact) {
-      const artifact = getLocalArtifact(artifactId);
-      setLocalArtifact(artifact);
-      setSelectedRevisionId(artifact?.currentRevisionId);
-    }
-  }, [artifactId, initialArtifact]);
-
-  const artifact = initialArtifact ?? localArtifact;
+  const artifact = initialArtifact;
 
   const selectedRevision = useMemo<ArtifactRevision | undefined>(
     () =>

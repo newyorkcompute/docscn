@@ -1,6 +1,7 @@
-# db
+# @docscn/db
 
-This library was generated with [Nx](https://nx.dev).
+Drizzle/Postgres schema, repository functions, migrations, and mock fallback
+data for docscn.
 
 ## Building
 
