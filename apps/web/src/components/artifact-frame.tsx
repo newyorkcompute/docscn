@@ -4,10 +4,12 @@ export function ArtifactFrame({
   html,
   title,
   className,
+  iframeClassName,
 }: {
   html: string;
   title: string;
   className?: string;
+  iframeClassName?: string;
 }) {
   return (
     <div
@@ -25,7 +27,7 @@ export function ArtifactFrame({
         </span>
       </div>
       <iframe
-        className="h-[680px] w-full bg-white"
+        className={cn('h-[680px] w-full bg-white', iframeClassName)}
         sandbox="allow-scripts allow-forms"
         srcDoc={html}
         title={title}

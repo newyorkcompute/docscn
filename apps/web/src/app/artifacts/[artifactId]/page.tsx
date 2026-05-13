@@ -1,7 +1,6 @@
 import { findArtifact, listReviewThreads } from '@docscn/db';
 import { getServerSession } from '../../../lib/session';
 import { ArtifactWorkspace } from '../../../components/artifact-workspace';
-import { SiteHeader } from '../../../components/site-header';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,15 +17,12 @@ export default async function ArtifactPage({
   const threads = artifact ? await listReviewThreads(artifact.id) : [];
 
   return (
-    <>
-      <SiteHeader />
-      <main>
-        <ArtifactWorkspace
-          artifact={artifact}
-          artifactId={artifactId}
-          threads={threads}
-        />
-      </main>
-    </>
+    <main>
+      <ArtifactWorkspace
+        artifact={artifact}
+        artifactId={artifactId}
+        threads={threads}
+      />
+    </main>
   );
 }
