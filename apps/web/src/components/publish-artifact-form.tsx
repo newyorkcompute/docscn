@@ -20,7 +20,7 @@ const starterHtml = `<!doctype html>
       body { margin: 0; font-family: ui-sans-serif, system-ui; background: #09090b; color: #fafafa; }
       main { padding: 40px; }
       .card { border: 1px solid #3f3f46; border-radius: 24px; padding: 24px; background: #18181b; }
-      button { border: 0; border-radius: 12px; padding: 12px 16px; background: #5eead4; color: #042f2e; font-weight: 800; }
+      button { border: 0; border-radius: 12px; padding: 12px 16px; background: #2563eb; color: #ffffff; font-weight: 800; }
     </style>
   </head>
   <body>
@@ -115,23 +115,27 @@ export function PublishArtifactForm() {
     <Shell className="grid gap-8 py-10 lg:grid-cols-[0.9fr_1.1fr]">
       <div className="space-y-6">
         <div>
-          <Eyebrow>publish artifact</Eyebrow>
+          <Eyebrow>manual publish fallback</Eyebrow>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
-            Turn agent output into a reviewable interactive page.
+            Agents should publish artifacts. This form is for testing.
           </h1>
           <p className="mt-4 text-muted-foreground">
-            Paste or upload self-contained HTML. docscn creates a shareable
-            artifact page with metadata, visibility, review threads, and
-            revision history ready to grow into API and CLI publishing.
+            The primary docscn path is API-key publishing from Cursor, Claude,
+            scheduled reports, CLIs, and future MCP workflows. Keep this page
+            around for local smoke tests and one-off manual uploads.
           </p>
         </div>
         <Card className="p-5">
           <div className="flex items-center gap-3">
             <FileCode2 className="h-5 w-5 text-primary" />
             <div>
-              <p className="font-medium">Future CLI shape</p>
-              <p className="font-mono text-sm text-muted-foreground">
-                npx docscn publish artifact.html
+              <p className="font-medium">Agent publishing contract</p>
+              <p className="text-sm text-muted-foreground">
+                Point agents to{' '}
+                <a className="text-primary hover:underline" href="/skills.md">
+                  /skills.md
+                </a>{' '}
+                and give them a docscn API key from settings.
               </p>
             </div>
           </div>

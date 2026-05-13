@@ -1,15 +1,21 @@
 import { NextResponse } from 'next/server';
 import { findArtifact, listReviewThreads } from '@docscn/db';
-import { getRequestSession } from '../../../../lib/session';
+import { getRequestPrincipal, hasBearerToken } from '../../../../lib/publisher';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ artifactId: string }> },
 ) {
   const { artifactId } = await params;
-  const session = await getRequestSession(request);
+  const principal = await getRequestPrincipal(request);
+
+  if (!principal && hasBearerToken(request)) {
+    return NextResponse.json({ error: 'Invalid API key.' }, { status: 401 });
+  }
+
   const artifact = await findArtifact(artifactId, {
-    viewerUserId: session?.user.id,
+    includeUnlisted: true,
+    viewerUserId: principal?.userId,
   });
 
   if (!artifact) {

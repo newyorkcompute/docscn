@@ -30,6 +30,31 @@ export default async function SettingsPage() {
               </div>
 
               <Card className="p-6">
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                  <div>
+                    <h2 className="text-lg font-semibold">Agent setup</h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                      Give agents an API key and point them at the public skill
+                      file. They can publish artifacts, read review feedback,
+                      and submit revisions without using the UI.
+                    </p>
+                  </div>
+                  <Button asChild size="sm" variant="outline">
+                    <Link href="/skills.md">Open skills.md</Link>
+                  </Button>
+                </div>
+                <div className="mt-5 rounded-lg border border-border bg-secondary/40 p-4">
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                    Agent prompt
+                  </p>
+                  <code className="mt-3 block text-sm leading-6 text-foreground">
+                    Read /skills.md, use my docscn API key, and publish your
+                    self-contained HTML artifact to this workspace.
+                  </code>
+                </div>
+              </Card>
+
+              <Card className="p-6">
                 <h2 className="text-lg font-semibold">Account</h2>
                 <div className="mt-4 grid gap-3 text-sm">
                   <div className="flex items-center justify-between gap-4 border-b border-border pb-3">

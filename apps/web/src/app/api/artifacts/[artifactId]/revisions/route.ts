@@ -5,7 +5,10 @@ import {
   findArtifact,
 } from '@docscn/db';
 import type { IntegrationSource, SubmitRevisionInput } from '@docscn/sdk';
-import { getRequestSession } from '../../../../../lib/session';
+import {
+  getRequestPrincipal,
+  hasBearerToken,
+} from '../../../../../lib/publisher';
 
 function isString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -29,24 +32,28 @@ export async function POST(
   { params }: { params: Promise<{ artifactId: string }> },
 ) {
   const { artifactId } = await params;
-  const session = await getRequestSession(request);
+  const principal = await getRequestPrincipal(request);
 
-  if (!session) {
+  if (!principal) {
     return NextResponse.json(
-      { error: 'Sign in to revise artifacts.' },
+      {
+        error: hasBearerToken(request)
+          ? 'Invalid API key.'
+          : 'Sign in to revise artifacts.',
+      },
       { status: 401 },
     );
   }
 
   const artifact = await findArtifact(artifactId, {
-    viewerUserId: session.user.id,
+    viewerUserId: principal.userId,
   });
 
   if (!artifact) {
     return NextResponse.json({ error: 'Artifact not found.' }, { status: 404 });
   }
 
-  if (!canMutateArtifact(artifact, session.user.id)) {
+  if (!canMutateArtifact(artifact, principal.userId)) {
     return NextResponse.json(
       { error: 'Only the artifact owner can submit revisions.' },
       { status: 403 },
@@ -79,9 +86,16 @@ export async function POST(
     artifactId: artifact.id,
     html: body.html,
     summary: body.summary,
-    authorName: session.user.name || body.authorName,
-    actorUserId: session.user.id,
-    source: isIntegrationSource(body.source) ? body.source : 'web',
+    authorName:
+      principal.kind === 'session'
+        ? principal.name || body.authorName
+        : body.authorName,
+    actorUserId: principal.userId,
+    source: isIntegrationSource(body.source)
+      ? body.source
+      : principal.kind === 'api-key'
+        ? 'automation'
+        : 'web',
     resolvedThreadIds,
   };
 
