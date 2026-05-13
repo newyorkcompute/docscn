@@ -49,7 +49,7 @@ export default async function Index() {
           </section>
 
           <Card className="p-4">
-            <div className="rounded-xl border border-border bg-black/60 p-4">
+            <div className="rounded-xl border border-border bg-secondary/40 p-4">
               <div className="flex items-center justify-between border-b border-border pb-4">
                 <div>
                   <Eyebrow>

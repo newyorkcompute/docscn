@@ -50,14 +50,15 @@ npm run typecheck
 npm run format
 ```
 
-## Database And Storage
+## Self-Hosted Quick Start
 
-docscn uses Drizzle ORM with Postgres for metadata and S3-compatible object
-storage for revision HTML. The app is safe to run without configured services:
-if `DATABASE_URL` is missing, it falls back to in-process published artifacts
-plus the AI-native seed examples.
+docscn is designed to run locally with replaceable open-source infrastructure:
+Postgres for metadata, MinIO/S3-compatible storage for artifact HTML, and Better
+Auth for sessions. The app is safe to run without configured services: if
+`DATABASE_URL` is missing, it falls back to in-process published artifacts plus
+the AI-native seed examples.
 
-To use Postgres and MinIO locally:
+To run the persistent stack locally:
 
 ```bash
 cp .env.example .env.local
@@ -74,7 +75,7 @@ MinIO is exposed at `http://localhost:9000`, with its console at
 `http://localhost:9001`. The `minio-init` service creates the
 `docscn-artifacts` bucket used by the S3 adapter.
 
-Database commands:
+Local service commands:
 
 ```bash
 npm run db:up         # start local Docker Postgres + MinIO
@@ -84,9 +85,27 @@ npm run db:migrate    # apply migrations using .env.local
 npm run db:studio     # open Drizzle Studio using .env.local
 ```
 
+## Portable Stack
+
+The core stack is intentionally OSS-friendly and provider-portable:
+
+- **App/runtime:** Next.js, React, Tailwind CSS, Nx, and shadcn-inspired local UI
+  primitives.
+- **Auth:** Better Auth with local Postgres tables. OAuth providers can be added
+  later without changing artifact ownership.
+- **Database:** Postgres via Drizzle ORM. Local Docker Postgres works the same
+  way as Neon, Supabase, RDS, or another Postgres-compatible host.
+- **Object storage:** S3-compatible adapter. Local MinIO can be swapped for
+  Cloudflare R2, AWS S3, Tigris, or another compatible provider through env vars.
+- **Publishing credentials:** hashed API keys stored in Postgres. Raw keys are
+  only shown once.
+
+No core data path depends on a single hosted vendor. Hosted defaults can be
+convenient, but the interfaces are meant to be replaceable.
+
 ## MVP Features
 
-- Polished dark-mode-first landing page for `docscn.ai`.
+- Polished light/dark landing page for `docscn.ai`.
 - Dashboard with AI-native artifact examples.
 - Better Auth email/password foundation with owner-aware artifact publishing.
 - Hashed API keys for agent and CLI publishing through `Authorization: Bearer`.
@@ -97,6 +116,7 @@ npm run db:studio     # open Drizzle Studio using .env.local
 - Visibility rules: public artifacts are listed, unlisted artifacts are direct
   link shareable, and private artifacts are owner-only.
 - Review threads and revision history around each artifact.
+- Figma-style comment pins over the artifact viewer for review context.
 - SDK contracts shaped for future publish APIs, MCP tools, skills, and agents.
 - Minimal CLI publishing flow for local API-key testing.
 

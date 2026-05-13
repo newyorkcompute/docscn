@@ -62,7 +62,7 @@ export function Card({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-card text-card-foreground shadow-sm shadow-black/10',
+        'rounded-xl border border-border bg-card text-card-foreground shadow-sm shadow-black/[0.03]',
         className,
       )}
       {...props}
@@ -84,7 +84,8 @@ export function Badge({
         tone === 'default' && 'border-primary/40 bg-primary/10 text-primary',
         tone === 'muted' &&
           'border-border bg-secondary/60 text-muted-foreground',
-        tone === 'success' && 'border-blue-400/35 bg-blue-400/10 text-blue-300',
+        tone === 'success' &&
+          'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-300',
         tone === 'warning' &&
           'border-amber-400/40 bg-amber-400/10 text-amber-300',
         tone === 'outline' && 'border-border bg-transparent text-foreground',

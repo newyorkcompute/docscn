@@ -11,6 +11,12 @@ function isThreadStatus(value: unknown): value is ReviewThreadStatus {
   return value === 'open' || value === 'needs-revision' || value === 'resolved';
 }
 
+function parseAnchorCoordinate(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? value
+    : undefined;
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ artifactId: string }> },
@@ -63,7 +69,11 @@ export async function POST(
       ? body.requestedChange
       : undefined,
     anchor: isString(body.anchorLabel)
-      ? { label: body.anchorLabel }
+      ? {
+          label: body.anchorLabel,
+          x: parseAnchorCoordinate(body.anchorX),
+          y: parseAnchorCoordinate(body.anchorY),
+        }
       : undefined,
   };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, MouseEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -10,6 +10,7 @@ import {
   GitCommitHorizontal,
   MessageSquareText,
   PanelRightOpen,
+  Share2,
 } from 'lucide-react';
 import type {
   Artifact,
@@ -19,6 +20,29 @@ import type {
 } from '@docscn/sdk';
 import { Badge, Button, Card, Eyebrow, Shell, cn } from '@docscn/ui';
 import { ArtifactFrame } from './artifact-frame';
+
+interface PendingAnchor {
+  label: string;
+  x: number;
+  y: number;
+}
+
+function getPinPosition(thread: ReviewThread, index: number) {
+  if (
+    typeof thread.anchor?.x === 'number' &&
+    typeof thread.anchor?.y === 'number'
+  ) {
+    return {
+      left: `${Math.min(Math.max(thread.anchor.x, 6), 94)}%`,
+      top: `${Math.min(Math.max(thread.anchor.y, 8), 92)}%`,
+    };
+  }
+
+  return {
+    left: `${68 + (index % 3) * 8}%`,
+    top: `${18 + (index % 6) * 11}%`,
+  };
+}
 
 export function ArtifactWorkspace({
   artifact: initialArtifact,
@@ -54,6 +78,12 @@ export function ArtifactWorkspace({
   const [pendingAction, setPendingAction] = useState<string | undefined>();
   const [actionError, setActionError] = useState<string | undefined>();
   const [copiedBundle, setCopiedBundle] = useState<string | undefined>();
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [activeThreadId, setActiveThreadId] = useState<string | undefined>();
+  const [isPlacingComment, setIsPlacingComment] = useState(false);
+  const [pendingAnchor, setPendingAnchor] = useState<
+    PendingAnchor | undefined
+  >();
 
   const artifact = initialArtifact;
 
@@ -153,6 +183,34 @@ export function ArtifactWorkspace({
     window.setTimeout(() => setCopiedBundle(undefined), 1600);
   }
 
+  async function copyShareLink() {
+    await navigator.clipboard.writeText(window.location.href);
+    setCopiedLink(true);
+    window.setTimeout(() => setCopiedLink(false), 1600);
+  }
+
+  function selectThread(threadId: string) {
+    setActiveSidebarTab('review');
+    setActiveThreadId(threadId);
+    window.setTimeout(() => {
+      document
+        .getElementById(`thread-${threadId}`)
+        ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 0);
+  }
+
+  function placeCommentAnchor(event: MouseEvent<HTMLDivElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    const label = `Pin ${threads.length + 1}`;
+
+    setPendingAnchor({ label, x, y });
+    setAnchorLabel(label);
+    setActiveSidebarTab('review');
+    setIsPlacingComment(false);
+  }
+
   async function refreshAfterAction() {
     router.refresh();
   }
@@ -182,7 +240,9 @@ export function ArtifactWorkspace({
           authorName: reviewAuthor,
           status: reviewStatus,
           requestedChange,
-          anchorLabel,
+          anchorLabel: pendingAnchor?.label ?? anchorLabel,
+          anchorX: pendingAnchor?.x,
+          anchorY: pendingAnchor?.y,
         }),
       });
 
@@ -194,6 +254,7 @@ export function ArtifactWorkspace({
       setReviewBody('');
       setRequestedChange('');
       setAnchorLabel('');
+      setPendingAnchor(undefined);
       await refreshAfterAction();
     } catch (error) {
       setActionError(
@@ -333,19 +394,29 @@ export function ArtifactWorkspace({
         <div className="max-w-3xl">
           <div className="flex flex-wrap items-center gap-2">
             <Badge>{artifact.metadata.visibility}</Badge>
-            <Badge tone="outline">{artifact.metadata.kind}</Badge>
-            <Badge tone="outline">{artifact.metadata.source}</Badge>
+            <Badge tone={openThreads.length ? 'warning' : 'success'}>
+              {openThreads.length} open comments
+            </Badge>
           </div>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-5xl">
             {artifact.metadata.title}
           </h1>
-          <p className="mt-4 text-muted-foreground">
+          <p className="mt-4 max-w-2xl text-muted-foreground">
             {artifact.metadata.description}
           </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {artifact.metadata.kind} by {artifact.metadata.author.name}
+          </p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/publish">Publish another</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={copyShareLink}>
+            <Share2 className="h-4 w-4" />
+            {copiedLink ? 'Copied' : 'Share'}
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/publish">Publish another</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -383,10 +454,68 @@ export function ArtifactWorkspace({
             </div>
           </Card>
 
-          <ArtifactFrame
-            html={selectedRevision.html}
-            title={artifact.metadata.title}
-          />
+          <div className="relative">
+            <ArtifactFrame
+              html={selectedRevision.html}
+              title={artifact.metadata.title}
+            />
+            {isPlacingComment ? (
+              <div
+                className="absolute inset-x-0 bottom-0 top-10 z-10 cursor-crosshair bg-primary/5"
+                role="button"
+                tabIndex={0}
+                onClick={placeCommentAnchor}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    setIsPlacingComment(false);
+                  }
+                }}
+              >
+                <div className="absolute left-1/2 top-6 -translate-x-1/2 rounded-full border border-primary/30 bg-background px-3 py-1 text-xs text-primary shadow-sm">
+                  Click anywhere on the artifact to place a comment
+                </div>
+              </div>
+            ) : null}
+            {threads.length ? (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 top-10">
+                {threads.map((thread, index) => {
+                  const position = getPinPosition(thread, index);
+
+                  return (
+                    <button
+                      aria-label={`Open comment: ${thread.title}`}
+                      className={cn(
+                        'pointer-events-auto absolute grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border text-xs font-semibold shadow-sm transition',
+                        thread.id === activeThreadId
+                          ? 'border-primary bg-primary text-primary-foreground ring-4 ring-primary/15'
+                          : 'border-background bg-primary text-primary-foreground hover:scale-105',
+                        thread.status === 'resolved' && 'opacity-45',
+                      )}
+                      key={thread.id}
+                      style={position}
+                      type="button"
+                      onClick={() => selectThread(thread.id)}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+            {pendingAnchor ? (
+              <button
+                aria-label="Pending comment pin"
+                className="pointer-events-none absolute z-20 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-background bg-primary text-xs font-semibold text-primary-foreground shadow-sm ring-4 ring-primary/15"
+                style={{
+                  left: `${pendingAnchor.x}%`,
+                  top: `${pendingAnchor.y}%`,
+                }}
+                type="button"
+              >
+                +
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <aside className="space-y-5">
@@ -444,11 +573,34 @@ export function ArtifactWorkspace({
                   value={reviewBody}
                   onChange={(event) => setReviewBody(event.target.value)}
                 />
+                <Button
+                  className="w-full justify-start"
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsPlacingComment((current) => !current)}
+                >
+                  <MessageSquareText className="h-3.5 w-3.5" />
+                  {pendingAnchor
+                    ? `Placed at ${Math.round(pendingAnchor.x)}%, ${Math.round(
+                        pendingAnchor.y,
+                      )}%`
+                    : isPlacingComment
+                      ? 'Click on artifact to place'
+                      : 'Place comment on artifact'}
+                </Button>
                 <input
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
                   placeholder="Anchor label, e.g. hero, chart, timeline row (optional)"
                   value={anchorLabel}
-                  onChange={(event) => setAnchorLabel(event.target.value)}
+                  onChange={(event) => {
+                    setAnchorLabel(event.target.value);
+                    setPendingAnchor((current) =>
+                      current
+                        ? { ...current, label: event.target.value }
+                        : undefined,
+                    );
+                  }}
                 />
                 <textarea
                   className="min-h-16 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
@@ -494,32 +646,49 @@ export function ArtifactWorkspace({
                     feedback.
                   </p>
                 ) : (
-                  threads.map((thread) => (
+                  threads.map((thread, index) => (
                     <div
-                      className="rounded-xl border border-border bg-secondary/30 p-4"
+                      className={cn(
+                        'rounded-lg border bg-card p-4 transition',
+                        thread.id === activeThreadId
+                          ? 'border-primary/60 ring-4 ring-primary/10'
+                          : 'border-border',
+                      )}
+                      id={`thread-${thread.id}`}
                       key={thread.id}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <Badge
-                            tone={
-                              thread.status === 'resolved'
-                                ? 'success'
-                                : thread.status === 'needs-revision'
-                                  ? 'warning'
-                                  : 'muted'
-                            }
-                          >
-                            {thread.status}
-                          </Badge>
-                          <h3 className="mt-3 text-sm font-medium">
+                          <div className="flex items-center gap-2">
+                            <span className="grid h-6 w-6 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                              {index + 1}
+                            </span>
+                            <Badge
+                              tone={
+                                thread.status === 'resolved'
+                                  ? 'success'
+                                  : thread.status === 'needs-revision'
+                                    ? 'warning'
+                                    : 'muted'
+                              }
+                            >
+                              {thread.status}
+                            </Badge>
+                          </div>
+                          <h3 className="mt-3 text-sm font-medium leading-5">
                             {thread.title}
                           </h3>
                         </div>
-                        <MessageSquareText className="h-4 w-4 text-muted-foreground" />
+                        <button
+                          className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          type="button"
+                          onClick={() => selectThread(thread.id)}
+                        >
+                          <MessageSquareText className="h-4 w-4" />
+                        </button>
                       </div>
                       {thread.requestedChange ? (
-                        <p className="mt-3 rounded-lg bg-background/60 p-3 text-xs leading-5 text-muted-foreground">
+                        <p className="mt-3 rounded-md bg-secondary/50 p-3 text-xs leading-5 text-muted-foreground">
                           {thread.requestedChange}
                         </p>
                       ) : null}
@@ -538,7 +707,7 @@ export function ArtifactWorkspace({
                           </div>
                         ))}
                       </div>
-                      <div className="mt-4 flex flex-wrap gap-2">
+                      <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-3">
                         {thread.status !== 'resolved' ? (
                           <Button
                             disabled={
@@ -636,13 +805,13 @@ export function ArtifactWorkspace({
                   onChange={(event) => setRevisionAuthor(event.target.value)}
                 />
                 <textarea
-                  className="min-h-40 w-full rounded-md border border-input bg-black/40 px-3 py-2 font-mono text-xs outline-none ring-ring focus:ring-2"
+                  className="min-h-40 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs outline-none ring-ring focus:ring-2"
                   value={revisionHtml}
                   onChange={(event) => setRevisionHtml(event.target.value)}
                 />
                 {threads.filter((thread) => thread.status !== 'resolved')
                   .length ? (
-                  <div className="space-y-2 rounded-lg border border-border bg-secondary/30 p-3">
+                  <div className="space-y-2 rounded-lg border border-border bg-secondary/40 p-3">
                     <p className="text-xs font-medium text-muted-foreground">
                       Mark threads resolved by this revision
                     </p>
@@ -687,7 +856,7 @@ export function ArtifactWorkspace({
                   .reverse()
                   .map((revision) => (
                     <button
-                      className="block w-full rounded-xl border border-border bg-secondary/30 p-4 text-left transition hover:border-primary/50"
+                      className="block w-full rounded-lg border border-border bg-card p-4 text-left transition hover:border-primary/50"
                       key={revision.id}
                       type="button"
                       onClick={() => setSelectedRevisionId(revision.id)}
@@ -746,7 +915,7 @@ export function ArtifactWorkspace({
                   {copiedBundle === 'json' ? 'Copied' : 'Copy JSON'}
                 </Button>
               </div>
-              <div className="mt-4 rounded-lg border border-border bg-secondary/30 p-3">
+              <div className="mt-4 rounded-lg border border-border bg-secondary/40 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs font-medium text-muted-foreground">
                     Open threads

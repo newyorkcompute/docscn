@@ -213,7 +213,7 @@ export function PublishArtifactForm() {
         <label className="space-y-2 text-sm">
           <span className="text-muted-foreground">Self-contained HTML</span>
           <textarea
-            className="min-h-80 w-full rounded-md border border-input bg-black/40 px-3 py-2 font-mono text-xs outline-none ring-ring focus:ring-2"
+            className="min-h-80 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs outline-none ring-ring focus:ring-2"
             value={html}
             onChange={(event) => setHtml(event.target.value)}
           />
