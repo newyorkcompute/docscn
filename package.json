@@ -1,0 +1,81 @@
+{
+  "name": "docscn",
+  "version": "0.0.0",
+  "description": "Open-source workspace for publishing, reviewing, and revising agent-generated HTML artifacts.",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "nx dev web",
+    "build": "nx run-many -t build -p web,db,sdk,cli,config",
+    "lint": "nx run-many -t lint -p web,ui,db,sdk,cli,config",
+    "typecheck": "tsc -p apps/web/tsconfig.json --noEmit",
+    "format": "nx format:write",
+    "format:check": "nx format:check"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/newyorkcompute/docscn.git"
+  },
+  "keywords": [
+    "agents",
+    "html",
+    "artifacts",
+    "review",
+    "open-source",
+    "mcp"
+  ],
+  "author": "newyorkcompute",
+  "license": "MIT",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/newyorkcompute/docscn/issues"
+  },
+  "homepage": "https://github.com/newyorkcompute/docscn#readme",
+  "devDependencies": {
+    "@babel/core": "^7.14.5",
+    "@babel/preset-react": "^7.14.5",
+    "@eslint/js": "^9.8.0",
+    "@next/eslint-plugin-next": "^16.1.6",
+    "@nx/eslint": "22.7.1",
+    "@nx/eslint-plugin": "22.7.1",
+    "@nx/js": "22.7.1",
+    "@nx/next": "^22.7.1",
+    "@nx/react": "22.7.1",
+    "@swc-node/register": "~1.11.1",
+    "@swc/cli": "~0.8.0",
+    "@swc/core": "~1.15.5",
+    "@swc/helpers": "~0.5.18",
+    "@tailwindcss/postcss": "^4.3.0",
+    "@types/node": "20.19.9",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.8.0",
+    "eslint-config-next": "^16.1.6",
+    "eslint-config-prettier": "^10.0.0",
+    "eslint-plugin-import": "2.31.0",
+    "eslint-plugin-jsx-a11y": "6.10.1",
+    "eslint-plugin-react": "7.35.0",
+    "eslint-plugin-react-hooks": "5.0.0",
+    "jsonc-eslint-parser": "^2.1.0",
+    "nx": "22.7.1",
+    "prettier": "~3.6.2",
+    "tailwindcss": "^4.3.0",
+    "tslib": "^2.3.0",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "^8.40.0"
+  },
+  "nx": {},
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.2.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.14.0",
+    "next": "~16.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.6.0"
+  }
+}

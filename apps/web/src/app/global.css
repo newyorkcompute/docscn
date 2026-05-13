@@ -1,0 +1,56 @@
+@import 'tailwindcss';
+
+@source '../../../../packages/ui/src/**/*.{ts,tsx}';
+@source './**/*.{ts,tsx}';
+@source '../components/**/*.{ts,tsx}';
+
+@theme inline {
+  --font-sans: 'Geist', 'Geist Fallback', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback', ui-monospace, monospace;
+  --color-background: oklch(0.12 0 0);
+  --color-foreground: oklch(0.985 0 0);
+  --color-card: oklch(0.17 0 0);
+  --color-card-foreground: oklch(0.985 0 0);
+  --color-popover: oklch(0.17 0 0);
+  --color-popover-foreground: oklch(0.985 0 0);
+  --color-primary: oklch(0.58 0.24 260);
+  --color-primary-foreground: oklch(0.985 0 0);
+  --color-secondary: oklch(0.22 0 0);
+  --color-secondary-foreground: oklch(0.985 0 0);
+  --color-muted: oklch(0.22 0 0);
+  --color-muted-foreground: oklch(0.68 0 0);
+  --color-accent: oklch(0.24 0 0);
+  --color-accent-foreground: oklch(0.985 0 0);
+  --color-destructive: oklch(0.63 0.22 25);
+  --color-border: oklch(0.25 0 0);
+  --color-input: oklch(0.25 0 0);
+  --color-ring: oklch(0.58 0.24 260);
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: calc(var(--radius) * 0.875);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--color-background);
+}
+
+::selection {
+  background: rgba(0, 82, 255, 0.35);
+}
+
+iframe {
+  color-scheme: light;
+}
