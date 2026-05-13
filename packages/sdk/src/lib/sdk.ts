@@ -57,6 +57,7 @@ export interface ArtifactRevision {
 export interface Artifact {
   id: string;
   slug: string;
+  ownerUserId?: string;
   metadata: ArtifactMetadata;
   currentRevisionId: string;
   revisions: ArtifactRevision[];
@@ -94,6 +95,7 @@ export interface CreateArtifactInput {
   html: string;
   visibility: ArtifactVisibility;
   authorName: string;
+  ownerUserId?: string;
   source: IntegrationSource;
   kind: ArtifactKind;
 }
@@ -111,6 +113,7 @@ export interface SubmitRevisionInput {
   html: string;
   summary: string;
   authorName: string;
+  actorUserId?: string;
   source: IntegrationSource;
   resolvedThreadIds?: string[];
 }

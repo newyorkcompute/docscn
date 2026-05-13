@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createReviewThread, findArtifact } from '@docscn/db';
 import type { CreateReviewThreadInput, ReviewThreadStatus } from '@docscn/sdk';
+import { getRequestSession } from '../../../../../lib/session';
 
 function isString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -15,7 +16,18 @@ export async function POST(
   { params }: { params: Promise<{ artifactId: string }> },
 ) {
   const { artifactId } = await params;
-  const artifact = await findArtifact(artifactId);
+  const session = await getRequestSession(request);
+
+  if (!session) {
+    return NextResponse.json(
+      { error: 'Sign in to review artifacts.' },
+      { status: 401 },
+    );
+  }
+
+  const artifact = await findArtifact(artifactId, {
+    viewerUserId: session.user.id,
+  });
 
   if (!artifact) {
     return NextResponse.json({ error: 'Artifact not found.' }, { status: 404 });
@@ -45,7 +57,7 @@ export async function POST(
       : artifact.currentRevisionId,
     title: body.title,
     body: body.body,
-    authorName: body.authorName,
+    authorName: session.user.name || body.authorName,
     status: isThreadStatus(body.status) ? body.status : 'open',
     requestedChange: isString(body.requestedChange)
       ? body.requestedChange

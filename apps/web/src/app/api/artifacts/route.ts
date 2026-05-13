@@ -8,6 +8,7 @@ import {
   type IntegrationSource,
   visibilityOptions,
 } from '@docscn/sdk';
+import { getRequestSession } from '../../../lib/session';
 
 function isString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -57,11 +58,24 @@ function parseCreateArtifactInput(
   };
 }
 
-export async function GET() {
-  return NextResponse.json({ artifacts: await listArtifacts() });
+export async function GET(request: Request) {
+  const session = await getRequestSession(request);
+
+  return NextResponse.json({
+    artifacts: await listArtifacts({ viewerUserId: session?.user.id }),
+  });
 }
 
 export async function POST(request: Request) {
+  const session = await getRequestSession(request);
+
+  if (!session) {
+    return NextResponse.json(
+      { error: 'Sign in to publish artifacts.' },
+      { status: 401 },
+    );
+  }
+
   const input = parseCreateArtifactInput(
     await request.json().catch(() => null),
   );
@@ -73,7 +87,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const published = await publishArtifact(input);
+  const published = await publishArtifact({
+    ...input,
+    authorName: session.user.name || input.authorName,
+    ownerUserId: session.user.id,
+  });
 
   return NextResponse.json(published, { status: 201 });
 }

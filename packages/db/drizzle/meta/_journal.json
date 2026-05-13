@@ -15,6 +15,13 @@
       "when": 1778700493666,
       "tag": "0001_brown_tyger_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778701160996,
+      "tag": "0002_wild_donald_blake",
+      "breakpoints": true
     }
   ]
 }

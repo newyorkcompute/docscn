@@ -33,6 +33,36 @@ import {
 const runtimeArtifacts: Artifact[] = [];
 const runtimeThreads: ReviewThread[] = [];
 
+interface ArtifactAccessOptions {
+  includeUnlisted?: boolean;
+  viewerUserId?: string | null;
+}
+
+function canViewArtifact(
+  artifact: Artifact,
+  options: ArtifactAccessOptions = {},
+) {
+  if (artifact.ownerUserId && artifact.ownerUserId === options.viewerUserId) {
+    return true;
+  }
+
+  if (artifact.metadata.visibility === 'public') {
+    return true;
+  }
+
+  return (
+    artifact.metadata.visibility === 'unlisted' &&
+    options.includeUnlisted === true
+  );
+}
+
+export function canMutateArtifact(
+  artifact: Artifact,
+  viewerUserId?: string | null,
+) {
+  return Boolean(artifact.ownerUserId && artifact.ownerUserId === viewerUserId);
+}
+
 async function storeRevisionHtml(input: {
   artifactId: string;
   revisionId: string;
@@ -103,6 +133,7 @@ function createPublishedArtifact(input: CreateArtifactInput): Artifact {
   return {
     id,
     slug: `${slugBase}-${id.slice(-8)}`,
+    ownerUserId: input.ownerUserId,
     currentRevisionId: revisionId,
     metadata: {
       title: input.title.trim(),
@@ -136,6 +167,7 @@ async function mapArtifactRows(
     artifactRows.map(async (artifact) => ({
       id: artifact.id,
       slug: artifact.slug,
+      ownerUserId: artifact.ownerUserId ?? undefined,
       currentRevisionId: artifact.currentRevisionId,
       metadata: {
         title: artifact.title,
@@ -193,9 +225,13 @@ function mapThreadRows(
   }));
 }
 
-export async function listArtifacts(): Promise<Artifact[]> {
+export async function listArtifacts(
+  options: ArtifactAccessOptions = {},
+): Promise<Artifact[]> {
   if (!isDatabaseConfigured()) {
-    return [...runtimeArtifacts, ...getMockArtifacts()];
+    return [...runtimeArtifacts, ...getMockArtifacts()].filter((artifact) =>
+      canViewArtifact(artifact, options),
+    );
   }
 
   const db = getDb();
@@ -204,22 +240,34 @@ export async function listArtifacts(): Promise<Artifact[]> {
     db.select().from(artifactRevisions),
   ]);
 
-  return mapArtifactRows(artifactRows, revisionRows);
+  return (await mapArtifactRows(artifactRows, revisionRows)).filter(
+    (artifact) => canViewArtifact(artifact, options),
+  );
 }
 
 export async function findArtifact(
   idOrSlug: string,
+  options: ArtifactAccessOptions = { includeUnlisted: true },
 ): Promise<Artifact | undefined> {
   const runtimeArtifact = runtimeArtifacts.find(
     (artifact) => artifact.id === idOrSlug || artifact.slug === idOrSlug,
   );
 
   if (runtimeArtifact) {
-    return runtimeArtifact;
+    return canViewArtifact(runtimeArtifact, {
+      includeUnlisted: true,
+      ...options,
+    })
+      ? runtimeArtifact
+      : undefined;
   }
 
   if (!isDatabaseConfigured()) {
-    return getMockArtifactById(idOrSlug);
+    const mockArtifact = getMockArtifactById(idOrSlug);
+    return mockArtifact &&
+      canViewArtifact(mockArtifact, { includeUnlisted: true, ...options })
+      ? mockArtifact
+      : undefined;
   }
 
   const db = getDb();
@@ -239,7 +287,16 @@ export async function findArtifact(
     .from(artifactRevisions)
     .where(eq(artifactRevisions.artifactId, artifact.id));
 
-  return (await mapArtifactRows([artifact], revisionRows))[0];
+  const mappedArtifact = (await mapArtifactRows([artifact], revisionRows))[0];
+
+  if (
+    !mappedArtifact ||
+    !canViewArtifact(mappedArtifact, { includeUnlisted: true, ...options })
+  ) {
+    return undefined;
+  }
+
+  return mappedArtifact;
 }
 
 export async function listReviewThreads(
@@ -309,6 +366,7 @@ export async function publishArtifact(input: CreateArtifactInput): Promise<{
     tags: artifact.metadata.tags,
     source: artifact.metadata.source,
     currentRevisionId: artifact.currentRevisionId,
+    ownerUserId: artifact.ownerUserId,
   });
   await db.insert(artifactRevisions).values({
     id: revision.id,
@@ -466,7 +524,9 @@ export async function updateReviewThreadStatus(
 export async function createArtifactRevision(
   input: SubmitRevisionInput,
 ): Promise<ArtifactRevision | undefined> {
-  const artifact = await findArtifact(input.artifactId);
+  const artifact = await findArtifact(input.artifactId, {
+    viewerUserId: input.actorUserId,
+  });
 
   if (!artifact) {
     return undefined;
@@ -542,6 +602,41 @@ export async function createArtifactRevision(
   }
 
   return revision;
+}
+
+export async function findReviewThread(
+  threadId: string,
+): Promise<ReviewThread | undefined> {
+  const runtimeThread = runtimeThreads.find((thread) => thread.id === threadId);
+
+  if (runtimeThread) {
+    return runtimeThread;
+  }
+
+  if (!isDatabaseConfigured()) {
+    return getMockArtifacts()
+      .flatMap((artifact) => getMockReviewThreads(artifact.id))
+      .find((thread) => thread.id === threadId);
+  }
+
+  const db = getDb();
+  const threadRows = await db
+    .select()
+    .from(reviewThreads)
+    .where(eq(reviewThreads.id, threadId))
+    .limit(1);
+  const thread = threadRows[0];
+
+  if (!thread) {
+    return undefined;
+  }
+
+  const commentRows = await db
+    .select()
+    .from(reviewComments)
+    .where(eq(reviewComments.threadId, threadId));
+
+  return mapThreadRows([thread], commentRows)[0];
 }
 
 export async function getAgentFeedbackBundle(

@@ -88,10 +88,13 @@ npm run db:studio     # open Drizzle Studio using .env.local
 
 - Polished dark-mode-first landing page for `docscn.ai`.
 - Dashboard with AI-native artifact examples.
+- Better Auth email/password foundation with owner-aware artifact publishing.
 - Publish Artifact flow backed by `/api/artifacts`, with Drizzle/Postgres when
   configured and a local runtime fallback otherwise.
 - Sandboxed artifact viewer using iframe `srcDoc`.
 - Artifact metadata: title, description, author/agent, date, visibility, source.
+- Visibility rules: public artifacts are listed, unlisted artifacts are direct
+  link shareable, and private artifacts are owner-only.
 - Review threads and revision history around each artifact.
 - SDK contracts shaped for future publish APIs, MCP tools, skills, and agents.
 - CLI package reserved for future `npx docscn publish artifact.html`.

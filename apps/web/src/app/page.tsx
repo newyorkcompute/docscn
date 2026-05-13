@@ -9,12 +9,14 @@ import {
 } from 'lucide-react';
 import { listArtifacts } from '@docscn/db';
 import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
+import { getServerSession } from '../lib/session';
 import { SiteHeader } from '../components/site-header';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Index() {
-  const artifacts = await listArtifacts();
+  const session = await getServerSession();
+  const artifacts = await listArtifacts({ viewerUserId: session?.user.id });
 
   return (
     <>

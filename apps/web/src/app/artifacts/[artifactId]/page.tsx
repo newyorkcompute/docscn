@@ -1,4 +1,5 @@
 import { findArtifact, listReviewThreads } from '@docscn/db';
+import { getServerSession } from '../../../lib/session';
 import { ArtifactWorkspace } from '../../../components/artifact-workspace';
 import { SiteHeader } from '../../../components/site-header';
 
@@ -10,7 +11,10 @@ export default async function ArtifactPage({
   params: Promise<{ artifactId: string }>;
 }) {
   const { artifactId } = await params;
-  const artifact = await findArtifact(artifactId);
+  const session = await getServerSession();
+  const artifact = await findArtifact(artifactId, {
+    viewerUserId: session?.user.id,
+  });
   const threads = artifact ? await listReviewThreads(artifact.id) : [];
 
   return (

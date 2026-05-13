@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { Button, Shell } from '@docscn/ui';
+import { getServerSession } from '../lib/session';
+import { SignOutButton } from './sign-out-button';
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const session = await getServerSession();
+
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/75 backdrop-blur-xl">
       <Shell className="flex items-center justify-between py-4">
@@ -27,9 +31,23 @@ export function SiteHeader() {
             github
           </a>
         </nav>
-        <Button asChild size="sm">
-          <Link href="/publish">Publish artifact</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          {session ? (
+            <>
+              <span className="hidden text-sm text-muted-foreground sm:inline">
+                {session.user.name}
+              </span>
+              <SignOutButton />
+            </>
+          ) : (
+            <Button asChild size="sm" variant="ghost">
+              <Link href="/sign-in">Sign in</Link>
+            </Button>
+          )}
+          <Button asChild size="sm">
+            <Link href="/publish">Publish artifact</Link>
+          </Button>
+        </div>
       </Shell>
     </header>
   );
