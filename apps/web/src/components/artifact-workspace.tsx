@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   Bot,
   Clock3,
+  Copy,
   GitCommitHorizontal,
   MessageSquareText,
   PanelRightOpen,
@@ -43,6 +44,7 @@ export function ArtifactWorkspace({
   const [resolvedThreadIds, setResolvedThreadIds] = useState<string[]>([]);
   const [pendingAction, setPendingAction] = useState<string | undefined>();
   const [actionError, setActionError] = useState<string | undefined>();
+  const [copiedBundle, setCopiedBundle] = useState<string | undefined>();
 
   const artifact = initialArtifact;
 
@@ -61,6 +63,86 @@ export function ArtifactWorkspace({
   useEffect(() => {
     setRevisionHtml(selectedRevision?.html ?? '');
   }, [selectedRevision?.id, selectedRevision?.html]);
+
+  const openThreads = useMemo(
+    () => threads.filter((thread) => thread.status !== 'resolved'),
+    [threads],
+  );
+
+  const feedbackBundle = useMemo(() => {
+    if (!artifact || !selectedRevision) {
+      return undefined;
+    }
+
+    return {
+      artifact: {
+        id: artifact.id,
+        slug: artifact.slug,
+        title: artifact.metadata.title,
+        description: artifact.metadata.description,
+        visibility: artifact.metadata.visibility,
+        kind: artifact.metadata.kind,
+      },
+      revision: {
+        id: selectedRevision.id,
+        version: selectedRevision.version,
+        summary: selectedRevision.summary,
+      },
+      instructions: {
+        goal: 'Revise the self-contained HTML artifact using the review feedback.',
+        constraints: [
+          'Return a complete self-contained HTML document.',
+          'Preserve useful existing interactions unless feedback asks to change them.',
+          'Address each requested change explicitly.',
+        ],
+      },
+      openThreads: openThreads.map((thread) => ({
+        id: thread.id,
+        status: thread.status,
+        title: thread.title,
+        anchor: thread.anchor,
+        requestedChange: thread.requestedChange,
+        comments: thread.comments.map((comment) => ({
+          author: comment.author.name,
+          role: comment.role,
+          body: comment.body,
+        })),
+      })),
+    };
+  }, [artifact, openThreads, selectedRevision]);
+
+  const feedbackJson = feedbackBundle
+    ? JSON.stringify(feedbackBundle, null, 2)
+    : '';
+
+  const feedbackPrompt = feedbackBundle
+    ? [
+        `Revise "${feedbackBundle.artifact.title}" from revision v${feedbackBundle.revision.version}.`,
+        '',
+        feedbackBundle.openThreads.length
+          ? 'Address these open review threads:'
+          : 'There are no open review threads. Improve clarity without changing the intent.',
+        ...feedbackBundle.openThreads.flatMap((thread, index) => [
+          '',
+          `${index + 1}. ${thread.title} (${thread.status})`,
+          thread.requestedChange
+            ? `Requested change: ${thread.requestedChange}`
+            : 'Requested change: infer from comments.',
+          ...thread.comments.map(
+            (comment) =>
+              `- ${comment.author} (${comment.role}): ${comment.body}`,
+          ),
+        ]),
+        '',
+        'Return only a complete self-contained HTML document.',
+      ].join('\n')
+    : '';
+
+  async function copyFeedback(value: string, label: string) {
+    await navigator.clipboard.writeText(value);
+    setCopiedBundle(label);
+    window.setTimeout(() => setCopiedBundle(undefined), 1600);
+  }
 
   async function refreshAfterAction() {
     router.refresh();
@@ -507,13 +589,45 @@ export function ArtifactWorkspace({
           <Card className="p-5">
             <div className="flex items-center gap-2">
               <Bot className="h-4 w-4 text-primary" />
-              <h2 className="font-semibold">Agent-readable loop</h2>
+              <h2 className="font-semibold">Agent feedback bundle</h2>
             </div>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Threads, anchors, requested changes, and revision summaries are
-              typed for future publish APIs, MCP tools, skills, and CLI
-              automation.
+              Copy unresolved review feedback into an agent so it can produce
+              the next self-contained HTML revision.
             </p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <Button
+                size="sm"
+                type="button"
+                variant="outline"
+                onClick={() => copyFeedback(feedbackPrompt, 'prompt')}
+              >
+                <Copy className="h-3.5 w-3.5" />
+                {copiedBundle === 'prompt' ? 'Copied' : 'Copy prompt'}
+              </Button>
+              <Button
+                size="sm"
+                type="button"
+                variant="outline"
+                onClick={() => copyFeedback(feedbackJson, 'json')}
+              >
+                <Copy className="h-3.5 w-3.5" />
+                {copiedBundle === 'json' ? 'Copied' : 'Copy JSON'}
+              </Button>
+            </div>
+            <div className="mt-4 rounded-lg border border-border bg-secondary/30 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Open threads
+                </p>
+                <Badge tone={openThreads.length ? 'warning' : 'success'}>
+                  {openThreads.length}
+                </Badge>
+              </div>
+              <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap rounded-md bg-background p-3 font-mono text-[11px] leading-5 text-muted-foreground">
+                {feedbackPrompt}
+              </pre>
+            </div>
           </Card>
         </aside>
       </div>
