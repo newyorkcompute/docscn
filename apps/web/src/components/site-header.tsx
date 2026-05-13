@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Button, Shell } from '@docscn/ui';
 import { getServerSession } from '../lib/session';
-import { SignOutButton } from './sign-out-button';
+import { UserMenu } from './user-menu';
 
 export async function SiteHeader() {
   const session = await getServerSession();
@@ -24,26 +24,10 @@ export async function SiteHeader() {
           <Link href="/publish" className="hover:text-foreground">
             publish
           </Link>
-          {session ? (
-            <Link href="/settings/api-keys" className="hover:text-foreground">
-              api keys
-            </Link>
-          ) : null}
-          <a
-            href="https://github.com/newyorkcompute/docscn"
-            className="hover:text-foreground"
-          >
-            github
-          </a>
         </nav>
         <div className="flex items-center gap-2">
           {session ? (
-            <>
-              <span className="hidden text-sm text-muted-foreground sm:inline">
-                {session.user.name}
-              </span>
-              <SignOutButton />
-            </>
+            <UserMenu email={session.user.email} name={session.user.name} />
           ) : (
             <Button asChild size="sm" variant="ghost">
               <Link href="/sign-in">Sign in</Link>
