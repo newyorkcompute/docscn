@@ -11,7 +11,12 @@ import {
   MessageSquareText,
   PanelRightOpen,
 } from 'lucide-react';
-import type { Artifact, ArtifactRevision, ReviewThread } from '@docscn/sdk';
+import type {
+  Artifact,
+  ArtifactRevision,
+  ReviewThread,
+  ReviewThreadStatus,
+} from '@docscn/sdk';
 import { Badge, Button, Card, Eyebrow, Shell, cn } from '@docscn/ui';
 import { ArtifactFrame } from './artifact-frame';
 
@@ -31,10 +36,14 @@ export function ArtifactWorkspace({
   const [reviewTitle, setReviewTitle] = useState('');
   const [reviewBody, setReviewBody] = useState('');
   const [requestedChange, setRequestedChange] = useState('');
+  const [anchorLabel, setAnchorLabel] = useState('');
   const [reviewAuthor, setReviewAuthor] = useState('Sid');
   const [reviewStatus, setReviewStatus] = useState<'open' | 'needs-revision'>(
     'needs-revision',
   );
+  const [activeSidebarTab, setActiveSidebarTab] = useState<
+    'review' | 'revisions' | 'feedback'
+  >('review');
   const [commentBodies, setCommentBodies] = useState<Record<string, string>>(
     {},
   );
@@ -173,6 +182,7 @@ export function ArtifactWorkspace({
           authorName: reviewAuthor,
           status: reviewStatus,
           requestedChange,
+          anchorLabel,
         }),
       });
 
@@ -183,6 +193,7 @@ export function ArtifactWorkspace({
       setReviewTitle('');
       setReviewBody('');
       setRequestedChange('');
+      setAnchorLabel('');
       await refreshAfterAction();
     } catch (error) {
       setActionError(
@@ -222,6 +233,34 @@ export function ArtifactWorkspace({
     } catch (error) {
       setActionError(
         error instanceof Error ? error.message : 'Comment failed.',
+      );
+    } finally {
+      setPendingAction(undefined);
+    }
+  }
+
+  async function updateThreadStatus(
+    threadId: string,
+    status: ReviewThreadStatus,
+  ) {
+    setPendingAction(`status-${threadId}-${status}`);
+    setActionError(undefined);
+
+    try {
+      const response = await fetch(`/api/review-threads/${threadId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Could not update thread status.');
+      }
+
+      await refreshAfterAction();
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : 'Thread status update failed.',
       );
     } finally {
       setPendingAction(undefined);
@@ -357,278 +396,371 @@ export function ArtifactWorkspace({
             </Card>
           ) : null}
 
-          <Card className="p-5">
-            <div className="flex items-center gap-2">
-              <PanelRightOpen className="h-4 w-4 text-primary" />
-              <h2 className="font-semibold">Review threads</h2>
-            </div>
-            <form className="mt-5 space-y-3" onSubmit={createThread}>
-              <input
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
-                placeholder="Thread title"
-                value={reviewTitle}
-                onChange={(event) => setReviewTitle(event.target.value)}
-              />
-              <textarea
-                className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
-                placeholder="What should change?"
-                value={reviewBody}
-                onChange={(event) => setReviewBody(event.target.value)}
-              />
-              <textarea
-                className="min-h-16 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
-                placeholder="Agent-readable requested change (optional)"
-                value={requestedChange}
-                onChange={(event) => setRequestedChange(event.target.value)}
-              />
-              <div className="grid gap-2 sm:grid-cols-2">
+          <Card className="grid grid-cols-3 gap-1 p-1">
+            {(
+              [
+                { id: 'review', label: 'Review', count: openThreads.length },
+                {
+                  id: 'revisions',
+                  label: 'Revisions',
+                  count: artifact.revisions.length,
+                },
+                { id: 'feedback', label: 'Agent', count: openThreads.length },
+              ] as const
+            ).map(({ id, label, count }) => (
+              <button
+                className={cn(
+                  'rounded-md px-3 py-2 text-xs font-medium transition',
+                  activeSidebarTab === id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                )}
+                key={id}
+                type="button"
+                onClick={() => setActiveSidebarTab(id)}
+              >
+                {label}
+                <span className="ml-1 opacity-70">{count}</span>
+              </button>
+            ))}
+          </Card>
+
+          {activeSidebarTab === 'review' ? (
+            <Card className="p-5">
+              <div className="flex items-center gap-2">
+                <PanelRightOpen className="h-4 w-4 text-primary" />
+                <h2 className="font-semibold">Review threads</h2>
+              </div>
+              <form className="mt-5 space-y-3" onSubmit={createThread}>
                 <input
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
-                  placeholder="Reviewer"
-                  value={reviewAuthor}
-                  onChange={(event) => setReviewAuthor(event.target.value)}
+                  placeholder="Thread title"
+                  value={reviewTitle}
+                  onChange={(event) => setReviewTitle(event.target.value)}
                 />
-                <select
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
-                  value={reviewStatus}
-                  onChange={(event) =>
-                    setReviewStatus(
-                      event.target.value as 'open' | 'needs-revision',
-                    )
-                  }
-                >
-                  <option value="needs-revision">needs revision</option>
-                  <option value="open">open</option>
-                </select>
-              </div>
-              <Button
-                className="w-full"
-                disabled={pendingAction === 'thread'}
-                size="sm"
-                type="submit"
-              >
-                {pendingAction === 'thread'
-                  ? 'Creating thread...'
-                  : 'Create thread'}
-              </Button>
-            </form>
-            <div className="mt-5 space-y-4">
-              {threads.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No review threads yet. This artifact is ready for first pass
-                  feedback.
-                </p>
-              ) : (
-                threads.map((thread) => (
-                  <div
-                    className="rounded-xl border border-border bg-secondary/30 p-4"
-                    key={thread.id}
+                <textarea
+                  className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                  placeholder="What should change?"
+                  value={reviewBody}
+                  onChange={(event) => setReviewBody(event.target.value)}
+                />
+                <input
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
+                  placeholder="Anchor label, e.g. hero, chart, timeline row (optional)"
+                  value={anchorLabel}
+                  onChange={(event) => setAnchorLabel(event.target.value)}
+                />
+                <textarea
+                  className="min-h-16 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
+                  placeholder="Agent-readable requested change (optional)"
+                  value={requestedChange}
+                  onChange={(event) => setRequestedChange(event.target.value)}
+                />
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <input
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                    placeholder="Reviewer"
+                    value={reviewAuthor}
+                    onChange={(event) => setReviewAuthor(event.target.value)}
+                  />
+                  <select
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                    value={reviewStatus}
+                    onChange={(event) =>
+                      setReviewStatus(
+                        event.target.value as 'open' | 'needs-revision',
+                      )
+                    }
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
+                    <option value="needs-revision">needs revision</option>
+                    <option value="open">open</option>
+                  </select>
+                </div>
+                <Button
+                  className="w-full"
+                  disabled={pendingAction === 'thread'}
+                  size="sm"
+                  type="submit"
+                >
+                  {pendingAction === 'thread'
+                    ? 'Creating thread...'
+                    : 'Create thread'}
+                </Button>
+              </form>
+              <div className="mt-5 space-y-4">
+                {threads.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No review threads yet. This artifact is ready for first pass
+                    feedback.
+                  </p>
+                ) : (
+                  threads.map((thread) => (
+                    <div
+                      className="rounded-xl border border-border bg-secondary/30 p-4"
+                      key={thread.id}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <Badge
+                            tone={
+                              thread.status === 'resolved'
+                                ? 'success'
+                                : thread.status === 'needs-revision'
+                                  ? 'warning'
+                                  : 'muted'
+                            }
+                          >
+                            {thread.status}
+                          </Badge>
+                          <h3 className="mt-3 text-sm font-medium">
+                            {thread.title}
+                          </h3>
+                        </div>
+                        <MessageSquareText className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      {thread.requestedChange ? (
+                        <p className="mt-3 rounded-lg bg-background/60 p-3 text-xs leading-5 text-muted-foreground">
+                          {thread.requestedChange}
+                        </p>
+                      ) : null}
+                      {thread.anchor ? (
+                        <p className="mt-3 font-mono text-[11px] text-muted-foreground">
+                          anchor: {thread.anchor.label}
+                        </p>
+                      ) : null}
+                      <div className="mt-3 space-y-3">
+                        {thread.comments.map((comment) => (
+                          <div key={comment.id} className="text-sm">
+                            <p className="font-medium">{comment.author.name}</p>
+                            <p className="mt-1 text-muted-foreground">
+                              {comment.body}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {thread.status !== 'resolved' ? (
+                          <Button
+                            disabled={
+                              pendingAction === `status-${thread.id}-resolved`
+                            }
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                              updateThreadStatus(thread.id, 'resolved')
+                            }
+                          >
+                            Resolve
+                          </Button>
+                        ) : (
+                          <Button
+                            disabled={
+                              pendingAction === `status-${thread.id}-open`
+                            }
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                              updateThreadStatus(thread.id, 'open')
+                            }
+                          >
+                            Reopen
+                          </Button>
+                        )}
+                        {thread.status !== 'needs-revision' ? (
+                          <Button
+                            disabled={
+                              pendingAction ===
+                              `status-${thread.id}-needs-revision`
+                            }
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                              updateThreadStatus(thread.id, 'needs-revision')
+                            }
+                          >
+                            Needs revision
+                          </Button>
+                        ) : null}
+                      </div>
+                      <div className="mt-4 space-y-2">
+                        <textarea
+                          className="min-h-16 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
+                          placeholder="Reply to this thread"
+                          value={commentBodies[thread.id] ?? ''}
+                          onChange={(event) =>
+                            setCommentBodies((current) => ({
+                              ...current,
+                              [thread.id]: event.target.value,
+                            }))
+                          }
+                        />
+                        <Button
+                          disabled={pendingAction === `comment-${thread.id}`}
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                          onClick={() => addComment(thread.id)}
+                        >
+                          {pendingAction === `comment-${thread.id}`
+                            ? 'Adding reply...'
+                            : 'Add reply'}
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+          ) : null}
+
+          {activeSidebarTab === 'revisions' ? (
+            <Card className="p-5">
+              <div className="flex items-center gap-2">
+                <GitCommitHorizontal className="h-4 w-4 text-primary" />
+                <h2 className="font-semibold">Revision history</h2>
+              </div>
+              <form className="mt-5 space-y-3" onSubmit={submitRevision}>
+                <input
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                  placeholder="Revision summary"
+                  value={revisionSummary}
+                  onChange={(event) => setRevisionSummary(event.target.value)}
+                />
+                <input
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                  placeholder="Author / agent"
+                  value={revisionAuthor}
+                  onChange={(event) => setRevisionAuthor(event.target.value)}
+                />
+                <textarea
+                  className="min-h-40 w-full rounded-md border border-input bg-black/40 px-3 py-2 font-mono text-xs outline-none ring-ring focus:ring-2"
+                  value={revisionHtml}
+                  onChange={(event) => setRevisionHtml(event.target.value)}
+                />
+                {threads.filter((thread) => thread.status !== 'resolved')
+                  .length ? (
+                  <div className="space-y-2 rounded-lg border border-border bg-secondary/30 p-3">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Mark threads resolved by this revision
+                    </p>
+                    {threads
+                      .filter((thread) => thread.status !== 'resolved')
+                      .map((thread) => (
+                        <label
+                          className="flex items-start gap-2 text-xs text-muted-foreground"
+                          key={thread.id}
+                        >
+                          <input
+                            className="mt-0.5"
+                            checked={resolvedThreadIds.includes(thread.id)}
+                            type="checkbox"
+                            onChange={(event) => {
+                              setResolvedThreadIds((current) =>
+                                event.target.checked
+                                  ? [...current, thread.id]
+                                  : current.filter((id) => id !== thread.id),
+                              );
+                            }}
+                          />
+                          <span>{thread.title}</span>
+                        </label>
+                      ))}
+                  </div>
+                ) : null}
+                <Button
+                  className="w-full"
+                  disabled={pendingAction === 'revision'}
+                  size="sm"
+                  type="submit"
+                >
+                  {pendingAction === 'revision'
+                    ? 'Submitting revision...'
+                    : 'Submit revision'}
+                </Button>
+              </form>
+              <div className="mt-5 space-y-4">
+                {artifact.revisions
+                  .slice()
+                  .reverse()
+                  .map((revision) => (
+                    <button
+                      className="block w-full rounded-xl border border-border bg-secondary/30 p-4 text-left transition hover:border-primary/50"
+                      key={revision.id}
+                      type="button"
+                      onClick={() => setSelectedRevisionId(revision.id)}
+                    >
+                      <div className="flex items-center justify-between gap-3">
                         <Badge
                           tone={
-                            thread.status === 'resolved'
-                              ? 'success'
-                              : thread.status === 'needs-revision'
-                                ? 'warning'
-                                : 'muted'
+                            revision.id === selectedRevision.id
+                              ? 'default'
+                              : 'muted'
                           }
                         >
-                          {thread.status}
+                          v{revision.version}
                         </Badge>
-                        <h3 className="mt-3 text-sm font-medium">
-                          {thread.title}
-                        </h3>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock3 className="h-3 w-3" />
+                          {new Date(revision.createdAt).toLocaleDateString()}
+                        </span>
                       </div>
-                      <MessageSquareText className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    {thread.requestedChange ? (
-                      <p className="mt-3 rounded-lg bg-background/60 p-3 text-xs leading-5 text-muted-foreground">
-                        {thread.requestedChange}
+                      <p className="mt-3 text-sm text-muted-foreground">
+                        {revision.summary}
                       </p>
-                    ) : null}
-                    <div className="mt-3 space-y-3">
-                      {thread.comments.map((comment) => (
-                        <div key={comment.id} className="text-sm">
-                          <p className="font-medium">{comment.author.name}</p>
-                          <p className="mt-1 text-muted-foreground">
-                            {comment.body}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-4 space-y-2">
-                      <textarea
-                        className="min-h-16 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
-                        placeholder="Reply to this thread"
-                        value={commentBodies[thread.id] ?? ''}
-                        onChange={(event) =>
-                          setCommentBodies((current) => ({
-                            ...current,
-                            [thread.id]: event.target.value,
-                          }))
-                        }
-                      />
-                      <Button
-                        disabled={pendingAction === `comment-${thread.id}`}
-                        size="sm"
-                        type="button"
-                        variant="outline"
-                        onClick={() => addComment(thread.id)}
-                      >
-                        {pendingAction === `comment-${thread.id}`
-                          ? 'Adding reply...'
-                          : 'Add reply'}
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <div className="flex items-center gap-2">
-              <GitCommitHorizontal className="h-4 w-4 text-primary" />
-              <h2 className="font-semibold">Revision history</h2>
-            </div>
-            <form className="mt-5 space-y-3" onSubmit={submitRevision}>
-              <input
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
-                placeholder="Revision summary"
-                value={revisionSummary}
-                onChange={(event) => setRevisionSummary(event.target.value)}
-              />
-              <input
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
-                placeholder="Author / agent"
-                value={revisionAuthor}
-                onChange={(event) => setRevisionAuthor(event.target.value)}
-              />
-              <textarea
-                className="min-h-40 w-full rounded-md border border-input bg-black/40 px-3 py-2 font-mono text-xs outline-none ring-ring focus:ring-2"
-                value={revisionHtml}
-                onChange={(event) => setRevisionHtml(event.target.value)}
-              />
-              {threads.filter((thread) => thread.status !== 'resolved')
-                .length ? (
-                <div className="space-y-2 rounded-lg border border-border bg-secondary/30 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">
-                    Mark threads resolved by this revision
-                  </p>
-                  {threads
-                    .filter((thread) => thread.status !== 'resolved')
-                    .map((thread) => (
-                      <label
-                        className="flex items-start gap-2 text-xs text-muted-foreground"
-                        key={thread.id}
-                      >
-                        <input
-                          className="mt-0.5"
-                          checked={resolvedThreadIds.includes(thread.id)}
-                          type="checkbox"
-                          onChange={(event) => {
-                            setResolvedThreadIds((current) =>
-                              event.target.checked
-                                ? [...current, thread.id]
-                                : current.filter((id) => id !== thread.id),
-                            );
-                          }}
-                        />
-                        <span>{thread.title}</span>
-                      </label>
-                    ))}
-                </div>
-              ) : null}
-              <Button
-                className="w-full"
-                disabled={pendingAction === 'revision'}
-                size="sm"
-                type="submit"
-              >
-                {pendingAction === 'revision'
-                  ? 'Submitting revision...'
-                  : 'Submit revision'}
-              </Button>
-            </form>
-            <div className="mt-5 space-y-4">
-              {artifact.revisions
-                .slice()
-                .reverse()
-                .map((revision) => (
-                  <button
-                    className="block w-full rounded-xl border border-border bg-secondary/30 p-4 text-left transition hover:border-primary/50"
-                    key={revision.id}
-                    type="button"
-                    onClick={() => setSelectedRevisionId(revision.id)}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <Badge
-                        tone={
-                          revision.id === selectedRevision.id
-                            ? 'default'
-                            : 'muted'
-                        }
-                      >
-                        v{revision.version}
-                      </Badge>
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock3 className="h-3 w-3" />
-                        {new Date(revision.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="mt-3 text-sm text-muted-foreground">
-                      {revision.summary}
-                    </p>
-                  </button>
-                ))}
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <div className="flex items-center gap-2">
-              <Bot className="h-4 w-4 text-primary" />
-              <h2 className="font-semibold">Agent feedback bundle</h2>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Copy unresolved review feedback into an agent so it can produce
-              the next self-contained HTML revision.
-            </p>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <Button
-                size="sm"
-                type="button"
-                variant="outline"
-                onClick={() => copyFeedback(feedbackPrompt, 'prompt')}
-              >
-                <Copy className="h-3.5 w-3.5" />
-                {copiedBundle === 'prompt' ? 'Copied' : 'Copy prompt'}
-              </Button>
-              <Button
-                size="sm"
-                type="button"
-                variant="outline"
-                onClick={() => copyFeedback(feedbackJson, 'json')}
-              >
-                <Copy className="h-3.5 w-3.5" />
-                {copiedBundle === 'json' ? 'Copied' : 'Copy JSON'}
-              </Button>
-            </div>
-            <div className="mt-4 rounded-lg border border-border bg-secondary/30 p-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-medium text-muted-foreground">
-                  Open threads
-                </p>
-                <Badge tone={openThreads.length ? 'warning' : 'success'}>
-                  {openThreads.length}
-                </Badge>
+                    </button>
+                  ))}
               </div>
-              <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap rounded-md bg-background p-3 font-mono text-[11px] leading-5 text-muted-foreground">
-                {feedbackPrompt}
-              </pre>
-            </div>
-          </Card>
+            </Card>
+          ) : null}
+
+          {activeSidebarTab === 'feedback' ? (
+            <Card className="p-5">
+              <div className="flex items-center gap-2">
+                <Bot className="h-4 w-4 text-primary" />
+                <h2 className="font-semibold">Agent feedback bundle</h2>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                Copy unresolved review feedback into an agent so it can produce
+                the next self-contained HTML revision.
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Button
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                  onClick={() => copyFeedback(feedbackPrompt, 'prompt')}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  {copiedBundle === 'prompt' ? 'Copied' : 'Copy prompt'}
+                </Button>
+                <Button
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                  onClick={() => copyFeedback(feedbackJson, 'json')}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  {copiedBundle === 'json' ? 'Copied' : 'Copy JSON'}
+                </Button>
+              </div>
+              <div className="mt-4 rounded-lg border border-border bg-secondary/30 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Open threads
+                  </p>
+                  <Badge tone={openThreads.length ? 'warning' : 'success'}>
+                    {openThreads.length}
+                  </Badge>
+                </div>
+                <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap rounded-md bg-background p-3 font-mono text-[11px] leading-5 text-muted-foreground">
+                  {feedbackPrompt}
+                </pre>
+              </div>
+            </Card>
+          ) : null}
         </aside>
       </div>
     </Shell>

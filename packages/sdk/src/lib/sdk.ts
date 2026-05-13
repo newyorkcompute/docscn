@@ -132,6 +132,11 @@ export interface CreateReviewCommentInput {
   role?: ActorRole;
 }
 
+export interface UpdateReviewThreadStatusInput {
+  threadId: string;
+  status: ReviewThreadStatus;
+}
+
 export interface PublishResult {
   artifactId: string;
   slug: string;

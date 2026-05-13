@@ -12,6 +12,7 @@ import type {
   ReviewComment,
   ReviewThread,
   SubmitRevisionInput,
+  UpdateReviewThreadStatusInput,
 } from '@docscn/sdk';
 import { slugifyArtifactTitle } from '@docscn/sdk';
 import { getDb, isDatabaseConfigured } from './client';
@@ -361,6 +362,48 @@ export async function createReviewComment(
   });
 
   return comment;
+}
+
+export async function updateReviewThreadStatus(
+  input: UpdateReviewThreadStatusInput,
+): Promise<ReviewThread | undefined> {
+  if (!isDatabaseConfigured()) {
+    const thread =
+      runtimeThreads.find((candidate) => candidate.id === input.threadId) ??
+      getMockArtifacts()
+        .flatMap((artifact) => getMockReviewThreads(artifact.id))
+        .find((candidate) => candidate.id === input.threadId);
+
+    if (thread) {
+      thread.status = input.status;
+    }
+
+    return thread;
+  }
+
+  const db = getDb();
+  await db
+    .update(reviewThreads)
+    .set({ status: input.status })
+    .where(eq(reviewThreads.id, input.threadId));
+
+  const threadRows = await db
+    .select()
+    .from(reviewThreads)
+    .where(eq(reviewThreads.id, input.threadId))
+    .limit(1);
+  const thread = threadRows[0];
+
+  if (!thread) {
+    return undefined;
+  }
+
+  const commentRows = await db
+    .select()
+    .from(reviewComments)
+    .where(eq(reviewComments.threadId, input.threadId));
+
+  return mapThreadRows([thread], commentRows)[0];
 }
 
 export async function createArtifactRevision(
