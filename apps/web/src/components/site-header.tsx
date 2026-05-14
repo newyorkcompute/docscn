@@ -18,14 +18,6 @@ export async function SiteHeader() {
             docscn
           </span>
         </Link>
-        <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
-          <Link href="/dashboard" className="hover:text-foreground">
-            dashboard
-          </Link>
-          <Link href="/publish" className="hover:text-foreground">
-            publish
-          </Link>
-        </nav>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           {session ? (
@@ -35,9 +27,6 @@ export async function SiteHeader() {
               <Link href="/sign-in">Sign in</Link>
             </Button>
           )}
-          <Button asChild size="sm">
-            <Link href="/publish">Publish artifact</Link>
-          </Button>
         </div>
       </Shell>
     </header>

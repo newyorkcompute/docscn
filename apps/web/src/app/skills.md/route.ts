@@ -9,6 +9,34 @@ Publish rich, self-contained HTML artifacts such as incident timelines, migratio
 
 Every artifact HTML document must be self-contained and include a full \`<html>\` document. Inline CSS and small inline scripts are allowed. External network dependencies should be avoided unless the user explicitly asks for them.
 
+## Why docscn prefers HTML over markdown
+
+Use HTML when markdown would become a long, hard-to-read document. HTML is the preferred format for dense agent outputs because it can combine structure, tables, CSS, SVG diagrams, code snippets, interactions, forms, charts, canvas-like spatial layouts, and export buttons in one shareable artifact.
+
+Good docscn artifacts should help the user stay in the loop. Optimize for visual clarity, information density, and easy review by humans who may not read a long markdown file. If the output would otherwise need ASCII diagrams, giant tables, color approximations, or multiple markdown files, make it HTML.
+
+## Artifact design guidance
+
+docscn itself uses a shadcn/Tailwind-inspired design language: clean typography, neutral surfaces, subtle borders, restrained shadows, blue primary accents, and accessible contrast. Generated artifacts should feel polished and product-like, not like raw browser defaults.
+
+Artifacts are rendered as sandboxed self-contained HTML. Do not assume Tailwind CSS, shadcn/ui, React, or any app-level styles are available inside the artifact iframe unless you include the required CSS and JavaScript yourself. Prefer plain HTML, CSS variables, inline SVG, and small vanilla JavaScript.
+
+Support light and dark mode inside the artifact when possible. Use CSS variables and \`prefers-color-scheme\`, for example define neutral backgrounds, text colors, borders, and accent colors for both themes. Avoid hardcoding a dark-only or light-only artifact unless the user asks for it.
+
+Use responsive layouts so artifacts are readable in narrow and wide viewports. Prefer semantic HTML, keyboard-friendly controls, readable font sizes, and sufficient color contrast.
+
+## High-value artifact patterns
+
+Prefer artifacts that are immediately useful as interactive pages:
+
+- Specs, plans, and explorations with tabs, comparison grids, mockups, data flow diagrams, risks, and code snippets.
+- Code review explainers with rendered diffs, inline annotations, severity color-coding, architecture diagrams, and reviewer checklists.
+- Design prototypes with visual states, motion examples, sliders, knobs, and copyable parameters.
+- Reports and research summaries with charts, SVG illustrations, timelines, expandable details, and leadership-friendly summaries.
+- Custom editing interfaces for triage, prioritization, prompt tuning, config editing, tagging datasets, annotating diffs, or exporting structured changes.
+
+For two-way interaction, include an explicit export path such as "copy as JSON", "copy as markdown", "copy prompt", "copy diff", or "copy settings" so the user's interactions can be pasted back into an agent.
+
 ## Golden path: use the CLI
 
 Agents should use the docscn CLI whenever possible. It stores a local API key in \`~/.docscn/config.json\`, so the user does not need to paste credentials repeatedly.
@@ -173,6 +201,10 @@ Response:
 
 - Prefer publishing polished HTML over raw notes.
 - Keep the artifact interactive when interaction adds value.
+- Prefer visual structure over long prose: use grids, cards, diagrams, tables, tabs, timelines, and callouts when they clarify the work.
+- Include export/copy actions for interactive artifacts so users can turn UI changes back into prompts, JSON, diffs, or settings.
+- Match docscn's shadcn/Tailwind-inspired taste with self-contained CSS; do not rely on Tailwind or shadcn being globally available inside the artifact.
+- Support light and dark mode within the artifact where practical.
 - Keep HTML portable: no build step, no framework runtime required, no secret values embedded.
 - Use \`unlisted\` by default unless the user asks for public or private.
 - Use \`private\` for sensitive content. Private artifacts require the owner's session or API key to read.

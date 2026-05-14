@@ -37,6 +37,12 @@ export function UserMenu({ email, name }: UserMenuProps) {
         <div className="my-1 h-px bg-border" />
         <Link
           className="block rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          href="/dashboard"
+        >
+          Dashboard
+        </Link>
+        <Link
+          className="block rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           href="/settings"
         >
           Settings
