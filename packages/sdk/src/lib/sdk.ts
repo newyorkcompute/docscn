@@ -124,6 +124,7 @@ export interface CreateReviewThreadInput {
   title: string;
   body: string;
   authorName: string;
+  authorRole?: ActorRole;
   status: ReviewThreadStatus;
   requestedChange?: string;
   anchor?: ReviewAnchor;
@@ -165,6 +166,24 @@ export interface ApiKeyPrincipal {
   apiKeyId: string;
   userId: string;
   name: string;
+}
+
+export interface CliLoginRequest {
+  deviceCode: string;
+  userCode: string;
+  expiresAt: string;
+  intervalSeconds: number;
+}
+
+export interface CliLoginApproval {
+  userCode: string;
+  status: 'approved' | 'expired' | 'not-found' | 'already-consumed';
+}
+
+export interface CliLoginPollResult {
+  status: 'pending' | 'approved' | 'expired' | 'not-found' | 'already-consumed';
+  token?: string;
+  apiKey?: ApiKey;
 }
 
 export interface PublishResult {

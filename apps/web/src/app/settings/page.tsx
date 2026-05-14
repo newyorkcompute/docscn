@@ -34,9 +34,10 @@ export default async function SettingsPage() {
                   <div>
                     <h2 className="text-lg font-semibold">Agent setup</h2>
                     <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                      Give agents an API key and point them at the public skill
-                      file. They can publish artifacts, read review feedback,
-                      and submit revisions without using the UI.
+                      Point agents at the public skill file. They can run the
+                      CLI login flow, save credentials locally, publish
+                      artifacts, read feedback, comment, and submit revisions
+                      without using the UI.
                     </p>
                   </div>
                   <Button asChild size="sm" variant="outline">
@@ -48,8 +49,8 @@ export default async function SettingsPage() {
                     Agent prompt
                   </p>
                   <code className="mt-3 block text-sm leading-6 text-foreground">
-                    Read /skills.md, use my docscn API key, and publish your
-                    self-contained HTML artifact to this workspace.
+                    Read /skills.md, run npx docscn login if needed, and publish
+                    your self-contained HTML artifact to this workspace.
                   </code>
                 </div>
               </Card>

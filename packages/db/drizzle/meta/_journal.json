@@ -29,6 +29,13 @@
       "when": 1778701672113,
       "tag": "0003_wonderful_squirrel_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778717680925,
+      "tag": "0004_huge_the_stranger",
+      "breakpoints": true
     }
   ]
 }

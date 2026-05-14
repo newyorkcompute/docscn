@@ -5,7 +5,10 @@ import {
   findReviewThread,
 } from '@docscn/db';
 import type { ActorRole, CreateReviewCommentInput } from '@docscn/sdk';
-import { getRequestSession } from '../../../../../lib/session';
+import {
+  getRequestPrincipal,
+  hasBearerToken,
+} from '../../../../../lib/publisher';
 
 function isString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -20,11 +23,15 @@ export async function POST(
   { params }: { params: Promise<{ threadId: string }> },
 ) {
   const { threadId } = await params;
-  const session = await getRequestSession(request);
+  const principal = await getRequestPrincipal(request);
 
-  if (!session) {
+  if (!principal) {
     return NextResponse.json(
-      { error: 'Sign in to comment on artifacts.' },
+      {
+        error: hasBearerToken(request)
+          ? 'Invalid API key.'
+          : 'Sign in to comment on artifacts.',
+      },
       { status: 401 },
     );
   }
@@ -39,7 +46,7 @@ export async function POST(
   }
 
   const artifact = await findArtifact(thread.artifactId, {
-    viewerUserId: session.user.id,
+    viewerUserId: principal.userId,
   });
 
   if (!artifact) {
@@ -61,8 +68,15 @@ export async function POST(
   const input: CreateReviewCommentInput = {
     threadId,
     body: body.body,
-    authorName: session.user.name || body.authorName,
-    role: isActorRole(body.role) ? body.role : 'human',
+    authorName:
+      principal.kind === 'session'
+        ? principal.name || body.authorName
+        : body.authorName,
+    role: isActorRole(body.role)
+      ? body.role
+      : principal.kind === 'api-key'
+        ? 'agent'
+        : 'human',
   };
 
   return NextResponse.json(

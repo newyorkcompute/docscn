@@ -7,10 +7,11 @@ import { Button, Card, Shell } from '@docscn/ui';
 import { authClient } from '../lib/auth-client';
 
 interface AuthFormProps {
+  callbackURL?: string;
   mode: 'sign-in' | 'sign-up';
 }
 
-export function AuthForm({ mode }: AuthFormProps) {
+export function AuthForm({ callbackURL = '/dashboard', mode }: AuthFormProps) {
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -26,7 +27,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     const callbacks = {
       onSuccess: () => {
-        router.push('/dashboard');
+        router.push(callbackURL);
         router.refresh();
       },
       onError: (ctx: { error: { message?: string } }) => {
@@ -41,7 +42,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             email,
             password,
             name,
-            callbackURL: '/dashboard',
+            callbackURL,
           },
           callbacks,
         );
@@ -50,7 +51,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           {
             email,
             password,
-            callbackURL: '/dashboard',
+            callbackURL,
           },
           callbacks,
         );

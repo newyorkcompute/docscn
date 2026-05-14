@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createReviewThread, findArtifact } from '@docscn/db';
-import type { CreateReviewThreadInput, ReviewThreadStatus } from '@docscn/sdk';
-import { getRequestSession } from '../../../../../lib/session';
+import type {
+  ActorRole,
+  CreateReviewThreadInput,
+  ReviewThreadStatus,
+} from '@docscn/sdk';
+import {
+  getRequestPrincipal,
+  hasBearerToken,
+} from '../../../../../lib/publisher';
 
 function isString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -9,6 +16,10 @@ function isString(value: unknown): value is string {
 
 function isThreadStatus(value: unknown): value is ReviewThreadStatus {
   return value === 'open' || value === 'needs-revision' || value === 'resolved';
+}
+
+function isActorRole(value: unknown): value is ActorRole {
+  return value === 'human' || value === 'agent' || value === 'system';
 }
 
 function parseAnchorCoordinate(value: unknown) {
@@ -22,17 +33,21 @@ export async function POST(
   { params }: { params: Promise<{ artifactId: string }> },
 ) {
   const { artifactId } = await params;
-  const session = await getRequestSession(request);
+  const principal = await getRequestPrincipal(request);
 
-  if (!session) {
+  if (!principal) {
     return NextResponse.json(
-      { error: 'Sign in to review artifacts.' },
+      {
+        error: hasBearerToken(request)
+          ? 'Invalid API key.'
+          : 'Sign in to review artifacts.',
+      },
       { status: 401 },
     );
   }
 
   const artifact = await findArtifact(artifactId, {
-    viewerUserId: session.user.id,
+    viewerUserId: principal.userId,
   });
 
   if (!artifact) {
@@ -63,7 +78,15 @@ export async function POST(
       : artifact.currentRevisionId,
     title: body.title,
     body: body.body,
-    authorName: session.user.name || body.authorName,
+    authorName:
+      principal.kind === 'session'
+        ? principal.name || body.authorName
+        : body.authorName,
+    authorRole: isActorRole(body.role)
+      ? body.role
+      : principal.kind === 'api-key'
+        ? 'agent'
+        : 'human',
     status: isThreadStatus(body.status) ? body.status : 'open',
     requestedChange: isString(body.requestedChange)
       ? body.requestedChange

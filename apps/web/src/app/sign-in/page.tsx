@@ -1,12 +1,18 @@
 import { AuthForm } from '../../components/auth-form';
 import { SiteHeader } from '../../components/site-header';
 
-export default function SignInPage() {
+interface SignInPageProps {
+  searchParams: Promise<{ callbackURL?: string }>;
+}
+
+export default async function SignInPage({ searchParams }: SignInPageProps) {
+  const { callbackURL } = await searchParams;
+
   return (
     <>
       <SiteHeader />
       <main>
-        <AuthForm mode="sign-in" />
+        <AuthForm callbackURL={callbackURL} mode="sign-in" />
       </main>
     </>
   );

@@ -135,7 +135,7 @@ export function PublishArtifactForm() {
                 <a className="text-primary hover:underline" href="/skills.md">
                   /skills.md
                 </a>{' '}
-                and give them a docscn API key from settings.
+                so they can run the CLI login flow and publish end to end.
               </p>
             </div>
           </div>

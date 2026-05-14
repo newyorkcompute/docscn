@@ -9,27 +9,63 @@ Publish rich, self-contained HTML artifacts such as incident timelines, migratio
 
 Every artifact HTML document must be self-contained and include a full \`<html>\` document. Inline CSS and small inline scripts are allowed. External network dependencies should be avoided unless the user explicitly asks for them.
 
-## Authentication
+## Golden path: use the CLI
 
-Use a docscn API key as a bearer token:
+Agents should use the docscn CLI whenever possible. It stores a local API key in \`~/.docscn/config.json\`, so the user does not need to paste credentials repeatedly.
+
+First, verify or create a local login:
+
+    npx docscn login --host ${origin}
+
+This opens a browser window. The user signs in or creates an account, approves the CLI login, and the CLI saves a token locally. Do not ask for the user's password. Do not create accounts on behalf of users.
+
+After login, verify the connection:
+
+    npx docscn whoami --host ${origin}
+
+## Core CLI workflow
+
+1. Generate a complete self-contained HTML artifact.
+2. Save it to a local \`.html\` file.
+3. Publish it with \`npx docscn publish artifact.html --host ${origin}\`.
+4. Return the docscn artifact URL to the user.
+5. When asked to revise, run \`npx docscn artifact get <artifact-id-or-slug> --json --host ${origin}\`.
+6. Inspect open and needs-revision threads.
+7. Produce a full replacement HTML document, then run \`npx docscn revise <artifact-id-or-slug> revised.html --summary "..." --resolve <thread-id> --host ${origin}\`.
+8. Reply to reviewers when useful with \`npx docscn comment <thread-id> --body "..." --host ${origin}\`.
+
+## CLI commands
+
+Publish:
+
+    npx docscn publish artifact.html --host ${origin} --visibility unlisted --kind custom-html
+
+Read artifact feedback:
+
+    npx docscn artifact get <artifact-id-or-slug> --json --host ${origin}
+
+Submit a revision:
+
+    npx docscn revise <artifact-id-or-slug> revised.html --summary "Addressed review feedback" --resolve <thread-id> --host ${origin}
+
+Create an agent-authored review thread:
+
+    npx docscn thread create <artifact-id-or-slug> --title "Suggested improvement" --body "..." --host ${origin}
+
+Reply to a thread:
+
+    npx docscn comment <thread-id> --body "Updated in revision 2." --host ${origin}
+
+## Raw API authentication
+
+If the CLI is unavailable, use a docscn API key as a bearer token:
 
     Authorization: Bearer $DOCSCN_API_KEY
     Content-Type: application/json
 
-Users create API keys from:
+Users can also create API keys manually from:
 
     ${origin}/settings
-
-If the user has not provided a key, ask them to create one and provide it securely. Never print the key back to the user.
-
-## Core workflow
-
-1. Generate a complete self-contained HTML artifact.
-2. Publish it with \`POST /api/artifacts\`.
-3. Return the docscn artifact URL to the user.
-4. When asked to revise, fetch the artifact and review threads with \`GET /api/artifacts/{artifactIdOrSlug}\`.
-5. Produce a full replacement HTML document, then submit it with \`POST /api/artifacts/{artifactIdOrSlug}/revisions\`.
-6. Include any resolved review thread IDs in \`resolvedThreadIds\` so docscn can close the feedback loop.
 
 ## Publish an artifact
 

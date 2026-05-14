@@ -1,12 +1,30 @@
-import { basename, extname } from 'node:path';
+import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
+import { basename, extname } from 'node:path';
 import type {
   ArtifactKind,
   ArtifactVisibility,
   CreateArtifactInput,
+  ReviewThreadStatus,
 } from '@docscn/sdk';
+import {
+  findProfileForHost,
+  getConfigPath,
+  normalizeHost,
+  readCliConfig,
+  saveDefaultProfile,
+} from './config.js';
 
-export const commands = ['publish', 'help'] as const;
+export const commands = [
+  'artifact',
+  'comment',
+  'help',
+  'login',
+  'publish',
+  'revise',
+  'thread',
+  'whoami',
+] as const;
 
 export type DocscnCommand = (typeof commands)[number];
 
@@ -21,6 +39,25 @@ const cliArtifactKinds = [
   'pr-review',
   'custom-html',
 ] as const;
+const cliThreadStatusOptions = ['open', 'needs-revision', 'resolved'] as const;
+const valueFlags = new Set([
+  '--anchor-label',
+  '--anchor-x',
+  '--anchor-y',
+  '--api-key',
+  '--author',
+  '--body',
+  '--description',
+  '--host',
+  '--kind',
+  '--requested-change',
+  '--resolve',
+  '--status',
+  '--summary',
+  '--title',
+  '--url',
+  '--visibility',
+]);
 
 interface CliPublishOptions {
   filePath: string;
@@ -43,6 +80,79 @@ interface PublishResponse {
   error?: string;
 }
 
+interface ApiErrorResponse {
+  error?: string;
+}
+
+interface CliLoginStartResponse extends ApiErrorResponse {
+  deviceCode?: string;
+  userCode?: string;
+  verificationUrl?: string;
+  expiresAt?: string;
+  intervalSeconds?: number;
+}
+
+interface CliLoginPollResponse extends ApiErrorResponse {
+  status?:
+    | 'pending'
+    | 'approved'
+    | 'expired'
+    | 'not-found'
+    | 'already-consumed';
+  token?: string;
+}
+
+interface WhoamiResponse extends ApiErrorResponse {
+  principal?: {
+    kind: 'api-key' | 'session';
+    name?: string;
+    userId: string;
+  };
+}
+
+interface ArtifactResponse extends ApiErrorResponse {
+  artifact?: {
+    id: string;
+    slug: string;
+    currentRevisionId: string;
+    metadata: {
+      title: string;
+    };
+  };
+  threads?: Array<{
+    id: string;
+    status: ReviewThreadStatus;
+    title: string;
+  }>;
+}
+
+interface RevisionResponse extends ApiErrorResponse {
+  revision?: {
+    id: string;
+    version: number;
+    summary: string;
+  };
+}
+
+interface ThreadResponse extends ApiErrorResponse {
+  thread?: {
+    id: string;
+    status: ReviewThreadStatus;
+    title: string;
+  };
+}
+
+interface CommentResponse extends ApiErrorResponse {
+  comment?: {
+    id: string;
+  };
+}
+
+interface Credentials {
+  apiKey: string;
+  baseUrl: string;
+}
+
 function parseFlagValue(args: string[], name: string) {
   const index = args.indexOf(name);
 
@@ -57,8 +167,33 @@ function hasFlag(args: string[], name: string) {
   return args.includes(name);
 }
 
-function normalizeBaseUrl(value: string) {
-  return value.replace(/\/+$/, '');
+function collectFlagValues(args: string[], name: string) {
+  return args.reduce<string[]>((values, arg, index) => {
+    if (arg === name && args[index + 1]) {
+      values.push(args[index + 1]);
+    }
+
+    return values;
+  }, []);
+}
+
+function getPositionals(args: string[]) {
+  const positionals: string[] = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+
+    if (arg.startsWith('-')) {
+      if (valueFlags.has(arg)) {
+        index += 1;
+      }
+      continue;
+    }
+
+    positionals.push(arg);
+  }
+
+  return positionals;
 }
 
 function inferTitleFromPath(filePath: string) {
@@ -88,28 +223,66 @@ function parseKind(value: string): ArtifactKind {
   );
 }
 
-function parsePublishOptions(args: string[]): CliPublishOptions {
-  const filePath = args.find((arg) => !arg.startsWith('-'));
+function parseThreadStatus(value: string): ReviewThreadStatus {
+  if (cliThreadStatusOptions.includes(value as ReviewThreadStatus)) {
+    return value as ReviewThreadStatus;
+  }
+
+  throw new Error(
+    `Invalid status "${value}". Expected one of: ${cliThreadStatusOptions.join(', ')}`,
+  );
+}
+
+function parseCoordinate(value: string | undefined) {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Invalid coordinate "${value}".`);
+  }
+
+  return parsed;
+}
+
+async function resolveCredentials(args: string[]): Promise<Credentials> {
+  const config = await readCliConfig();
+  const baseUrl = normalizeHost(
+    parseFlagValue(args, '--host') ??
+      parseFlagValue(args, '--url') ??
+      process.env['DOCSCN_URL'] ??
+      config?.defaultHost ??
+      'http://localhost:3000',
+  );
+  const apiKey =
+    parseFlagValue(args, '--api-key') ??
+    process.env['DOCSCN_API_KEY'] ??
+    findProfileForHost(config, baseUrl)?.apiKey;
+
+  if (!apiKey) {
+    throw new Error(
+      `Missing API key. Run "docscn login --host ${baseUrl}" or set DOCSCN_API_KEY.`,
+    );
+  }
+
+  return { apiKey, baseUrl };
+}
+
+async function parsePublishOptions(args: string[]): Promise<CliPublishOptions> {
+  const [filePath] = getPositionals(args);
 
   if (!filePath) {
     throw new Error('Missing artifact HTML file path.');
   }
 
-  const apiKey =
-    parseFlagValue(args, '--api-key') ?? process.env['DOCSCN_API_KEY'];
-
-  if (!apiKey) {
-    throw new Error('Missing API key. Set DOCSCN_API_KEY or pass --api-key.');
-  }
+  const credentials = await resolveCredentials(args);
 
   return {
     filePath,
-    apiKey,
-    baseUrl: normalizeBaseUrl(
-      parseFlagValue(args, '--url') ??
-        process.env['DOCSCN_URL'] ??
-        'http://localhost:3000',
-    ),
+    apiKey: credentials.apiKey,
+    baseUrl: credentials.baseUrl,
     title: parseFlagValue(args, '--title'),
     description:
       parseFlagValue(args, '--description') ?? 'Published from docscn CLI.',
@@ -121,30 +294,93 @@ function parsePublishOptions(args: string[]): CliPublishOptions {
   };
 }
 
+async function readJsonResponse<T>(response: Response): Promise<T | null> {
+  return response.json().catch(() => null) as Promise<T | null>;
+}
+
+async function apiFetch<T>(
+  credentials: Credentials,
+  path: string,
+  init: RequestInit = {},
+) {
+  const response = await fetch(`${credentials.baseUrl}${path}`, {
+    ...init,
+    headers: {
+      authorization: `Bearer ${credentials.apiKey}`,
+      'content-type': 'application/json',
+      ...init.headers,
+    },
+  });
+  const payload = await readJsonResponse<T & ApiErrorResponse>(response);
+
+  if (!response.ok) {
+    throw new Error(
+      payload?.error ?? `Request failed with ${response.status}.`,
+    );
+  }
+
+  return payload;
+}
+
+function openBrowser(url: string) {
+  const command =
+    process.platform === 'darwin'
+      ? 'open'
+      : process.platform === 'win32'
+        ? 'cmd'
+        : 'xdg-open';
+  const args = process.platform === 'win32' ? ['/c', 'start', '', url] : [url];
+  const child = spawn(command, args, {
+    detached: true,
+    stdio: 'ignore',
+  });
+
+  child.unref();
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function buildArtifactUrl(baseUrl: string, pathOrUrl: string) {
+  return pathOrUrl.startsWith('http') ? pathOrUrl : `${baseUrl}${pathOrUrl}`;
+}
+
 export function getCliHelp() {
   return `docscn
 
 Publish and automate agent-generated HTML artifacts.
 
 Usage:
+  docscn login [--host <url>]
+  docscn whoami [--host <url>]
   docscn publish artifact.html [options]
+  docscn artifact get <artifact-id-or-slug> [--json]
+  docscn revise <artifact-id-or-slug> artifact.html --summary <text> [--resolve <thread-id>]
+  docscn thread create <artifact-id-or-slug> --title <text> --body <text>
+  docscn comment <thread-id> --body <text>
 
 Options:
-  --api-key <key>          API key. Defaults to DOCSCN_API_KEY.
-  --url <url>              docscn server URL. Defaults to DOCSCN_URL or http://localhost:3000.
+  --api-key <key>          API key. Defaults to DOCSCN_API_KEY or ~/.docscn/config.json.
+  --host, --url <url>      docscn server URL. Defaults to DOCSCN_URL, saved config, or http://localhost:3000.
   --title <title>          Artifact title. Defaults to the file name.
   --description <text>     Artifact description.
   --visibility <value>     public, unlisted, or private. Defaults to unlisted.
   --kind <value>           Artifact kind. Defaults to custom-html.
   --author <name>          Artifact author/agent name. Defaults to docscn CLI.
+  --summary <text>         Revision summary.
+  --resolve <thread-id>    Mark a thread resolved when revising. Repeatable.
+  --json                   Print machine-readable JSON for supported commands.
 
 Examples:
-  DOCSCN_API_KEY=docscn_sk_... docscn publish artifact.html
-  docscn publish report.html --url http://localhost:3000 --visibility private`;
+  docscn login --host http://localhost:3000
+  docscn publish report.html --visibility private
+  docscn artifact get artifact-slug --json
+  docscn revise artifact-slug report.html --summary "Addressed open feedback" --resolve thread-123`;
 }
 
 export async function publishArtifactFromCli(args: string[]) {
-  const options = parsePublishOptions(args);
+  const options = await parsePublishOptions(args);
   const html = await readFile(options.filePath, 'utf8');
 
   if (!html.toLowerCase().includes('<html')) {
@@ -171,9 +407,7 @@ export async function publishArtifactFromCli(args: string[]) {
     },
     body: JSON.stringify(payload),
   });
-  const result = (await response
-    .json()
-    .catch(() => null)) as PublishResponse | null;
+  const result = await readJsonResponse<PublishResponse>(response);
 
   if (!response.ok) {
     throw new Error(result?.error ?? `Publish failed with ${response.status}.`);
@@ -186,8 +420,227 @@ export async function publishArtifactFromCli(args: string[]) {
   return {
     artifactId: result.result.artifactId,
     revisionId: result.result.revisionId,
-    url: `${options.baseUrl}${result.result.url}`,
+    url: buildArtifactUrl(options.baseUrl, result.result.url),
   };
+}
+
+export async function loginFromCli(args: string[]) {
+  const config = await readCliConfig();
+  const baseUrl = normalizeHost(
+    parseFlagValue(args, '--host') ??
+      parseFlagValue(args, '--url') ??
+      process.env['DOCSCN_URL'] ??
+      config?.defaultHost ??
+      'http://localhost:3000',
+  );
+  const response = await fetch(`${baseUrl}/api/cli/auth/start`, {
+    method: 'POST',
+  });
+  const login = await readJsonResponse<CliLoginStartResponse>(response);
+
+  if (
+    !response.ok ||
+    !login?.deviceCode ||
+    !login.userCode ||
+    !login.verificationUrl ||
+    !login.expiresAt
+  ) {
+    throw new Error(login?.error ?? `Login failed with ${response.status}.`);
+  }
+
+  console.log(`Opening ${login.verificationUrl}`);
+  console.log(`Code: ${login.userCode}`);
+
+  try {
+    openBrowser(login.verificationUrl);
+  } catch {
+    console.log('Could not open a browser automatically.');
+  }
+
+  const intervalMs = (login.intervalSeconds ?? 2) * 1000;
+
+  while (Date.now() < Date.parse(login.expiresAt)) {
+    await sleep(intervalMs);
+
+    const pollResponse = await fetch(`${baseUrl}/api/cli/auth/poll`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ deviceCode: login.deviceCode }),
+    });
+    const poll = await readJsonResponse<CliLoginPollResponse>(pollResponse);
+
+    if (poll?.status === 'pending') {
+      continue;
+    }
+
+    if (poll?.status === 'approved' && poll.token) {
+      await saveDefaultProfile({ apiKey: poll.token, host: baseUrl });
+      console.log(`Saved docscn credentials to ${getConfigPath()}`);
+      return;
+    }
+
+    throw new Error(poll?.error ?? `Login ${poll?.status ?? 'failed'}.`);
+  }
+
+  throw new Error('Login expired. Run docscn login again.');
+}
+
+export async function whoamiFromCli(args: string[]) {
+  const credentials = await resolveCredentials(args);
+  const result = await apiFetch<WhoamiResponse>(credentials, '/api/me');
+
+  if (!result?.principal) {
+    throw new Error('whoami response did not include a principal.');
+  }
+
+  console.log(
+    `Signed in to ${credentials.baseUrl} as ${result.principal.name ?? result.principal.userId}`,
+  );
+  console.log(`Principal: ${result.principal.kind}`);
+}
+
+export async function getArtifactFromCli(args: string[]) {
+  const [artifactId] = getPositionals(args);
+
+  if (!artifactId) {
+    throw new Error('Missing artifact id or slug.');
+  }
+
+  const credentials = await resolveCredentials(args);
+  const result = await apiFetch<ArtifactResponse>(
+    credentials,
+    `/api/artifacts/${encodeURIComponent(artifactId)}`,
+  );
+
+  if (hasFlag(args, '--json')) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  if (!result?.artifact) {
+    throw new Error('Artifact response did not include artifact details.');
+  }
+
+  console.log(`${result.artifact.metadata.title}`);
+  console.log(`Artifact: ${result.artifact.id}`);
+  console.log(`Revision: ${result.artifact.currentRevisionId}`);
+  console.log(
+    `Open threads: ${(result.threads ?? []).filter((thread) => thread.status !== 'resolved').length}`,
+  );
+}
+
+export async function reviseArtifactFromCli(args: string[]) {
+  const [artifactId, filePath] = getPositionals(args);
+  const summary = parseFlagValue(args, '--summary');
+
+  if (!artifactId || !filePath) {
+    throw new Error(
+      'Usage: docscn revise <artifact-id-or-slug> artifact.html --summary <text>',
+    );
+  }
+
+  if (!summary) {
+    throw new Error('Missing --summary for revision.');
+  }
+
+  const credentials = await resolveCredentials(args);
+  const html = await readFile(filePath, 'utf8');
+
+  if (!html.toLowerCase().includes('<html')) {
+    throw new Error(
+      'Revision file must be self-contained HTML including <html>.',
+    );
+  }
+
+  const result = await apiFetch<RevisionResponse>(
+    credentials,
+    `/api/artifacts/${encodeURIComponent(artifactId)}/revisions`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        authorName: parseFlagValue(args, '--author') ?? 'docscn CLI',
+        html,
+        resolvedThreadIds: collectFlagValues(args, '--resolve'),
+        source: 'cli',
+        summary,
+      }),
+    },
+  );
+
+  if (!result?.revision) {
+    throw new Error('Revision response did not include revision details.');
+  }
+
+  console.log(`Revision ${result.revision.id}`);
+  console.log(`Version ${result.revision.version}`);
+}
+
+export async function createThreadFromCli(args: string[]) {
+  const [artifactId] = getPositionals(args);
+  const title = parseFlagValue(args, '--title');
+  const body = parseFlagValue(args, '--body');
+
+  if (!artifactId || !title || !body) {
+    throw new Error(
+      'Usage: docscn thread create <artifact-id-or-slug> --title <text> --body <text>',
+    );
+  }
+
+  const credentials = await resolveCredentials(args);
+  const result = await apiFetch<ThreadResponse>(
+    credentials,
+    `/api/artifacts/${encodeURIComponent(artifactId)}/threads`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        anchorLabel: parseFlagValue(args, '--anchor-label'),
+        anchorX: parseCoordinate(parseFlagValue(args, '--anchor-x')),
+        anchorY: parseCoordinate(parseFlagValue(args, '--anchor-y')),
+        authorName: parseFlagValue(args, '--author') ?? 'docscn CLI',
+        body,
+        requestedChange: parseFlagValue(args, '--requested-change'),
+        role: 'agent',
+        status: parseThreadStatus(parseFlagValue(args, '--status') ?? 'open'),
+        title,
+      }),
+    },
+  );
+
+  if (!result?.thread) {
+    throw new Error('Thread response did not include thread details.');
+  }
+
+  console.log(`Thread ${result.thread.id}`);
+  console.log(`Status ${result.thread.status}`);
+}
+
+export async function createCommentFromCli(args: string[]) {
+  const [threadId] = getPositionals(args);
+  const body = parseFlagValue(args, '--body');
+
+  if (!threadId || !body) {
+    throw new Error('Usage: docscn comment <thread-id> --body <text>');
+  }
+
+  const credentials = await resolveCredentials(args);
+  const result = await apiFetch<CommentResponse>(
+    credentials,
+    `/api/review-threads/${encodeURIComponent(threadId)}/comments`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        authorName: parseFlagValue(args, '--author') ?? 'docscn CLI',
+        body,
+        role: 'agent',
+      }),
+    },
+  );
+
+  if (!result?.comment) {
+    throw new Error('Comment response did not include comment details.');
+  }
+
+  console.log(`Comment ${result.comment.id}`);
 }
 
 export async function runDocscnCli(args = process.argv.slice(2)) {
@@ -198,13 +651,44 @@ export async function runDocscnCli(args = process.argv.slice(2)) {
     return;
   }
 
-  if (command !== 'publish') {
-    throw new Error(`Unknown command "${command}". Run docscn help.`);
+  if (command === 'login') {
+    await loginFromCli(rest);
+    return;
   }
 
-  const published = await publishArtifactFromCli(rest);
+  if (command === 'whoami') {
+    await whoamiFromCli(rest);
+    return;
+  }
 
-  console.log(`Published ${published.artifactId}`);
-  console.log(`Revision ${published.revisionId}`);
-  console.log(published.url);
+  if (command === 'publish') {
+    const published = await publishArtifactFromCli(rest);
+
+    console.log(`Published ${published.artifactId}`);
+    console.log(`Revision ${published.revisionId}`);
+    console.log(published.url);
+    return;
+  }
+
+  if (command === 'artifact' && rest[0] === 'get') {
+    await getArtifactFromCli(rest.slice(1));
+    return;
+  }
+
+  if (command === 'revise') {
+    await reviseArtifactFromCli(rest);
+    return;
+  }
+
+  if (command === 'thread' && rest[0] === 'create') {
+    await createThreadFromCli(rest.slice(1));
+    return;
+  }
+
+  if (command === 'comment') {
+    await createCommentFromCli(rest);
+    return;
+  }
+
+  throw new Error(`Unknown command "${args.join(' ')}". Run docscn help.`);
 }

@@ -9,7 +9,7 @@ import type {
   ReviewThreadStatus,
   UpdateReviewThreadStatusInput,
 } from '@docscn/sdk';
-import { getRequestSession } from '../../../../lib/session';
+import { getRequestPrincipal, hasBearerToken } from '../../../../lib/publisher';
 
 function isReviewThreadStatus(value: unknown): value is ReviewThreadStatus {
   return value === 'open' || value === 'needs-revision' || value === 'resolved';
@@ -20,11 +20,15 @@ export async function PATCH(
   { params }: { params: Promise<{ threadId: string }> },
 ) {
   const { threadId } = await params;
-  const session = await getRequestSession(request);
+  const principal = await getRequestPrincipal(request);
 
-  if (!session) {
+  if (!principal) {
     return NextResponse.json(
-      { error: 'Sign in to update review thread status.' },
+      {
+        error: hasBearerToken(request)
+          ? 'Invalid API key.'
+          : 'Sign in to update review thread status.',
+      },
       { status: 401 },
     );
   }
@@ -39,14 +43,14 @@ export async function PATCH(
   }
 
   const artifact = await findArtifact(existingThread.artifactId, {
-    viewerUserId: session.user.id,
+    viewerUserId: principal.userId,
   });
 
   if (!artifact) {
     return NextResponse.json({ error: 'Artifact not found.' }, { status: 404 });
   }
 
-  if (!canMutateArtifact(artifact, session.user.id)) {
+  if (!canMutateArtifact(artifact, principal.userId)) {
     return NextResponse.json(
       { error: 'Only the artifact owner can update review status.' },
       { status: 403 },

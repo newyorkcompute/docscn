@@ -7,6 +7,9 @@ import type {
   ApiKeyPrincipal,
   Artifact,
   ArtifactRevision,
+  CliLoginApproval,
+  CliLoginPollResult,
+  CliLoginRequest,
   CreatedApiKey,
   CreateApiKeyInput,
   CreateArtifactInput,
@@ -25,6 +28,7 @@ import {
   apiKeys,
   artifactRevisions,
   artifacts,
+  cliDeviceLogins,
   reviewComments,
   reviewThreads,
 } from './schema';
@@ -37,7 +41,12 @@ import {
 
 const runtimeArtifacts: Artifact[] = [];
 const runtimeThreads: ReviewThread[] = [];
+const runtimeCliDeviceLogins: Array<
+  typeof cliDeviceLogins.$inferSelect & { deviceCode: string }
+> = [];
 const apiKeyTokenPrefix = 'docscn_sk_';
+const cliLoginTtlMs = 10 * 60 * 1000;
+const cliLoginIntervalSeconds = 2;
 
 interface ArtifactAccessOptions {
   includeUnlisted?: boolean;
@@ -128,6 +137,22 @@ function hashApiKey(token: string) {
 
 function createApiKeyToken() {
   return `${apiKeyTokenPrefix}${randomBytes(32).toString('base64url')}`;
+}
+
+function createCliDeviceCode() {
+  return `docscn_dc_${randomBytes(32).toString('base64url')}`;
+}
+
+function createCliUserCode() {
+  return randomBytes(4).toString('hex').toUpperCase();
+}
+
+function hashCliDeviceCode(deviceCode: string) {
+  return createHash('sha256').update(deviceCode).digest('hex');
+}
+
+function isExpired(expiresAt: string) {
+  return Date.parse(expiresAt) <= Date.now();
 }
 
 function mapApiKeyRow(row: typeof apiKeys.$inferSelect): ApiKey {
@@ -349,6 +374,165 @@ export async function verifyApiKey(
   };
 }
 
+export async function createCliLoginRequest(): Promise<CliLoginRequest> {
+  const deviceCode = createCliDeviceCode();
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + cliLoginTtlMs).toISOString();
+  const row = {
+    id: `cli-login-${randomUUID()}`,
+    deviceCodeHash: hashCliDeviceCode(deviceCode),
+    userCode: createCliUserCode(),
+    createdAt: now.toISOString(),
+    expiresAt,
+    approvedUserId: null,
+    approvedAt: null,
+    consumedAt: null,
+  };
+
+  if (!isDatabaseConfigured()) {
+    runtimeCliDeviceLogins.push({ ...row, deviceCode });
+  } else {
+    await getDb().insert(cliDeviceLogins).values(row);
+  }
+
+  return {
+    deviceCode,
+    userCode: row.userCode,
+    expiresAt,
+    intervalSeconds: cliLoginIntervalSeconds,
+  };
+}
+
+export async function approveCliLoginRequest(input: {
+  userCode: string;
+  userId: string;
+}): Promise<CliLoginApproval> {
+  const normalizedUserCode = input.userCode.trim().toUpperCase();
+
+  if (!isDatabaseConfigured()) {
+    const pendingLogin = runtimeCliDeviceLogins.find(
+      (login) => login.userCode === normalizedUserCode,
+    );
+
+    if (!pendingLogin) {
+      return { userCode: normalizedUserCode, status: 'not-found' };
+    }
+
+    if (pendingLogin.consumedAt) {
+      return { userCode: normalizedUserCode, status: 'already-consumed' };
+    }
+
+    if (isExpired(pendingLogin.expiresAt)) {
+      return { userCode: normalizedUserCode, status: 'expired' };
+    }
+
+    pendingLogin.approvedUserId = input.userId;
+    pendingLogin.approvedAt = new Date().toISOString();
+
+    return { userCode: normalizedUserCode, status: 'approved' };
+  }
+
+  const rows = await getDb()
+    .select()
+    .from(cliDeviceLogins)
+    .where(eq(cliDeviceLogins.userCode, normalizedUserCode))
+    .limit(1);
+  const pendingLogin = rows[0];
+
+  if (!pendingLogin) {
+    return { userCode: normalizedUserCode, status: 'not-found' };
+  }
+
+  if (pendingLogin.consumedAt) {
+    return { userCode: normalizedUserCode, status: 'already-consumed' };
+  }
+
+  if (isExpired(pendingLogin.expiresAt)) {
+    return { userCode: normalizedUserCode, status: 'expired' };
+  }
+
+  await getDb()
+    .update(cliDeviceLogins)
+    .set({
+      approvedAt: new Date().toISOString(),
+      approvedUserId: input.userId,
+    })
+    .where(eq(cliDeviceLogins.id, pendingLogin.id));
+
+  return { userCode: normalizedUserCode, status: 'approved' };
+}
+
+export async function pollCliLoginRequest(
+  deviceCode: string,
+): Promise<CliLoginPollResult> {
+  const deviceCodeHash = hashCliDeviceCode(deviceCode);
+
+  if (!isDatabaseConfigured()) {
+    const pendingLogin = runtimeCliDeviceLogins.find(
+      (login) => login.deviceCode === deviceCode,
+    );
+
+    if (!pendingLogin) {
+      return { status: 'not-found' };
+    }
+
+    if (pendingLogin.consumedAt) {
+      return { status: 'already-consumed' };
+    }
+
+    if (isExpired(pendingLogin.expiresAt)) {
+      return { status: 'expired' };
+    }
+
+    if (!pendingLogin.approvedUserId) {
+      return { status: 'pending' };
+    }
+
+    pendingLogin.consumedAt = new Date().toISOString();
+    const { apiKey, token } = await createApiKey({
+      userId: pendingLogin.approvedUserId,
+      name: 'docscn CLI',
+    });
+
+    return { status: 'approved', apiKey, token };
+  }
+
+  const rows = await getDb()
+    .select()
+    .from(cliDeviceLogins)
+    .where(eq(cliDeviceLogins.deviceCodeHash, deviceCodeHash))
+    .limit(1);
+  const pendingLogin = rows[0];
+
+  if (!pendingLogin) {
+    return { status: 'not-found' };
+  }
+
+  if (pendingLogin.consumedAt) {
+    return { status: 'already-consumed' };
+  }
+
+  if (isExpired(pendingLogin.expiresAt)) {
+    return { status: 'expired' };
+  }
+
+  if (!pendingLogin.approvedUserId) {
+    return { status: 'pending' };
+  }
+
+  await getDb()
+    .update(cliDeviceLogins)
+    .set({ consumedAt: new Date().toISOString() })
+    .where(eq(cliDeviceLogins.id, pendingLogin.id));
+
+  const { apiKey, token } = await createApiKey({
+    userId: pendingLogin.approvedUserId,
+    name: 'docscn CLI',
+  });
+
+  return { status: 'approved', apiKey, token };
+}
+
 export async function listArtifacts(
   options: ArtifactAccessOptions = {},
 ): Promise<Artifact[]> {
@@ -531,9 +715,9 @@ export async function createReviewThread(
       {
         id: `comment-${randomUUID()}`,
         body: input.body.trim(),
-        author: createActorFromName(input.authorName),
+        author: createActorFromName(input.authorName, input.authorRole),
         createdAt: now,
-        role: 'human',
+        role: input.authorRole ?? 'human',
       },
     ],
   };

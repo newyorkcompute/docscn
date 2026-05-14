@@ -91,6 +91,31 @@ export const apiKeys = pgTable('api_keys', {
   }),
 });
 
+export const cliDeviceLogins = pgTable('cli_device_logins', {
+  id: text('id').primaryKey(),
+  deviceCodeHash: text('device_code_hash').notNull().unique(),
+  userCode: text('user_code').notNull().unique(),
+  createdAt: timestamp('created_at', {
+    mode: 'string',
+    withTimezone: true,
+  }).notNull(),
+  expiresAt: timestamp('expires_at', {
+    mode: 'string',
+    withTimezone: true,
+  }).notNull(),
+  approvedUserId: text('approved_user_id').references(() => user.id, {
+    onDelete: 'cascade',
+  }),
+  approvedAt: timestamp('approved_at', {
+    mode: 'string',
+    withTimezone: true,
+  }),
+  consumedAt: timestamp('consumed_at', {
+    mode: 'string',
+    withTimezone: true,
+  }),
+});
+
 export const artifacts = pgTable('artifacts', {
   id: text('id').primaryKey(),
   slug: text('slug').notNull().unique(),
