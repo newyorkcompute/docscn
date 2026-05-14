@@ -32,7 +32,8 @@
   --radius-xl: calc(var(--radius) * 1.5);
 }
 
-:root {
+:root,
+.light {
   color-scheme: light;
   --background: oklch(0.99 0.003 260);
   --foreground: oklch(0.18 0.01 260);
@@ -77,7 +78,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light):not(.dark) {
     color-scheme: dark;
     --background: oklch(0.12 0 0);
     --foreground: oklch(0.985 0 0);

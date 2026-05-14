@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Button, Shell } from '@docscn/ui';
 import { getServerSession } from '../lib/session';
+import { ThemeToggle } from './theme-toggle';
 import { UserMenu } from './user-menu';
 
 export async function SiteHeader() {
@@ -26,6 +27,7 @@ export async function SiteHeader() {
           </Link>
         </nav>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           {session ? (
             <UserMenu email={session.user.email} name={session.user.name} />
           ) : (
