@@ -28,7 +28,7 @@ packages/
   db/         Drizzle/Postgres schema, migrations, repository, mock fallback
   storage/    S3-compatible artifact HTML storage adapter
   sdk/        Public contracts for artifacts, publishing, comments, revisions
-  cli/        Future npx docscn publish artifact.html experience
+  cli/        Agent-first CLI for login, publishing, feedback, and revisions
   config/     Shared configuration and environment contracts
 ```
 
@@ -46,6 +46,7 @@ Useful commands:
 ```bash
 npm run build
 npm run lint
+npm test
 npm run typecheck
 npm run format
 ```
@@ -85,6 +86,18 @@ npm run db:migrate    # apply migrations using .env.local
 npm run db:studio     # open Drizzle Studio using .env.local
 ```
 
+To run the app with the local Docker services explicitly:
+
+```bash
+DATABASE_URL='postgres://docscn:docscn@localhost:5433/docscn' \
+S3_ENDPOINT='http://localhost:9000' \
+S3_REGION='us-east-1' \
+S3_BUCKET='docscn-artifacts' \
+S3_ACCESS_KEY_ID='docscn' \
+S3_SECRET_ACCESS_KEY='docscn-local-secret' \
+npm run dev
+```
+
 ## Portable Stack
 
 The core stack is intentionally OSS-friendly and provider-portable:
@@ -118,7 +131,9 @@ convenient, but the interfaces are meant to be replaceable.
 - Review threads and revision history around each artifact.
 - Figma-style comment pins over the artifact viewer for review context.
 - SDK contracts shaped for future publish APIs, MCP tools, skills, and agents.
-- Minimal CLI publishing flow for local API-key testing.
+- Agent-first CLI flow for browser login, local credential storage, publishing,
+  reading feedback, comments, and revisions.
+- Public `/skills.md` endpoint that tells agents how to interact with docscn.
 
 ## Self-Hosting Direction
 
@@ -135,36 +150,77 @@ open-source, self-hostable architecture:
 
 Copy `.env.example` to `.env.local` when wiring real services later.
 
-## CLI Publishing
+## Agent-First CLI
 
-Create an API key at `/settings/api-keys`, then publish a local HTML artifact
-against your running app:
+docscn is designed so agents operate through the CLI after reading
+`/skills.md`. The browser remains the human-owned surface for account creation
+and approval, while the CLI stores an API key locally at
+`~/.docscn/config.json`.
+
+For local development:
 
 ```bash
-DOCSCN_API_KEY=docscn_sk_... npm run cli -- publish artifact.html
+npm run cli -- login --host http://localhost:3000
+npm run cli -- whoami --host http://localhost:3000
+npm run cli -- publish artifact.html --host http://localhost:3000
 ```
 
-Useful options:
+The login command opens `/cli/login` in the browser. The user signs in or
+creates an account, approves the CLI connection, and the CLI saves a local token.
+Agents should never ask for the user's password.
+
+Agent workflow commands:
 
 ```bash
-npm run cli -- publish report.html \
-  --url http://localhost:3000 \
+npm run cli -- artifact get <artifact-id-or-slug> --json --host http://localhost:3000
+npm run cli -- revise <artifact-id-or-slug> revised.html \
+  --summary "Addressed review feedback" \
+  --resolve <thread-id> \
+  --host http://localhost:3000
+npm run cli -- thread create <artifact-id-or-slug> \
+  --title "Suggested improvement" \
+  --body "..." \
+  --host http://localhost:3000
+npm run cli -- comment <thread-id> \
+  --body "Updated in revision 2." \
+  --host http://localhost:3000
+```
+
+Raw API keys still work for automation and tests:
+
+```bash
+DOCSCN_API_KEY=docscn_sk_... npm run cli -- publish report.html \
+  --host http://localhost:3000 \
   --title "Launch readiness report" \
   --visibility unlisted \
   --kind custom-html \
   --author "Cursor agent"
 ```
 
-The future package shape is still:
+The hosted package shape will be:
 
 ```bash
-npx docscn publish artifact.html
-docscn login
-docscn pull
-docscn revisions
-docscn comments
-docscn export
+npx docscn login --host https://docscn.ai
+npx docscn publish artifact.html --host https://docscn.ai
 ```
+
+## Tests And Smoke
+
+The current test coverage focuses on the agent/API/CLI contract. UI tests can
+wait until the interface settles.
+
+```bash
+npm run test:cli       # CLI config and command behavior
+npm run test:backend   # localhost backend API contract
+npm test               # CLI + backend tests
+npm run smoke:agent    # full local agent flow through the built CLI
+```
+
+`npm run test:backend` and `npm run smoke:agent` expect the local web app to be
+running at `http://localhost:3000` with Postgres and MinIO available. The smoke
+script signs up a test user, completes CLI device auth, verifies saved config,
+publishes an artifact, reads feedback, creates a thread, submits a revision, and
+comments as an agent.
 
 ## License
 
