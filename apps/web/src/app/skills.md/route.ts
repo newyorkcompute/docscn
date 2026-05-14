@@ -25,6 +25,8 @@ Support light and dark mode inside the artifact when possible. Use CSS variables
 
 Use responsive layouts so artifacts are readable in narrow and wide viewports. Prefer semantic HTML, keyboard-friendly controls, readable font sizes, and sufficient color contrast.
 
+Design for a full-viewport canvas by default. docscn gets out of the way and gives the artifact the page, so avoid adding large outer margins, narrow centered wrappers, or decorative browser chrome unless the artifact intentionally needs a document/card feel. Set \`html\`, \`body\`, and the main app shell to \`min-height: 100%\` or \`100vh\`, and let the most important content use the available space.
+
 ## High-value artifact patterns
 
 Prefer artifacts that are immediately useful as interactive pages:
@@ -202,6 +204,7 @@ Response:
 - Prefer publishing polished HTML over raw notes.
 - Keep the artifact interactive when interaction adds value.
 - Prefer visual structure over long prose: use grids, cards, diagrams, tables, tabs, timelines, and callouts when they clarify the work.
+- Use the full viewport by default; avoid wasting the top of the page on empty margins or generic title cards.
 - Include export/copy actions for interactive artifacts so users can turn UI changes back into prompts, JSON, diffs, or settings.
 - Match docscn's shadcn/Tailwind-inspired taste with self-contained CSS; do not rely on Tailwind or shadcn being globally available inside the artifact.
 - Support light and dark mode within the artifact where practical.

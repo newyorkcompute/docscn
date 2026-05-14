@@ -81,7 +81,7 @@ export function ArtifactWorkspace({
   const [copiedLink, setCopiedLink] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | undefined>();
   const [isPlacingComment, setIsPlacingComment] = useState(false);
-  const [isReviewOpen, setIsReviewOpen] = useState(true);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [pendingAnchor, setPendingAnchor] = useState<
     PendingAnchor | undefined
   >();
@@ -193,6 +193,7 @@ export function ArtifactWorkspace({
   function selectThread(threadId: string) {
     setActiveSidebarTab('review');
     setActiveThreadId(threadId);
+    setIsReviewOpen(true);
     window.setTimeout(() => {
       document
         .getElementById(`thread-${threadId}`)
@@ -209,6 +210,7 @@ export function ArtifactWorkspace({
     setPendingAnchor({ label, x, y });
     setAnchorLabel(label);
     setActiveSidebarTab('review');
+    setIsReviewOpen(true);
     setIsPlacingComment(false);
   }
 
@@ -390,149 +392,167 @@ export function ArtifactWorkspace({
   }
 
   return (
-    <Shell className="min-h-screen max-w-none space-y-3 px-3 py-3">
-      <div className="sticky top-0 z-40 flex flex-col gap-3 rounded-xl border border-border bg-background/90 p-3 backdrop-blur lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <Link
-              className="font-mono text-xs tracking-[0.2em] text-muted-foreground hover:text-foreground"
-              href="/dashboard"
-            >
-              docscn
-            </Link>
-            <span className="text-muted-foreground">/</span>
-            <Badge>{artifact.metadata.visibility}</Badge>
-            <Badge tone={openThreads.length ? 'warning' : 'success'}>
-              {openThreads.length}
-            </Badge>
-          </div>
-          <h1 className="mt-2 truncate text-lg font-semibold tracking-tight">
-            {artifact.metadata.title}
-          </h1>
-          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-            {artifact.metadata.description}
-          </p>
-        </div>
+    <div className="relative min-h-screen overflow-hidden bg-background">
+      <div className="fixed inset-0">
+        <ArtifactFrame
+          className="h-full rounded-none border-0 shadow-none"
+          html={selectedRevision.html}
+          iframeClassName="h-screen min-h-screen"
+          showChrome={false}
+          title={artifact.metadata.title}
+        />
+      </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap gap-1">
-            {artifact.revisions.map((revision) => (
-              <button
-                className={cn(
-                  'rounded-md border px-2.5 py-1 text-xs transition',
-                  revision.id === selectedRevision.id
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border text-muted-foreground hover:text-foreground',
-                )}
-                key={revision.id}
-                type="button"
-                onClick={() => setSelectedRevisionId(revision.id)}
-              >
-                v{revision.version}
-              </button>
-            ))}
-          </div>
-          <Button
-            size="sm"
-            type="button"
-            variant="outline"
-            onClick={copyShareLink}
+      <div className="pointer-events-none fixed left-3 top-3 z-40">
+        <div className="pointer-events-auto max-w-[min(520px,calc(100vw-1.5rem))] rounded-full border border-border/80 bg-background/75 px-3 py-2 shadow-sm shadow-black/5 backdrop-blur-xl transition-opacity hover:bg-background/90">
+          <Link
+            className="flex min-w-0 items-center gap-2"
+            href="/dashboard"
+            title="Back to dashboard"
           >
-            <Share2 className="h-4 w-4" />
-            {copiedLink ? 'Copied' : 'Share'}
-          </Button>
+            <span className="font-mono text-xs tracking-[0.2em] text-muted-foreground">
+              docscn
+            </span>
+            <span className="text-muted-foreground">/</span>
+            <span className="truncate text-sm font-medium">
+              {artifact.metadata.title}
+            </span>
+          </Link>
+        </div>
+      </div>
+
+      <div className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-border/80 bg-background/75 p-1 shadow-sm shadow-black/5 backdrop-blur-xl transition-opacity hover:bg-background/90">
+        <Button
+          aria-label={`Open revision history, currently version ${selectedRevision.version}`}
+          size="sm"
+          title={`Revision v${selectedRevision.version}`}
+          type="button"
+          variant="ghost"
+          onClick={() => {
+            setActiveSidebarTab('revisions');
+            setIsReviewOpen(true);
+          }}
+        >
+          <GitCommitHorizontal className="h-4 w-4" />
+          <span className="text-xs">v{selectedRevision.version}</span>
+        </Button>
+        <Button
+          aria-label={copiedLink ? 'Copied share link' : 'Copy share link'}
+          size="sm"
+          title={copiedLink ? 'Copied' : 'Share'}
+          type="button"
+          variant="ghost"
+          onClick={copyShareLink}
+        >
+          <Share2 className="h-4 w-4" />
+          <span className="sr-only">{copiedLink ? 'Copied' : 'Share'}</span>
+        </Button>
+        <div className="relative">
           <Button
+            aria-label={`Open review drawer, ${openThreads.length} open threads`}
             size="sm"
+            title={`Review (${openThreads.length} open)`}
             type="button"
             variant={isReviewOpen ? 'secondary' : 'outline'}
             onClick={() => setIsReviewOpen((current) => !current)}
           >
             <MessageSquareText className="h-4 w-4" />
-            {isReviewOpen ? 'Hide review' : 'Review'}
+            <span className="sr-only">
+              {isReviewOpen ? 'Hide review' : 'Review'}
+            </span>
           </Button>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/publish">Publish another</Link>
-          </Button>
+          {openThreads.length ? (
+            <span className="pointer-events-none absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+              {openThreads.length}
+            </span>
+          ) : null}
         </div>
       </div>
 
-      <div
-        className={cn(
-          'grid gap-3',
-          isReviewOpen
-            ? 'xl:grid-cols-[minmax(0,1fr)_390px]'
-            : 'xl:grid-cols-1',
-        )}
-      >
-        <div className="min-w-0">
-          <div className="relative">
-            <ArtifactFrame
-              className="h-full"
-              html={selectedRevision.html}
-              iframeClassName="h-[calc(100vh-9.5rem)] min-h-[720px]"
-              title={artifact.metadata.title}
-            />
-            {isPlacingComment ? (
-              <button
-                aria-label="Place comment on artifact"
-                className="absolute inset-x-0 bottom-0 top-10 z-10 cursor-crosshair bg-primary/5"
-                type="button"
-                onClick={placeCommentAnchor}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') {
-                    setIsPlacingComment(false);
-                  }
-                }}
-              >
-                <div className="absolute left-1/2 top-6 -translate-x-1/2 rounded-full border border-primary/30 bg-background px-3 py-1 text-xs text-primary shadow-sm">
-                  Click anywhere on the artifact to place a comment
-                </div>
-              </button>
-            ) : null}
-            {threads.length ? (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 top-10">
-                {threads.map((thread, index) => {
-                  const position = getPinPosition(thread, index);
-
-                  return (
-                    <button
-                      aria-label={`Open comment: ${thread.title}`}
-                      className={cn(
-                        'pointer-events-auto absolute grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border text-xs font-semibold shadow-sm transition',
-                        thread.id === activeThreadId
-                          ? 'border-primary bg-primary text-primary-foreground ring-4 ring-primary/15'
-                          : 'border-background bg-primary text-primary-foreground hover:scale-105',
-                        thread.status === 'resolved' && 'opacity-45',
-                      )}
-                      key={thread.id}
-                      style={position}
-                      type="button"
-                      onClick={() => selectThread(thread.id)}
-                    >
-                      {index + 1}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
-            {pendingAnchor ? (
-              <button
-                aria-label="Pending comment pin"
-                className="pointer-events-none absolute z-20 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-background bg-primary text-xs font-semibold text-primary-foreground shadow-sm ring-4 ring-primary/15"
-                style={{
-                  left: `${pendingAnchor.x}%`,
-                  top: `${pendingAnchor.y}%`,
-                }}
-                type="button"
-              >
-                +
-              </button>
-            ) : null}
+      {isPlacingComment ? (
+        <button
+          aria-label="Place comment on artifact"
+          className="fixed inset-0 z-30 cursor-crosshair bg-primary/5"
+          type="button"
+          onClick={placeCommentAnchor}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setIsPlacingComment(false);
+            }
+          }}
+        >
+          <div className="absolute left-1/2 top-20 -translate-x-1/2 rounded-full border border-primary/30 bg-background px-3 py-1 text-xs text-primary shadow-sm">
+            Click anywhere on the artifact to place a comment
           </div>
-        </div>
+        </button>
+      ) : null}
 
-        {isReviewOpen ? (
-          <aside className="max-h-[calc(100vh-8.5rem)] space-y-4 overflow-y-auto rounded-xl border border-border bg-background/95 p-3">
+      {threads.length ? (
+        <div className="pointer-events-none fixed inset-0 z-20">
+          {threads.map((thread, index) => {
+            const position = getPinPosition(thread, index);
+
+            return (
+              <button
+                aria-label={`Open comment: ${thread.title}`}
+                className={cn(
+                  'pointer-events-auto absolute grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border text-xs font-semibold shadow-sm transition',
+                  thread.id === activeThreadId
+                    ? 'border-primary bg-primary text-primary-foreground ring-4 ring-primary/15'
+                    : 'border-background bg-primary text-primary-foreground hover:scale-105',
+                  thread.status === 'resolved' && 'opacity-45',
+                )}
+                key={thread.id}
+                style={position}
+                type="button"
+                onClick={() => selectThread(thread.id)}
+              >
+                {index + 1}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {pendingAnchor ? (
+        <button
+          aria-label="Pending comment pin"
+          className="pointer-events-none fixed z-30 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-background bg-primary text-xs font-semibold text-primary-foreground shadow-sm ring-4 ring-primary/15"
+          style={{
+            left: `${pendingAnchor.x}%`,
+            top: `${pendingAnchor.y}%`,
+          }}
+          type="button"
+        >
+          +
+        </button>
+      ) : null}
+
+      {isReviewOpen ? (
+        <>
+          <button
+            aria-label="Close review drawer"
+            className="fixed inset-0 z-40 bg-background/20 backdrop-blur-[1px]"
+            type="button"
+            onClick={() => setIsReviewOpen(false)}
+          />
+          <aside className="fixed bottom-3 right-3 top-3 z-50 w-[min(420px,calc(100vw-1.5rem))] space-y-4 overflow-y-auto rounded-xl border border-border bg-background/95 p-3 shadow-2xl shadow-black/10 backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-3 px-1">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  Review
+                </p>
+                <p className="text-sm font-medium">{artifact.metadata.title}</p>
+              </div>
+              <Button
+                size="sm"
+                type="button"
+                variant="ghost"
+                onClick={() => setIsReviewOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
             {actionError ? (
               <Card className="border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
                 {actionError}
@@ -947,8 +967,8 @@ export function ArtifactWorkspace({
               </Card>
             ) : null}
           </aside>
-        ) : null}
-      </div>
-    </Shell>
+        </>
+      ) : null}
+    </div>
   );
 }
