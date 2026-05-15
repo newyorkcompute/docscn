@@ -4,44 +4,93 @@ import { FormEvent, MouseEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Bot,
   Clock3,
   Copy,
   GitCommitHorizontal,
+  MousePointer2,
   MessageSquareText,
   PanelRightOpen,
-  Share2,
+  Plus,
+  Type,
 } from 'lucide-react';
 import type {
   Artifact,
   ArtifactRevision,
+  ReviewAnchor,
   ReviewThread,
   ReviewThreadStatus,
 } from '@docscn/sdk';
 import { Badge, Button, Card, Eyebrow, Shell, cn } from '@docscn/ui';
-import { ArtifactFrame } from './artifact-frame';
+import {
+  ArtifactFrame,
+  type ArtifactAnnotationEvent,
+  type ArtifactAnnotationMode,
+} from './artifact-frame';
+import { ThemeToggle } from './theme-toggle';
 
-interface PendingAnchor {
-  label: string;
+interface PendingAnchor extends ReviewAnchor {
+  kind: NonNullable<ReviewAnchor['kind']>;
   x: number;
   y: number;
 }
 
-function getPinPosition(thread: ReviewThread, index: number) {
+function getAnchorPoint(thread: ReviewThread, index: number) {
   if (
     typeof thread.anchor?.x === 'number' &&
     typeof thread.anchor?.y === 'number'
   ) {
     return {
-      left: `${Math.min(Math.max(thread.anchor.x, 6), 94)}%`,
-      top: `${Math.min(Math.max(thread.anchor.y, 8), 92)}%`,
+      x: Math.min(Math.max(thread.anchor.x, 6), 94),
+      y: Math.min(Math.max(thread.anchor.y, 8), 92),
     };
   }
 
   return {
-    left: `${68 + (index % 3) * 8}%`,
-    top: `${18 + (index % 6) * 11}%`,
+    x: 68 + (index % 3) * 8,
+    y: 18 + (index % 6) * 11,
   };
+}
+
+function getPinPosition(thread: ReviewThread, index: number) {
+  const point = getAnchorPoint(thread, index);
+
+  return {
+    left: `${point.x}%`,
+    top: `${point.y}%`,
+  };
+}
+
+function getAnchorSummary(anchor?: ReviewAnchor) {
+  if (!anchor) {
+    return undefined;
+  }
+
+  if (anchor.kind === 'text' && anchor.quote) {
+    return `"${anchor.quote.slice(0, 120)}${anchor.quote.length > 120 ? '...' : ''}"`;
+  }
+
+  if (anchor.kind === 'element') {
+    return anchor.elementLabel || anchor.selector || anchor.label;
+  }
+
+  return anchor.label;
+}
+
+function ToolbarTip({
+  children,
+  label,
+}: {
+  children: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <div className="group relative flex">
+      {children}
+      <span className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-neutral-950 px-2.5 py-1 text-xs text-white opacity-0 shadow-lg shadow-black/20 transition group-hover:opacity-100 group-focus-within:opacity-100">
+        {label}
+      </span>
+    </div>
+  );
 }
 
 export function ArtifactWorkspace({
@@ -61,12 +110,10 @@ export function ArtifactWorkspace({
   const [reviewBody, setReviewBody] = useState('');
   const [requestedChange, setRequestedChange] = useState('');
   const [anchorLabel, setAnchorLabel] = useState('');
-  const [reviewAuthor, setReviewAuthor] = useState('Sid');
-  const [reviewStatus, setReviewStatus] = useState<'open' | 'needs-revision'>(
-    'needs-revision',
-  );
-  const [activeSidebarTab, setActiveSidebarTab] = useState<
-    'review' | 'revisions' | 'feedback'
+  const reviewAuthor = 'Sid';
+  const reviewStatus: ReviewThreadStatus = 'needs-revision';
+  const [activeDrawerView, setActiveDrawerView] = useState<
+    'review' | 'revisions'
   >('review');
   const [commentBodies, setCommentBodies] = useState<Record<string, string>>(
     {},
@@ -78,9 +125,12 @@ export function ArtifactWorkspace({
   const [pendingAction, setPendingAction] = useState<string | undefined>();
   const [actionError, setActionError] = useState<string | undefined>();
   const [copiedBundle, setCopiedBundle] = useState<string | undefined>();
-  const [copiedLink, setCopiedLink] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | undefined>();
-  const [isPlacingComment, setIsPlacingComment] = useState(false);
+  const [activeThreadPopoverId, setActiveThreadPopoverId] = useState<
+    string | undefined
+  >();
+  const [annotationMode, setAnnotationMode] =
+    useState<ArtifactAnnotationMode>('idle');
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [pendingAnchor, setPendingAnchor] = useState<
     PendingAnchor | undefined
@@ -103,6 +153,11 @@ export function ArtifactWorkspace({
   useEffect(() => {
     setRevisionHtml(selectedRevision?.html ?? '');
   }, [selectedRevision?.id, selectedRevision?.html]);
+
+  const annotationBridgeId = useMemo(
+    () => `${artifactId}:${selectedRevision?.id ?? 'pending'}`,
+    [artifactId, selectedRevision?.id],
+  );
 
   const openThreads = useMemo(
     () => threads.filter((thread) => thread.status !== 'resolved'),
@@ -184,15 +239,20 @@ export function ArtifactWorkspace({
     window.setTimeout(() => setCopiedBundle(undefined), 1600);
   }
 
-  async function copyShareLink() {
-    await navigator.clipboard.writeText(window.location.href);
-    setCopiedLink(true);
-    window.setTimeout(() => setCopiedLink(false), 1600);
-  }
+  const activeThreadPopover = useMemo(
+    () => threads.find((thread) => thread.id === activeThreadPopoverId),
+    [activeThreadPopoverId, threads],
+  );
 
-  function selectThread(threadId: string) {
-    setActiveSidebarTab('review');
+  const activeThreadPopoverIndex = useMemo(
+    () => threads.findIndex((thread) => thread.id === activeThreadPopoverId),
+    [activeThreadPopoverId, threads],
+  );
+
+  function selectThreadInDrawer(threadId: string) {
+    setActiveDrawerView('review');
     setActiveThreadId(threadId);
+    setActiveThreadPopoverId(undefined);
     setIsReviewOpen(true);
     window.setTimeout(() => {
       document
@@ -201,31 +261,83 @@ export function ArtifactWorkspace({
     }, 0);
   }
 
+  function openThreadPopover(threadId: string) {
+    setActiveThreadId(threadId);
+    setActiveThreadPopoverId(threadId);
+    setPendingAnchor(undefined);
+    setAnnotationMode('idle');
+    setIsReviewOpen(false);
+  }
+
   function placeCommentAnchor(event: MouseEvent<HTMLButtonElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
     const label = `Pin ${threads.length + 1}`;
 
-    setPendingAnchor({ label, x, y });
+    setPendingAnchor({ kind: 'point', label, x, y });
     setAnchorLabel(label);
-    setActiveSidebarTab('review');
-    setIsReviewOpen(true);
-    setIsPlacingComment(false);
+    setActiveDrawerView('review');
+    setIsReviewOpen(false);
+    setActiveThreadPopoverId(undefined);
+    setAnnotationMode('idle');
+  }
+
+  function handleArtifactAnnotation(annotation: ArtifactAnnotationEvent) {
+    const label =
+      annotation.kind === 'text' && annotation.quote
+        ? `Text: "${annotation.quote.slice(0, 48)}${
+            annotation.quote.length > 48 ? '...' : ''
+          }"`
+        : annotation.label || `Element ${threads.length + 1}`;
+
+    setPendingAnchor({
+      kind: annotation.kind,
+      label,
+      x: annotation.x,
+      y: annotation.y,
+      selector: annotation.selector,
+      quote: annotation.quote,
+      elementLabel: annotation.elementLabel,
+      rect: annotation.rect,
+    });
+    setAnchorLabel(label);
+    setReviewTitle(
+      annotation.kind === 'text' ? 'Text comment' : 'Element comment',
+    );
+    setReviewBody('');
+    setRequestedChange('');
+    setActiveDrawerView('review');
+    setIsReviewOpen(false);
+    setActiveThreadPopoverId(undefined);
+    setAnnotationMode('idle');
   }
 
   async function refreshAfterAction() {
     router.refresh();
   }
 
+  function cancelPendingComment() {
+    setPendingAnchor(undefined);
+    setReviewBody('');
+    setReviewTitle('');
+    setRequestedChange('');
+    setAnchorLabel('');
+    setActionError(undefined);
+    setAnnotationMode('idle');
+  }
+
   async function createThread(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (
-      !artifact ||
-      !selectedRevision ||
-      !reviewTitle.trim() ||
-      !reviewBody.trim()
-    ) {
+    const body = reviewBody.trim();
+    const title =
+      reviewTitle.trim() ||
+      pendingAnchor?.label ||
+      anchorLabel.trim() ||
+      'Pinned comment';
+    const isPinComposer = event.currentTarget.dataset['source'] === 'pin';
+
+    if (!artifact || !selectedRevision || !body) {
       return;
     }
 
@@ -238,12 +350,18 @@ export function ArtifactWorkspace({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           revisionId: selectedRevision.id,
-          title: reviewTitle,
-          body: reviewBody,
+          title,
+          body,
           authorName: reviewAuthor,
           status: reviewStatus,
-          requestedChange,
+          requestedChange: requestedChange.trim(),
+          anchor: pendingAnchor,
           anchorLabel: pendingAnchor?.label ?? anchorLabel,
+          anchorKind: pendingAnchor?.kind,
+          anchorSelector: pendingAnchor?.selector,
+          anchorQuote: pendingAnchor?.quote,
+          anchorElementLabel: pendingAnchor?.elementLabel,
+          anchorRect: pendingAnchor?.rect,
           anchorX: pendingAnchor?.x,
           anchorY: pendingAnchor?.y,
         }),
@@ -258,6 +376,7 @@ export function ArtifactWorkspace({
       setRequestedChange('');
       setAnchorLabel('');
       setPendingAnchor(undefined);
+      setIsReviewOpen(isPinComposer ? false : isReviewOpen);
       await refreshAfterAction();
     } catch (error) {
       setActionError(
@@ -373,6 +492,41 @@ export function ArtifactWorkspace({
     }
   }
 
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      if (pendingAnchor) {
+        event.preventDefault();
+        setPendingAnchor(undefined);
+        setReviewBody('');
+        setReviewTitle('');
+        setRequestedChange('');
+        setAnchorLabel('');
+        setActionError(undefined);
+        setAnnotationMode('idle');
+        return;
+      }
+
+      if (annotationMode !== 'idle') {
+        event.preventDefault();
+        setAnnotationMode('idle');
+        return;
+      }
+
+      if (activeThreadPopoverId) {
+        event.preventDefault();
+        setActiveThreadPopoverId(undefined);
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [activeThreadPopoverId, annotationMode, pendingAnchor]);
+
   if (!artifact || !selectedRevision) {
     return (
       <Shell className="py-20">
@@ -395,72 +549,138 @@ export function ArtifactWorkspace({
     <div className="relative min-h-screen overflow-hidden bg-background">
       <div className="fixed inset-0">
         <ArtifactFrame
+          annotationBridgeId={annotationBridgeId}
+          annotationMode={annotationMode}
           className="h-full rounded-none border-0 shadow-none"
           html={selectedRevision.html}
           iframeClassName="h-screen min-h-screen"
           showChrome={false}
           title={artifact.metadata.title}
+          onAnnotation={handleArtifactAnnotation}
+          onAnnotationCancel={() => setAnnotationMode('idle')}
         />
       </div>
 
-      <div className="pointer-events-none fixed left-3 top-3 z-40">
-        <div className="pointer-events-auto max-w-[min(520px,calc(100vw-1.5rem))] rounded-full border border-border/80 bg-background/75 px-3 py-2 shadow-sm shadow-black/5 backdrop-blur-xl transition-opacity hover:bg-background/90">
-          <Link
-            className="flex min-w-0 items-center gap-2"
-            href="/dashboard"
-            title="Back to dashboard"
-          >
-            <span className="font-mono text-xs tracking-[0.2em] text-muted-foreground">
-              docscn
-            </span>
-            <span className="text-muted-foreground">/</span>
-            <span className="truncate text-sm font-medium">
-              {artifact.metadata.title}
-            </span>
-          </Link>
-        </div>
-      </div>
-
-      <div className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-border/80 bg-background/75 p-1 shadow-sm shadow-black/5 backdrop-blur-xl transition-opacity hover:bg-background/90">
-        <Button
-          aria-label={`Open revision history, currently version ${selectedRevision.version}`}
-          size="sm"
-          title={`Revision v${selectedRevision.version}`}
-          type="button"
-          variant="ghost"
-          onClick={() => {
-            setActiveSidebarTab('revisions');
-            setIsReviewOpen(true);
-          }}
-        >
-          <GitCommitHorizontal className="h-4 w-4" />
-          <span className="text-xs">v{selectedRevision.version}</span>
-        </Button>
-        <Button
-          aria-label={copiedLink ? 'Copied share link' : 'Copy share link'}
-          size="sm"
-          title={copiedLink ? 'Copied' : 'Share'}
-          type="button"
-          variant="ghost"
-          onClick={copyShareLink}
-        >
-          <Share2 className="h-4 w-4" />
-          <span className="sr-only">{copiedLink ? 'Copied' : 'Share'}</span>
-        </Button>
-        <div className="relative">
+      <div className="fixed bottom-4 right-4 z-40 flex items-center gap-1 rounded-full border border-white/10 bg-neutral-950/90 p-1 text-white shadow-2xl shadow-black/20 backdrop-blur-xl">
+        <ToolbarTip label="Point comment">
           <Button
-            aria-label={`Open review drawer, ${openThreads.length} open threads`}
+            aria-label="Place a point comment"
+            className={cn(
+              'h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white',
+              annotationMode === 'point' && 'bg-white/15',
+            )}
             size="sm"
-            title={`Review (${openThreads.length} open)`}
             type="button"
-            variant={isReviewOpen ? 'secondary' : 'outline'}
-            onClick={() => setIsReviewOpen((current) => !current)}
+            variant="ghost"
+            onClick={() => {
+              setPendingAnchor(undefined);
+              setActiveThreadPopoverId(undefined);
+              setActionError(undefined);
+              setActiveDrawerView('review');
+              setIsReviewOpen(false);
+              setAnnotationMode((current) =>
+                current === 'point' ? 'idle' : 'point',
+              );
+            }}
           >
-            <MessageSquareText className="h-4 w-4" />
-            <span className="sr-only">
-              {isReviewOpen ? 'Hide review' : 'Review'}
-            </span>
+            <Plus className="h-4 w-4" />
           </Button>
+        </ToolbarTip>
+        <ToolbarTip label="Text annotation">
+          <Button
+            aria-label="Annotate selected text"
+            className={cn(
+              'h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white',
+              annotationMode === 'text' && 'bg-white/15',
+            )}
+            size="sm"
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setPendingAnchor(undefined);
+              setActiveThreadPopoverId(undefined);
+              setActionError(undefined);
+              setIsReviewOpen(false);
+              setAnnotationMode((current) =>
+                current === 'text' ? 'idle' : 'text',
+              );
+            }}
+          >
+            <Type className="h-4 w-4" />
+          </Button>
+        </ToolbarTip>
+        <ToolbarTip label="Element annotation">
+          <Button
+            aria-label="Annotate an element"
+            className={cn(
+              'h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white',
+              annotationMode === 'element' && 'bg-white/15',
+            )}
+            size="sm"
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setPendingAnchor(undefined);
+              setActiveThreadPopoverId(undefined);
+              setActionError(undefined);
+              setIsReviewOpen(false);
+              setAnnotationMode((current) =>
+                current === 'element' ? 'idle' : 'element',
+              );
+            }}
+          >
+            <MousePointer2 className="h-4 w-4" />
+          </Button>
+        </ToolbarTip>
+        <div className="mx-1 h-5 w-px bg-white/15" />
+        <ToolbarTip label={`Revision history: v${selectedRevision.version}`}>
+          <Button
+            aria-label={`Open revision history, currently version ${selectedRevision.version}`}
+            className="h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white"
+            size="sm"
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setActiveDrawerView('revisions');
+              setIsReviewOpen(true);
+            }}
+          >
+            <GitCommitHorizontal className="h-4 w-4" />
+            <span className="text-xs">v{selectedRevision.version}</span>
+          </Button>
+        </ToolbarTip>
+        <ToolbarTip label="Theme">
+          <ThemeToggle
+            className="h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white"
+            showLabel={false}
+          />
+        </ToolbarTip>
+        <div className="relative">
+          <ToolbarTip label={`Review threads (${openThreads.length} open)`}>
+            <Button
+              aria-label={`Open review drawer, ${openThreads.length} open threads`}
+              className={cn(
+                'h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white',
+                isReviewOpen && 'bg-white/15',
+              )}
+              size="sm"
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                const isSwitchingViews = activeDrawerView !== 'review';
+                setActiveDrawerView('review');
+                setActiveThreadPopoverId(undefined);
+                setIsReviewOpen((current) =>
+                  isSwitchingViews ? true : !current,
+                );
+              }}
+            >
+              <MessageSquareText className="h-4 w-4" />
+              <span className="sr-only">
+                {isReviewOpen ? 'Hide review' : 'Review'}
+              </span>
+            </Button>
+          </ToolbarTip>
           {openThreads.length ? (
             <span className="pointer-events-none absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
               {openThreads.length}
@@ -469,7 +689,7 @@ export function ArtifactWorkspace({
         </div>
       </div>
 
-      {isPlacingComment ? (
+      {annotationMode === 'point' ? (
         <button
           aria-label="Place comment on artifact"
           className="fixed inset-0 z-30 cursor-crosshair bg-primary/5"
@@ -477,7 +697,7 @@ export function ArtifactWorkspace({
           onClick={placeCommentAnchor}
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
-              setIsPlacingComment(false);
+              setAnnotationMode('idle');
             }
           }}
         >
@@ -485,6 +705,14 @@ export function ArtifactWorkspace({
             Click anywhere on the artifact to place a comment
           </div>
         </button>
+      ) : null}
+
+      {annotationMode === 'text' || annotationMode === 'element' ? (
+        <div className="pointer-events-none fixed left-1/2 top-20 z-30 -translate-x-1/2 rounded-full border border-primary/30 bg-background px-3 py-1 text-xs text-primary shadow-sm">
+          {annotationMode === 'text'
+            ? 'Select text inside the artifact to comment'
+            : 'Click an element inside the artifact to comment'}
+        </div>
       ) : null}
 
       {threads.length ? (
@@ -505,12 +733,108 @@ export function ArtifactWorkspace({
                 key={thread.id}
                 style={position}
                 type="button"
-                onClick={() => selectThread(thread.id)}
+                onClick={() => openThreadPopover(thread.id)}
               >
                 {index + 1}
               </button>
             );
           })}
+        </div>
+      ) : null}
+
+      {activeThreadPopover && activeThreadPopoverIndex >= 0 ? (
+        <div
+          className="fixed z-50 w-[min(360px,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-neutral-950/95 p-4 text-white shadow-2xl shadow-black/30 backdrop-blur-xl"
+          style={{
+            left: `${getAnchorPoint(activeThreadPopover, activeThreadPopoverIndex).x}%`,
+            top: `${getAnchorPoint(activeThreadPopover, activeThreadPopoverIndex).y}%`,
+            transform: `translate(${
+              getAnchorPoint(activeThreadPopover, activeThreadPopoverIndex).x >
+              62
+                ? 'calc(-100% - 14px)'
+                : '14px'
+            }, ${
+              getAnchorPoint(activeThreadPopover, activeThreadPopoverIndex).y >
+              58
+                ? 'calc(-100% - 14px)'
+                : '14px'
+            })`,
+          }}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="grid h-6 w-6 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                  {activeThreadPopoverIndex + 1}
+                </span>
+                <Badge
+                  tone={
+                    activeThreadPopover.status === 'resolved'
+                      ? 'success'
+                      : activeThreadPopover.status === 'needs-revision'
+                        ? 'warning'
+                        : 'muted'
+                  }
+                >
+                  {activeThreadPopover.status}
+                </Badge>
+              </div>
+              <h3 className="mt-3 text-sm font-medium leading-5 text-white">
+                {activeThreadPopover.title}
+              </h3>
+            </div>
+            <button
+              className="rounded-full px-2 py-1 text-xs text-white/55 hover:bg-white/10 hover:text-white"
+              type="button"
+              onClick={() => setActiveThreadPopoverId(undefined)}
+            >
+              Close
+            </button>
+          </div>
+          {getAnchorSummary(activeThreadPopover.anchor) ? (
+            <p className="mt-3 rounded-lg bg-white/10 p-3 text-xs leading-5 text-white/70">
+              {getAnchorSummary(activeThreadPopover.anchor)}
+            </p>
+          ) : null}
+          <div className="mt-3 max-h-36 space-y-3 overflow-auto">
+            {activeThreadPopover.comments.map((comment) => (
+              <div key={comment.id} className="text-sm">
+                <p className="font-medium text-white">{comment.author.name}</p>
+                <p className="mt-1 leading-5 text-white/65">{comment.body}</p>
+              </div>
+            ))}
+          </div>
+          <textarea
+            className="mt-4 min-h-16 w-full resize-none rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35 focus:ring-2 focus:ring-primary"
+            placeholder="Reply to this thread"
+            value={commentBodies[activeThreadPopover.id] ?? ''}
+            onChange={(event) =>
+              setCommentBodies((current) => ({
+                ...current,
+                [activeThreadPopover.id]: event.target.value,
+              }))
+            }
+          />
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <button
+              className="rounded-full px-3 py-2 text-sm text-white/55 hover:bg-white/10 hover:text-white"
+              type="button"
+              onClick={() => selectThreadInDrawer(activeThreadPopover.id)}
+            >
+              Open details
+            </button>
+            <Button
+              className="rounded-full bg-primary px-4 text-primary-foreground hover:bg-primary/90"
+              disabled={pendingAction === `comment-${activeThreadPopover.id}`}
+              size="sm"
+              type="button"
+              onClick={() => addComment(activeThreadPopover.id)}
+            >
+              {pendingAction === `comment-${activeThreadPopover.id}`
+                ? 'Adding...'
+                : 'Reply'}
+            </Button>
+          </div>
         </div>
       ) : null}
 
@@ -528,6 +852,68 @@ export function ArtifactWorkspace({
         </button>
       ) : null}
 
+      {pendingAnchor && !isReviewOpen ? (
+        <form
+          className="fixed z-50 w-[min(340px,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-neutral-950/95 p-4 text-white shadow-2xl shadow-black/30 backdrop-blur-xl"
+          data-source="pin"
+          style={{
+            left: `${pendingAnchor.x}%`,
+            top: `${pendingAnchor.y}%`,
+            transform: `translate(${
+              pendingAnchor.x > 62 ? 'calc(-100% - 14px)' : '14px'
+            }, ${pendingAnchor.y > 58 ? 'calc(-100% - 14px)' : '14px'})`,
+          }}
+          onSubmit={createThread}
+        >
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="truncate font-mono text-xs text-white/60">
+              {getAnchorSummary(pendingAnchor) ||
+                anchorLabel ||
+                pendingAnchor.label}
+            </p>
+            <button
+              className="rounded-full px-2 py-1 text-xs text-white/55 hover:bg-white/10 hover:text-white"
+              type="button"
+              onClick={cancelPendingComment}
+            >
+              Cancel
+            </button>
+          </div>
+          <textarea
+            autoFocus
+            className="min-h-24 w-full resize-none rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35 focus:ring-2 focus:ring-primary"
+            placeholder="What should change?"
+            value={reviewBody}
+            onChange={(event) => setReviewBody(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                cancelPendingComment();
+              }
+            }}
+          />
+          {actionError ? (
+            <p className="mt-2 text-xs text-red-300">{actionError}</p>
+          ) : null}
+          <div className="mt-3 flex items-center justify-end gap-2">
+            <button
+              className="rounded-full px-3 py-2 text-sm text-white/55 hover:bg-white/10 hover:text-white"
+              type="button"
+              onClick={cancelPendingComment}
+            >
+              Cancel
+            </button>
+            <Button
+              className="rounded-full bg-primary px-4 text-primary-foreground hover:bg-primary/90"
+              disabled={pendingAction === 'thread' || !reviewBody.trim()}
+              size="sm"
+              type="submit"
+            >
+              {pendingAction === 'thread' ? 'Adding...' : 'Add'}
+            </Button>
+          </div>
+        </form>
+      ) : null}
+
       {isReviewOpen ? (
         <>
           <button
@@ -540,7 +926,7 @@ export function ArtifactWorkspace({
             <div className="flex items-center justify-between gap-3 px-1">
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                  Review
+                  {activeDrawerView === 'review' ? 'Review' : 'Revisions'}
                 </p>
                 <p className="text-sm font-medium">{artifact.metadata.title}</p>
               </div>
@@ -559,120 +945,37 @@ export function ArtifactWorkspace({
               </Card>
             ) : null}
 
-            <Card className="grid grid-cols-3 gap-1 p-1">
-              {(
-                [
-                  { id: 'review', label: 'Review', count: openThreads.length },
-                  {
-                    id: 'revisions',
-                    label: 'Revisions',
-                    count: artifact.revisions.length,
-                  },
-                  { id: 'feedback', label: 'Agent', count: openThreads.length },
-                ] as const
-              ).map(({ id, label, count }) => (
-                <button
-                  className={cn(
-                    'rounded-md px-3 py-2 text-xs font-medium transition',
-                    activeSidebarTab === id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
-                  )}
-                  key={id}
-                  type="button"
-                  onClick={() => setActiveSidebarTab(id)}
-                >
-                  {label}
-                  <span className="ml-1 opacity-70">{count}</span>
-                </button>
-              ))}
-            </Card>
-
-            {activeSidebarTab === 'review' ? (
+            {activeDrawerView === 'review' ? (
               <Card className="p-5">
                 <div className="flex items-center gap-2">
                   <PanelRightOpen className="h-4 w-4 text-primary" />
                   <h2 className="font-semibold">Review threads</h2>
                 </div>
-                <form className="mt-5 space-y-3" onSubmit={createThread}>
-                  <input
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
-                    placeholder="Thread title"
-                    value={reviewTitle}
-                    onChange={(event) => setReviewTitle(event.target.value)}
-                  />
-                  <textarea
-                    className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
-                    placeholder="What should change?"
-                    value={reviewBody}
-                    onChange={(event) => setReviewBody(event.target.value)}
-                  />
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  Add new feedback from the canvas with the point, text, or
+                  element annotation tools. This panel is only for reading,
+                  replying, and resolving threads.
+                </p>
+                <div className="mt-4 grid grid-cols-2 gap-2">
                   <Button
-                    className="w-full justify-start"
                     size="sm"
                     type="button"
                     variant="outline"
-                    onClick={() => setIsPlacingComment((current) => !current)}
+                    onClick={() => copyFeedback(feedbackPrompt, 'prompt')}
                   >
-                    <MessageSquareText className="h-3.5 w-3.5" />
-                    {pendingAnchor
-                      ? `Placed at ${Math.round(pendingAnchor.x)}%, ${Math.round(
-                          pendingAnchor.y,
-                        )}%`
-                      : isPlacingComment
-                        ? 'Click on artifact to place'
-                        : 'Place comment on artifact'}
+                    <Copy className="h-3.5 w-3.5" />
+                    {copiedBundle === 'prompt' ? 'Copied' : 'Copy for agent'}
                   </Button>
-                  <input
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
-                    placeholder="Anchor label, e.g. hero, chart, timeline row (optional)"
-                    value={anchorLabel}
-                    onChange={(event) => {
-                      setAnchorLabel(event.target.value);
-                      setPendingAnchor((current) =>
-                        current
-                          ? { ...current, label: event.target.value }
-                          : undefined,
-                      );
-                    }}
-                  />
-                  <textarea
-                    className="min-h-16 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
-                    placeholder="Agent-readable requested change (optional)"
-                    value={requestedChange}
-                    onChange={(event) => setRequestedChange(event.target.value)}
-                  />
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <input
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
-                      placeholder="Reviewer"
-                      value={reviewAuthor}
-                      onChange={(event) => setReviewAuthor(event.target.value)}
-                    />
-                    <select
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
-                      value={reviewStatus}
-                      onChange={(event) =>
-                        setReviewStatus(
-                          event.target.value as 'open' | 'needs-revision',
-                        )
-                      }
-                    >
-                      <option value="needs-revision">needs revision</option>
-                      <option value="open">open</option>
-                    </select>
-                  </div>
                   <Button
-                    className="w-full"
-                    disabled={pendingAction === 'thread'}
                     size="sm"
-                    type="submit"
+                    type="button"
+                    variant="outline"
+                    onClick={() => copyFeedback(feedbackJson, 'json')}
                   >
-                    {pendingAction === 'thread'
-                      ? 'Creating thread...'
-                      : 'Create thread'}
+                    <Copy className="h-3.5 w-3.5" />
+                    {copiedBundle === 'json' ? 'Copied' : 'Copy JSON'}
                   </Button>
-                </form>
+                </div>
                 <div className="mt-5 space-y-4">
                   {threads.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
@@ -716,7 +1019,7 @@ export function ArtifactWorkspace({
                           <button
                             className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
                             type="button"
-                            onClick={() => selectThread(thread.id)}
+                            onClick={() => selectThreadInDrawer(thread.id)}
                           >
                             <MessageSquareText className="h-4 w-4" />
                           </button>
@@ -728,7 +1031,7 @@ export function ArtifactWorkspace({
                         ) : null}
                         {thread.anchor ? (
                           <p className="mt-3 font-mono text-[11px] text-muted-foreground">
-                            anchor: {thread.anchor.label}
+                            anchor: {getAnchorSummary(thread.anchor)}
                           </p>
                         ) : null}
                         <div className="mt-3 space-y-3">
@@ -821,7 +1124,7 @@ export function ArtifactWorkspace({
               </Card>
             ) : null}
 
-            {activeSidebarTab === 'revisions' ? (
+            {activeDrawerView === 'revisions' ? (
               <Card className="p-5">
                 <div className="flex items-center gap-2">
                   <GitCommitHorizontal className="h-4 w-4 text-primary" />
@@ -917,52 +1220,6 @@ export function ArtifactWorkspace({
                         </p>
                       </button>
                     ))}
-                </div>
-              </Card>
-            ) : null}
-
-            {activeSidebarTab === 'feedback' ? (
-              <Card className="p-5">
-                <div className="flex items-center gap-2">
-                  <Bot className="h-4 w-4 text-primary" />
-                  <h2 className="font-semibold">Agent feedback bundle</h2>
-                </div>
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                  Copy unresolved review feedback into an agent so it can
-                  produce the next self-contained HTML revision.
-                </p>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Button
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                    onClick={() => copyFeedback(feedbackPrompt, 'prompt')}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                    {copiedBundle === 'prompt' ? 'Copied' : 'Copy prompt'}
-                  </Button>
-                  <Button
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                    onClick={() => copyFeedback(feedbackJson, 'json')}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                    {copiedBundle === 'json' ? 'Copied' : 'Copy JSON'}
-                  </Button>
-                </div>
-                <div className="mt-4 rounded-lg border border-border bg-secondary/40 p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Open threads
-                    </p>
-                    <Badge tone={openThreads.length ? 'warning' : 'success'}>
-                      {openThreads.length}
-                    </Badge>
-                  </div>
-                  <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap rounded-md bg-background p-3 font-mono text-[11px] leading-5 text-muted-foreground">
-                    {feedbackPrompt}
-                  </pre>
                 </div>
               </Card>
             ) : null}

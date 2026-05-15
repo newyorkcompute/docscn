@@ -65,9 +65,18 @@ export interface Artifact {
 
 export interface ReviewAnchor {
   label: string;
+  kind?: 'point' | 'text' | 'element';
   selector?: string;
+  quote?: string;
+  elementLabel?: string;
   x?: number;
   y?: number;
+  rect?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
 }
 
 export interface ReviewComment {

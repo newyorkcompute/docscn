@@ -121,5 +121,6 @@ body {
 }
 
 iframe {
-  color-scheme: light;
+  background: var(--color-background);
+  color-scheme: inherit;
 }

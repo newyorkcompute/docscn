@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Monitor, Moon, Sun } from 'lucide-react';
-import { Button } from '@docscn/ui';
+import { Button, cn } from '@docscn/ui';
 
 type ThemePreference = 'light' | 'dark' | 'system';
 
@@ -31,7 +31,13 @@ function getStoredTheme(): ThemePreference {
     : 'system';
 }
 
-export function ThemeToggle() {
+export function ThemeToggle({
+  className,
+  showLabel = true,
+}: {
+  className?: string;
+  showLabel?: boolean;
+}) {
   const [theme, setTheme] = useState<ThemePreference>('system');
 
   useEffect(() => {
@@ -69,14 +75,14 @@ export function ThemeToggle() {
   return (
     <Button
       aria-label={`Theme: ${label}. Click to change theme.`}
-      className="px-2 sm:px-3"
+      className={cn('px-2 sm:px-3', className)}
       onClick={cycleTheme}
       size="sm"
       title={`Theme: ${label}`}
       variant="ghost"
     >
       <Icon className="h-4 w-4" />
-      <span className="hidden sm:inline">{label}</span>
+      {showLabel ? <span className="hidden sm:inline">{label}</span> : null}
     </Button>
   );
 }

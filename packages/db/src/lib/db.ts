@@ -166,7 +166,310 @@ const prototypeHtml = String.raw`<!doctype html>
   </body>
 </html>`;
 
+const annotationThemeTestHtml = String.raw`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f8fafc;
+        --fg: #0f172a;
+        --muted: #64748b;
+        --panel: rgba(255, 255, 255, 0.86);
+        --panel-strong: #ffffff;
+        --border: rgba(15, 23, 42, 0.14);
+        --accent: #1677ff;
+        --accent-soft: rgba(22, 119, 255, 0.12);
+        --shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not(.light):not(.dark) {
+          color-scheme: dark;
+          --bg: #061019;
+          --fg: #e5f0ff;
+          --muted: #91a4b7;
+          --panel: rgba(10, 25, 38, 0.78);
+          --panel-strong: #0b1722;
+          --border: rgba(148, 163, 184, 0.22);
+          --accent: #4f9cff;
+          --accent-soft: rgba(79, 156, 255, 0.18);
+          --shadow: 0 24px 90px rgba(0, 0, 0, 0.45);
+        }
+      }
+
+      html.dark,
+      html[data-docscn-theme='dark'] {
+        color-scheme: dark;
+        --bg: #061019;
+        --fg: #e5f0ff;
+        --muted: #91a4b7;
+        --panel: rgba(10, 25, 38, 0.78);
+        --panel-strong: #0b1722;
+        --border: rgba(148, 163, 184, 0.22);
+        --accent: #4f9cff;
+        --accent-soft: rgba(79, 156, 255, 0.18);
+        --shadow: 0 24px 90px rgba(0, 0, 0, 0.45);
+      }
+
+      html.light,
+      html[data-docscn-theme='light'] {
+        color-scheme: light;
+        --bg: #f8fafc;
+        --fg: #0f172a;
+        --muted: #64748b;
+        --panel: rgba(255, 255, 255, 0.86);
+        --panel-strong: #ffffff;
+        --border: rgba(15, 23, 42, 0.14);
+        --accent: #1677ff;
+        --accent-soft: rgba(22, 119, 255, 0.12);
+        --shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at top left, var(--accent-soft), transparent 34rem),
+          linear-gradient(135deg, var(--bg), color-mix(in oklab, var(--bg), var(--accent) 5%));
+        color: var(--fg);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        display: grid;
+        min-height: 100vh;
+        gap: 28px;
+        padding: 48px;
+      }
+
+      .hero {
+        display: grid;
+        max-width: 1080px;
+        gap: 16px;
+      }
+
+      .eyebrow {
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 980px;
+        margin: 0;
+        font-size: clamp(40px, 7vw, 92px);
+        letter-spacing: -0.06em;
+        line-height: 0.92;
+      }
+
+      .lede {
+        max-width: 860px;
+        color: var(--muted);
+        font-size: clamp(18px, 2vw, 24px);
+        line-height: 1.5;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .card {
+        display: flex;
+        min-height: 250px;
+        flex-direction: column;
+        justify-content: space-between;
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        background: var(--panel);
+        padding: 28px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .card h2 {
+        margin: 0;
+        font-size: 26px;
+        letter-spacing: -0.03em;
+      }
+
+      .card p {
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .metric {
+        font-size: 64px;
+        font-weight: 760;
+        letter-spacing: -0.06em;
+      }
+
+      .pill {
+        display: inline-flex;
+        width: max-content;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 800;
+        padding: 10px 14px;
+      }
+
+      .timeline {
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        background: var(--panel-strong);
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 110px 1fr auto;
+        align-items: center;
+        gap: 18px;
+        border-top: 1px solid var(--border);
+        padding: 20px 24px;
+      }
+
+      .row:first-child {
+        border-top: 0;
+      }
+
+      .time {
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+        font-weight: 900;
+      }
+
+      .row strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .row span {
+        color: var(--muted);
+      }
+
+      button.demo {
+        cursor: pointer;
+        border: 0;
+        border-radius: 14px;
+        background: var(--accent);
+        color: white;
+        font-weight: 800;
+        padding: 12px 16px;
+      }
+
+      @media (max-width: 860px) {
+        main {
+          padding: 28px;
+        }
+
+        .grid,
+        .row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero" data-docscn-label="hero summary">
+        <div class="eyebrow">docscn theme + annotation test</div>
+        <h1>Toggle the toolbar theme, then annotate this artifact.</h1>
+        <p class="lede">
+          This HTML is self-contained and responds to <strong>html.dark</strong>,
+          <strong>html.light</strong>, <strong>data-docscn-theme</strong>, and
+          <strong>prefers-color-scheme</strong>. Select this sentence for text
+          annotation, or choose element mode and hover the cards below.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="card" data-docscn-label="Theme probe card">
+          <div>
+            <h2>Theme probe</h2>
+            <p>This card should visibly switch between light and dark when you use the docscn toolbar theme control.</p>
+          </div>
+          <div class="pill">uses .light / .dark</div>
+        </article>
+        <article class="card" data-docscn-label="Element annotation card">
+          <div>
+            <h2>Element annotation</h2>
+            <p>Switch to the pointer tool, hover this card, confirm the blue outline, then click to attach a comment to this element.</p>
+          </div>
+          <button class="demo" data-docscn-label="Demo action button">Try element mode</button>
+        </article>
+        <article class="card" data-docscn-label="Text selection card">
+          <div>
+            <h2>Text annotation</h2>
+            <p>Select this exact paragraph while the text tool is active. The comment composer should appear near the selected text and preserve the quoted text.</p>
+          </div>
+          <div class="metric">3 modes</div>
+        </article>
+      </section>
+
+      <section class="timeline" data-docscn-label="Incident timeline table">
+        <div class="row" data-docscn-label="Detection row">
+          <div class="time">09:12</div>
+          <div><strong>Regression detected</strong><span>Checkout p95 latency moved from 480ms to 2.8s after deploy 8f31c2.</span></div>
+          <button class="demo">Inspect</button>
+        </div>
+        <div class="row" data-docscn-label="Rollback row">
+          <div class="time">09:24</div>
+          <div><strong>Rollback started</strong><span>The on-call agent generated this timeline and marked the suspect payment enrichment step.</span></div>
+          <button class="demo">Annotate</button>
+        </div>
+        <div class="row" data-docscn-label="Recovery row">
+          <div class="time">09:59</div>
+          <div><strong>Recovery confirmed</strong><span>Use point comments for arbitrary spots, text comments for copy, and element comments for cards or rows.</span></div>
+          <button class="demo">Resolve</button>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>`;
+
 export const mockArtifacts: Artifact[] = [
+  {
+    id: 'artifact-annotation-theme-test',
+    slug: 'docscn-annotation-theme-test',
+    currentRevisionId: 'rev-annotation-theme-test-1',
+    metadata: {
+      title: 'docscn annotation and theme test',
+      description:
+        'Purpose-built local artifact for testing light/dark theme sync plus point, text, and element annotations.',
+      author: cursorAgent,
+      createdAt: '2026-05-14T23:50:00.000Z',
+      visibility: 'public',
+      kind: 'custom-html',
+      tags: ['annotations', 'theme', 'test'],
+      source: 'cursor',
+    },
+    revisions: [
+      {
+        id: 'rev-annotation-theme-test-1',
+        version: 1,
+        summary: 'Stable local test artifact for annotation and theme QA.',
+        html: annotationThemeTestHtml,
+        createdAt: '2026-05-14T23:50:00.000Z',
+        author: cursorAgent,
+        changeRequestIds: [],
+      },
+    ],
+  },
   {
     id: 'artifact-incident-timeline',
     slug: 'checkout-latency-incident-timeline',
