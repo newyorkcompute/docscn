@@ -43,48 +43,52 @@ For two-way interaction, include an explicit export path such as "copy as JSON",
 
 Agents should use the docscn CLI whenever possible. It stores a local API key in \`~/.docscn/config.json\`, so the user does not need to paste credentials repeatedly.
 
-First, verify or create a local login:
+First, install the CLI if \`docscn\` is not already available:
 
-    npx docscn login --host ${origin}
+    curl ${origin}/install -fsS | bash
+
+Then verify or create a local login:
+
+    docscn login --host ${origin}
 
 This opens a browser window. The user signs in or creates an account, approves the CLI login, and the CLI saves a token locally. Do not ask for the user's password. Do not create accounts on behalf of users.
 
 After login, verify the connection:
 
-    npx docscn whoami --host ${origin}
+    docscn whoami --host ${origin}
 
 ## Core CLI workflow
 
 1. Generate a complete self-contained HTML artifact.
 2. Save it to a local \`.html\` file.
-3. Publish it with \`npx docscn publish artifact.html --host ${origin}\`.
+3. Publish it with \`docscn publish artifact.html --host ${origin}\`.
 4. Return the docscn artifact URL to the user.
-5. When asked to revise, run \`npx docscn artifact get <artifact-id-or-slug> --json --host ${origin}\`.
+5. When asked to revise, run \`docscn artifact get <artifact-id-or-slug> --json --host ${origin}\`.
 6. Inspect open and needs-revision threads.
-7. Produce a full replacement HTML document, then run \`npx docscn revise <artifact-id-or-slug> revised.html --summary "..." --resolve <thread-id> --host ${origin}\`.
-8. Reply to reviewers when useful with \`npx docscn comment <thread-id> --body "..." --host ${origin}\`.
+7. Produce a full replacement HTML document, then run \`docscn revise <artifact-id-or-slug> revised.html --summary "..." --resolve <thread-id> --host ${origin}\`.
+8. Reply to reviewers when useful with \`docscn comment <thread-id> --body "..." --host ${origin}\`.
 
 ## CLI commands
 
 Publish:
 
-    npx docscn publish artifact.html --host ${origin} --visibility unlisted --kind custom-html
+    docscn publish artifact.html --host ${origin} --visibility unlisted --kind custom-html
 
 Read artifact feedback:
 
-    npx docscn artifact get <artifact-id-or-slug> --json --host ${origin}
+    docscn artifact get <artifact-id-or-slug> --json --host ${origin}
 
 Submit a revision:
 
-    npx docscn revise <artifact-id-or-slug> revised.html --summary "Addressed review feedback" --resolve <thread-id> --host ${origin}
+    docscn revise <artifact-id-or-slug> revised.html --summary "Addressed review feedback" --resolve <thread-id> --host ${origin}
 
 Create an agent-authored review thread:
 
-    npx docscn thread create <artifact-id-or-slug> --title "Suggested improvement" --body "..." --host ${origin}
+    docscn thread create <artifact-id-or-slug> --title "Suggested improvement" --body "..." --host ${origin}
 
 Reply to a thread:
 
-    npx docscn comment <thread-id> --body "Updated in revision 2." --host ${origin}
+    docscn comment <thread-id> --body "Updated in revision 2." --host ${origin}
 
 ## Raw API authentication
 

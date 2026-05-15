@@ -23,10 +23,12 @@ export const commands = [
   'publish',
   'revise',
   'thread',
+  'version',
   'whoami',
 ] as const;
 
 export type DocscnCommand = (typeof commands)[number];
+export const docscnCliVersion = '0.0.1';
 
 const cliVisibilityOptions = ['public', 'unlisted', 'private'] as const;
 const cliArtifactKinds = [
@@ -352,6 +354,7 @@ export function getCliHelp() {
 Publish and automate agent-generated HTML artifacts.
 
 Usage:
+  docscn --version
   docscn login [--host <url>]
   docscn whoami [--host <url>]
   docscn publish artifact.html [options]
@@ -645,6 +648,11 @@ export async function createCommentFromCli(args: string[]) {
 
 export async function runDocscnCli(args = process.argv.slice(2)) {
   const [command, ...rest] = args;
+
+  if (command === 'version' || command === '--version' || command === '-v') {
+    console.log(`docscn ${docscnCliVersion}`);
+    return;
+  }
 
   if (!command || command === 'help' || hasFlag(args, '--help')) {
     console.log(getCliHelp());

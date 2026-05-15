@@ -80,7 +80,10 @@ export default async function Index() {
               </div>
               <div className="rounded-lg border border-dashed border-primary/30 bg-primary/10 p-4">
                 <p className="font-mono text-xs text-primary">
-                  npx docscn publish artifact.html
+                  curl https://docscn.ai/install -fsS | bash
+                </p>
+                <p className="mt-2 font-mono text-xs text-primary">
+                  docscn publish artifact.html
                 </p>
               </div>
             </div>
