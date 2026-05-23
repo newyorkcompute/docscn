@@ -145,6 +145,54 @@ function waitForTcp({ host, port, timeoutMs }) {
   });
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForPostgresReady() {
+  console.log('Waiting for Postgres on localhost:5433...');
+  await waitForTcp({ host: '127.0.0.1', port: 5433, timeoutMs: 60_000 });
+
+  console.log('Waiting for Postgres to accept queries...');
+  for (let attempt = 1; attempt <= 30; attempt += 1) {
+    if (
+      await commandWorks('docker', [
+        'compose',
+        'exec',
+        '-T',
+        'postgres',
+        'pg_isready',
+        '-U',
+        'docscn',
+        '-d',
+        'docscn',
+      ])
+    ) {
+      return;
+    }
+
+    await sleep(2000);
+  }
+
+  throw new Error('Postgres did not become ready in time.');
+}
+
+async function migrateWithRetry() {
+  for (let attempt = 1; attempt <= 10; attempt += 1) {
+    try {
+      await run(npmCommand(), ['run', 'db:migrate']);
+      return;
+    } catch {
+      if (attempt === 10) {
+        throw new Error('Database migrations failed after multiple attempts.');
+      }
+
+      console.log(`Migration attempt ${attempt} failed, retrying...`);
+      await sleep(2000);
+    }
+  }
+}
+
 async function main() {
   await ensureEnvLocal();
 
@@ -168,11 +216,10 @@ async function main() {
     'minio-init',
   ]);
 
-  console.log('Waiting for Postgres on localhost:5433...');
-  await waitForTcp({ host: '127.0.0.1', port: 5433, timeoutMs: 60_000 });
+  await waitForPostgresReady();
 
   console.log('Applying database migrations...');
-  await run(npmCommand(), ['run', 'db:migrate']);
+  await migrateWithRetry();
 
   console.log('\nPersistent local stack is ready.');
   console.log('Run the app with: npm run dev:persistent');
