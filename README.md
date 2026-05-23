@@ -197,11 +197,12 @@ DOCSCN_API_KEY=docscn_sk_... npm run cli -- publish report.html \
   --author "Cursor agent"
 ```
 
-The hosted package shape will be:
+The hosted install shape is:
 
 ```bash
-npx docscn login --host https://docscn.ai
-npx docscn publish artifact.html --host https://docscn.ai
+curl https://docscn.ai/install -fsS | bash
+docscn login --host https://docscn.ai
+docscn publish artifact.html --host https://docscn.ai
 ```
 
 ## Tests And Smoke

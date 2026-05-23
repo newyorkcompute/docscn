@@ -15,5 +15,5 @@ export const docscnPackageBoundaries = {
   ui: 'Shared React primitives and docscn-specific interface building blocks.',
   db: 'Domain data access, mock repositories, and future Drizzle schema/migrations.',
   sdk: 'Public contracts for artifacts, publishing APIs, comments, revisions, MCP, and agents.',
-  cli: 'Future npx docscn automation and local artifact publishing commands.',
+  cli: 'docscn automation and local artifact publishing commands.',
 } as const;

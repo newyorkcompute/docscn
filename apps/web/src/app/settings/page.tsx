@@ -49,8 +49,9 @@ export default async function SettingsPage() {
                     Agent prompt
                   </p>
                   <code className="mt-3 block text-sm leading-6 text-foreground">
-                    Read /skills.md, run npx docscn login if needed, and publish
-                    your self-contained HTML artifact to this workspace.
+                    Read /skills.md, install docscn from /install if needed, run
+                    docscn login, and publish your self-contained HTML artifact
+                    to this workspace.
                   </code>
                 </div>
               </Card>
