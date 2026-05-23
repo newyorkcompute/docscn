@@ -22,6 +22,7 @@
     "format": "nx format:write",
     "format:check": "nx format:check",
     "setup:local": "node scripts/setup-local.mjs",
+    "doctor": "node scripts/doctor.mjs",
     "db:up": "docker compose up -d postgres minio minio-init",
     "db:down": "docker compose down",
     "db:generate": "drizzle-kit generate",

@@ -1,0 +1,60 @@
+name: Bug report
+description: Report something that is broken or confusing
+title: '[Bug]: '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve docscn. Include enough detail that someone
+        else can reproduce the issue locally.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug and what you expected instead.
+      placeholder: CLI login fails after browser approval with a 500 error.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Commands, URLs, or UI steps to reproduce the issue.
+      placeholder: |
+        1. npm run setup:local
+        2. npm run dev:persistent
+        3. docscn login --host http://localhost:3000
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Web app / artifact viewer
+        - Review / comments
+        - CLI
+        - Auth / API keys
+        - Database / persistence
+        - Docs / onboarding
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: docscn version or commit
+      placeholder: main @ bcded8f or docscn 0.0.1
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node version, browser, Docker usage, and whether DATABASE_URL was configured.
+      placeholder: macOS 15, Node 20, Chrome, Docker Compose, DATABASE_URL set
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste relevant terminal output, API responses, or screenshots.

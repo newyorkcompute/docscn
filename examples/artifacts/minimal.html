@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>docscn example artifact</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(180deg, #eef4ff, #ffffff);
+        color: #0f172a;
+      }
+
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 4rem 1.5rem;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        line-height: 1.1;
+        margin: 0 0 1rem;
+      }
+
+      p {
+        font-size: 1.05rem;
+        line-height: 1.7;
+        color: #334155;
+      }
+
+      .card {
+        margin-top: 2rem;
+        padding: 1.25rem 1.5rem;
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(15, 23, 42, 0.08);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>docscn example artifact</h1>
+      <p>
+        Publish this file to test the local CLI and artifact viewer. It is a
+        self-contained HTML document with inline styles.
+      </p>
+      <div class="card">
+        <strong>Try it</strong>
+        <p>
+          <code
+            >docscn publish examples/artifacts/minimal.html --host
+            http://localhost:3000</code
+          >
+        </p>
+      </div>
+    </main>
+  </body>
+</html>

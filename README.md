@@ -17,6 +17,16 @@ produce: incident timelines, migration plans, generated dashboards,
 architecture explainers, animated reports, UI prototypes, custom editing
 interfaces, and PR review artifacts.
 
+docscn is inspired by the idea that HTML is often a better artifact format than
+Markdown for agent-generated work: richer structure, easier sharing, and more
+readable review surfaces. That framing comes in part from Anthropic's
+[Using Claude Code: The unreasonable effectiveness of HTML](https://claude.com/blog/using-claude-code-the-unreasonable-effectiveness-of-html).
+
+Within Coinbase, we also run an internal service for sharing these kinds of
+HTML artifacts across teams. docscn is the open-source version of that pattern:
+a place to host artifacts at stable URLs, review them visually, and send
+structured feedback back into the next revision.
+
 ## Monorepo
 
 This repo uses Nx with npm workspaces.
@@ -245,6 +255,24 @@ running at `http://localhost:3000` with Postgres and MinIO available. The smoke
 script signs up a test user, completes CLI device auth, verifies saved config,
 publishes an artifact, verifies the published URL is viewable, reads feedback,
 creates a thread, submits a revision, and comments as an agent.
+
+## Contributing
+
+Contributions are welcome. Start with:
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md) for local setup and PR expectations
+- [docs/architecture.md](./docs/architecture.md) for the system overview
+- [SECURITY.md](./SECURITY.md) for vulnerability reporting
+- [examples/artifacts/](./examples/artifacts/) for sample HTML to publish locally
+
+Useful contributor commands:
+
+```bash
+npm run doctor
+npm run setup:local
+npm run dev:persistent
+npm run test
+```
 
 ## License
 

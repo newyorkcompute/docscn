@@ -1,0 +1,55 @@
+name: Feature request
+description: Suggest a product or developer experience improvement
+title: '[Feature]: '
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem first, then the proposed solution. Feature requests
+        that fit the publish → review → revise loop are easiest to evaluate.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem does this solve for artifact authors, reviewers, or agents?
+      placeholder: After sharing an unlisted artifact, I cannot tell whether anyone opened the link.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should docscn solve it?
+      placeholder: Show a simple page view count on artifact cards and the artifact header.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you considered.
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Primary audience
+      options:
+        - Human reviewers
+        - Artifact authors
+        - Agents / CLI users
+        - Self-host operators
+        - Contributors
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: This can start as a small MVP
+          required: false
+        - label: This likely needs docs updates
+          required: false
+        - label: This likely needs migration or env changes
+          required: false
