@@ -74,11 +74,13 @@ To run the persistent stack locally:
 
 ```bash
 npm install
-cp .env.example .env.local
-npm run db:up
-npm run db:migrate
-npm run dev
+npm run setup:local
+npm run dev:persistent
 ```
+
+`npm run setup:local` creates `.env.local` when needed, fills in the local
+Postgres/MinIO settings, starts Docker Compose services, and applies Drizzle
+migrations.
 
 The Docker Compose database is exposed at
 `postgres://docscn:docscn@localhost:5433/docscn` to avoid conflicts with an
@@ -96,6 +98,7 @@ npm run db:down       # stop local Docker services
 npm run db:generate   # create migrations from packages/db/src/lib/schema.ts
 npm run db:migrate    # apply migrations using .env.local
 npm run db:studio     # open Drizzle Studio using .env.local
+npm run dev:persistent # run Next.js with .env.local loaded explicitly
 ```
 
 To run the app with the local Docker services explicitly:
@@ -240,8 +243,8 @@ npm run smoke:agent    # full local agent flow through the built CLI
 `npm run test:backend` and `npm run smoke:agent` expect the local web app to be
 running at `http://localhost:3000` with Postgres and MinIO available. The smoke
 script signs up a test user, completes CLI device auth, verifies saved config,
-publishes an artifact, reads feedback, creates a thread, submits a revision, and
-comments as an agent.
+publishes an artifact, verifies the published URL is viewable, reads feedback,
+creates a thread, submits a revision, and comments as an agent.
 
 ## License
 

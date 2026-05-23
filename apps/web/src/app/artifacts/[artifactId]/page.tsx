@@ -12,6 +12,7 @@ export default async function ArtifactPage({
   const { artifactId } = await params;
   const session = await getServerSession();
   const artifact = await findArtifact(artifactId, {
+    includeUnlisted: true,
     viewerUserId: session?.user.id,
   });
   const threads = artifact ? await listReviewThreads(artifact.id) : [];

@@ -23,6 +23,18 @@ async function jsonFetch(url, init = {}) {
   return { response, payload };
 }
 
+async function pageFetch(url) {
+  const response = await fetch(url);
+  const body = await response.text();
+
+  assert.ok(
+    response.ok,
+    `${url} failed ${response.status}: ${body.slice(0, 240)}`,
+  );
+
+  return body;
+}
+
 async function createSignedInUser() {
   const signUp = await jsonFetch(`${base}/api/auth/sign-up/email`, {
     method: 'POST',
@@ -123,6 +135,8 @@ async function main() {
       'Smoke test artifact',
       '--kind',
       'custom-html',
+      '--visibility',
+      'unlisted',
     ],
     configDir,
   );
@@ -130,6 +144,13 @@ async function main() {
   const artifactSlug = artifactUrl?.split('/').at(-1);
 
   assert.ok(artifactSlug, `could not parse artifact slug from ${publish}`);
+
+  const publishedPage = await pageFetch(artifactUrl);
+  assert.match(
+    publishedPage,
+    /Agent smoke artifact/,
+    'published artifact URL should be viewable without CLI auth',
+  );
 
   const threadOutput = await runCli(
     [
@@ -181,6 +202,14 @@ async function main() {
     ],
     configDir,
   );
+
+  const revisedPage = await pageFetch(artifactUrl);
+  assert.match(
+    revisedPage,
+    /Agent smoke artifact revised/,
+    'published artifact URL should show the persisted revision',
+  );
+
   await runCli(
     [
       'comment',

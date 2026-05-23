@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "dev": "nx dev web",
+    "dev:persistent": "dotenv -e .env.local -- nx dev web",
     "cli": "nx build cli && node dist/packages/cli/src/index.js",
     "build": "nx run-many -t build -p web,db,storage,sdk,cli,config",
     "build:cli:release": "node scripts/build-cli-release.mjs",
@@ -20,6 +21,7 @@
     "smoke:agent": "nx build cli && node scripts/agent-smoke.mjs",
     "format": "nx format:write",
     "format:check": "nx format:check",
+    "setup:local": "node scripts/setup-local.mjs",
     "db:up": "docker compose up -d postgres minio minio-init",
     "db:down": "docker compose down",
     "db:generate": "drizzle-kit generate",
