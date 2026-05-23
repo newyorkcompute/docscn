@@ -36,8 +36,8 @@ export default async function SettingsPage() {
                     <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
                       Point agents at the public skill file. They can run the
                       CLI login flow, save credentials locally, publish
-                      artifacts, read feedback, comment, and submit revisions
-                      without using the UI.
+                      artifacts to stable URLs, read feedback, comment, and
+                      submit revisions without using the UI.
                     </p>
                   </div>
                   <Button asChild size="sm" variant="outline">
@@ -50,8 +50,8 @@ export default async function SettingsPage() {
                   </p>
                   <code className="mt-3 block text-sm leading-6 text-foreground">
                     Read /skills.md, install docscn from /install if needed, run
-                    docscn login, and publish your self-contained HTML artifact
-                    to this workspace.
+                    docscn login, and publish your self-contained HTML artifact.
+                    Collaborators can review it visually from the artifact URL.
                   </code>
                 </div>
               </Card>

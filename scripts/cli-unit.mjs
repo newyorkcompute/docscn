@@ -100,6 +100,6 @@ await assertRejectsWith(
 );
 
 const logs = await captureLogs(() => runDocscnCli(['help']));
-assert.ok(logs.join('\n').includes('Publish and automate'));
+assert.ok(logs.join('\n').includes('Host, share, and collaborate'));
 
 console.log('cli unit ok');

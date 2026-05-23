@@ -22,6 +22,15 @@ export interface ArtifactAnnotationEvent {
   };
 }
 
+export interface ArtifactViewportState {
+  scrollX: number;
+  scrollY: number;
+  scrollWidth: number;
+  scrollHeight: number;
+  viewportWidth: number;
+  viewportHeight: number;
+}
+
 function buildAnnotationBridgeScript(
   bridgeId: string,
   initialMode: ArtifactAnnotationMode,
@@ -82,18 +91,33 @@ function buildAnnotationBridgeScript(
     return clamp((value / Math.max(total, 1)) * 100, 0, 100);
   }
 
-  function rectToAnchor(rect) {
-    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 1;
-    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 1;
+  function viewportMetrics() {
+    const doc = document.documentElement;
+    const body = document.body;
+    const viewportWidth = window.innerWidth || doc.clientWidth || 1;
+    const viewportHeight = window.innerHeight || doc.clientHeight || 1;
 
     return {
-      x: asPercent(rect.left + rect.width / 2, viewportWidth),
-      y: asPercent(rect.top + rect.height / 2, viewportHeight),
+      scrollX: window.scrollX || doc.scrollLeft || 0,
+      scrollY: window.scrollY || doc.scrollTop || 0,
+      scrollWidth: Math.max(doc.scrollWidth || 0, body ? body.scrollWidth || 0 : 0, viewportWidth),
+      scrollHeight: Math.max(doc.scrollHeight || 0, body ? body.scrollHeight || 0 : 0, viewportHeight),
+      viewportWidth,
+      viewportHeight,
+    };
+  }
+
+  function rectToAnchor(rect) {
+    const metrics = viewportMetrics();
+
+    return {
+      x: asPercent(rect.left + metrics.scrollX + rect.width / 2, metrics.scrollWidth),
+      y: asPercent(rect.top + metrics.scrollY + rect.height / 2, metrics.scrollHeight),
       rect: {
-        x: asPercent(rect.left, viewportWidth),
-        y: asPercent(rect.top, viewportHeight),
-        width: asPercent(rect.width, viewportWidth),
-        height: asPercent(rect.height, viewportHeight),
+        x: asPercent(rect.left + metrics.scrollX, metrics.scrollWidth),
+        y: asPercent(rect.top + metrics.scrollY, metrics.scrollHeight),
+        width: asPercent(rect.width, metrics.scrollWidth),
+        height: asPercent(rect.height, metrics.scrollHeight),
       },
     };
   }
@@ -171,6 +195,30 @@ function buildAnnotationBridgeScript(
     );
   }
 
+  function sendViewport() {
+    window.parent.postMessage(
+      {
+        type: 'docscn:viewport',
+        bridgeId,
+        viewport: viewportMetrics(),
+      },
+      '*',
+    );
+  }
+
+  let viewportFrame = 0;
+
+  function scheduleViewport() {
+    if (viewportFrame) {
+      return;
+    }
+
+    viewportFrame = window.requestAnimationFrame(() => {
+      viewportFrame = 0;
+      sendViewport();
+    });
+  }
+
   function cancelAnnotationMode() {
     setMode('idle');
     window.parent.postMessage(
@@ -196,6 +244,11 @@ function buildAnnotationBridgeScript(
 
   setMode(mode);
   setTheme(initialTheme);
+  sendViewport();
+  window.setTimeout(sendViewport, 0);
+
+  window.addEventListener('scroll', scheduleViewport, { passive: true });
+  window.addEventListener('resize', scheduleViewport);
 
   document.addEventListener(
     'keydown',
@@ -390,6 +443,7 @@ export function ArtifactFrame({
   annotationMode = 'idle',
   onAnnotation,
   onAnnotationCancel,
+  onViewportChange,
 }: {
   html: string;
   title: string;
@@ -400,6 +454,7 @@ export function ArtifactFrame({
   annotationMode?: ArtifactAnnotationMode;
   onAnnotation?: (annotation: ArtifactAnnotationEvent) => void;
   onAnnotationCancel?: () => void;
+  onViewportChange?: (viewport: ArtifactViewportState) => void;
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [initialArtifactTheme, setInitialArtifactTheme] = useState<
@@ -453,6 +508,7 @@ export function ArtifactFrame({
 
     const handleAnnotation = onAnnotation;
     const handleAnnotationCancel = onAnnotationCancel;
+    const handleViewportChange = onViewportChange;
 
     function onMessage(event: MessageEvent) {
       if (event.source !== iframeRef.current?.contentWindow) {
@@ -464,6 +520,7 @@ export function ArtifactFrame({
             type?: string;
             bridgeId?: string;
             annotation?: ArtifactAnnotationEvent;
+            viewport?: ArtifactViewportState;
           }
         | undefined;
 
@@ -481,12 +538,20 @@ export function ArtifactFrame({
       ) {
         handleAnnotationCancel?.();
       }
+
+      if (
+        data?.type === 'docscn:viewport' &&
+        data.bridgeId === annotationBridgeId &&
+        data.viewport
+      ) {
+        handleViewportChange?.(data.viewport);
+      }
     }
 
     window.addEventListener('message', onMessage);
 
     return () => window.removeEventListener('message', onMessage);
-  }, [annotationBridgeId, onAnnotation, onAnnotationCancel]);
+  }, [annotationBridgeId, onAnnotation, onAnnotationCancel, onViewportChange]);
 
   useEffect(() => {
     postAnnotationMode();

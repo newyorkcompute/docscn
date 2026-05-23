@@ -3,13 +3,16 @@ import {
   ArrowRight,
   Bot,
   Code2,
+  Download,
   MessageSquare,
   PanelsTopLeft,
   RefreshCcw,
+  Terminal,
 } from 'lucide-react';
 import { listArtifacts } from '@docscn/db';
 import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
 import { getServerSession } from '../lib/session';
+import { getRequestOrigin } from '../lib/request-origin';
 import { SiteHeader } from '../components/site-header';
 
 export const dynamic = 'force-dynamic';
@@ -17,34 +20,48 @@ export const dynamic = 'force-dynamic';
 export default async function Index() {
   const session = await getServerSession();
   const artifacts = await listArtifacts({ viewerUserId: session?.user.id });
+  const origin = await getRequestOrigin();
+  const installCommand = `curl ${origin}/install -fsS | bash`;
+  const publishCommand = `docscn publish artifact.html --host ${origin}`;
 
   return (
     <>
       <SiteHeader />
       <main>
-        <Shell className="grid gap-10 py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <Shell className="grid gap-10 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-20">
           <section>
             <Badge tone="outline">
-              open-source / self-hostable / agent-native
+              open-source / localhost-first / agent-native
             </Badge>
             <h1 className="mt-6 text-5xl font-semibold tracking-[-0.06em] md:text-7xl">
-              Publish and review the HTML artifacts agents create.
+              Host, share, and collaborate on AI-generated HTML artifacts.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-              docscn is an open-source workspace for agent-generated HTML
-              artifacts. Publish interactive plans, reports, diagrams,
-              prototypes, and docs. Review them with your team. Let agents
-              revise from feedback.
+              Publish artifacts from Cursor, Claude, OpenCode, scheduled agents,
+              and scripts. Review them visually with your team, keep stable
+              share links, and send structured feedback back into the next
+              revision.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg">
-                <Link href="/publish">
-                  Publish artifact <ArrowRight className="h-4 w-4" />
+                <Link href="/dashboard">
+                  Open workspace <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href="/dashboard">Explore dashboard</Link>
+                <Link href="/artifacts/docscn-annotation-theme-test">
+                  Try collaboration canvas
+                </Link>
               </Button>
+            </div>
+            <div className="mt-8 rounded-xl border border-border bg-card p-3 shadow-sm shadow-black/3">
+              <div className="flex items-center gap-2 border-b border-border pb-3 text-xs text-muted-foreground">
+                <Terminal className="h-3.5 w-3.5 text-primary" />
+                install locally
+              </div>
+              <pre className="overflow-x-auto pt-3 font-mono text-sm text-foreground">
+                <code>{installCommand}</code>
+              </pre>
             </div>
           </section>
 
@@ -53,7 +70,7 @@ export default async function Index() {
               <div className="flex items-center justify-between border-b border-border pb-4">
                 <div>
                   <Eyebrow>
-                    publish {'->'} review {'->'} revise
+                    host {'->'} collaborate {'->'} revise
                   </Eyebrow>
                   <p className="mt-2 text-xl font-semibold">
                     Generated incident report
@@ -63,9 +80,9 @@ export default async function Index() {
               </div>
               <div className="grid gap-3 py-4">
                 {[
-                  'publish self-contained HTML',
-                  'comment with revision requests',
-                  'agents revise from structured feedback',
+                  'agent publishes a self-contained HTML artifact to a stable URL',
+                  'team comments on points, text selections, and elements',
+                  'agent reads structured feedback and submits the next revision',
                 ].map((item, index) => (
                   <div
                     className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
@@ -79,11 +96,15 @@ export default async function Index() {
                 ))}
               </div>
               <div className="rounded-lg border border-dashed border-primary/30 bg-primary/10 p-4">
-                <p className="font-mono text-xs text-primary">
-                  curl https://docscn.ai/install -fsS | bash
+                <div className="flex items-center gap-2 text-xs font-medium text-primary">
+                  <Download className="h-3.5 w-3.5" />
+                  CLI quickstart
+                </div>
+                <p className="mt-3 font-mono text-xs text-primary">
+                  {installCommand}
                 </p>
                 <p className="mt-2 font-mono text-xs text-primary">
-                  docscn publish artifact.html
+                  {publishCommand}
                 </p>
               </div>
             </div>
@@ -95,17 +116,17 @@ export default async function Index() {
             [
               'Publishing, not notes',
               Code2,
-              'Self-contained HTML from Cursor, Claude, OpenCode, MCP tools, and scheduled agents.',
+              'Host self-contained HTML from Cursor, Claude, OpenCode, MCP tools, scheduled agents, and scripts.',
             ],
             [
-              'Review like PRs/Figma',
+              'Collaborate like PRs/Figma',
               MessageSquare,
-              'Threads, anchors, requested changes, and status around the artifact itself.',
+              'Point, text, and element annotations stay attached to the rendered artifact and its revisions.',
             ],
             [
               'Revision loop',
               RefreshCcw,
-              'Structured feedback that agents can read and use to generate the next artifact revision.',
+              'Agents fetch open review threads as JSON and publish a complete revised HTML document.',
             ],
           ].map(([title, Icon, body]) => (
             <Card className="p-6" key={title as string}>
@@ -158,9 +179,13 @@ export default async function Index() {
             </div>
             <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
               <p>Claude/Cursor/OpenCode publish artifacts directly.</p>
-              <p>MCP tools enrich artifacts with external context.</p>
-              <p>Agents consume comments and revision requests.</p>
-              <p>Self-host with Postgres, S3-compatible storage, and Redis.</p>
+              <p>
+                /skills.md tells agents how to publish, read feedback, and
+                revise.
+              </p>
+              <p>Agents consume comments and revision requests as JSON.</p>
+              <p>GitHub Releases provide the standalone CLI binary.</p>
+              <p>Self-host with Postgres and S3-compatible storage.</p>
             </div>
           </Card>
         </Shell>

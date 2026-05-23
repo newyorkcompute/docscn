@@ -7,10 +7,10 @@ import {
   Clock3,
   Copy,
   GitCommitHorizontal,
+  MessageCircle,
   MousePointer2,
   MessageSquareText,
   PanelRightOpen,
-  Plus,
   Type,
 } from 'lucide-react';
 import type {
@@ -25,6 +25,7 @@ import {
   ArtifactFrame,
   type ArtifactAnnotationEvent,
   type ArtifactAnnotationMode,
+  type ArtifactViewportState,
 } from './artifact-frame';
 import { ThemeToggle } from './theme-toggle';
 
@@ -40,8 +41,8 @@ function getAnchorPoint(thread: ReviewThread, index: number) {
     typeof thread.anchor?.y === 'number'
   ) {
     return {
-      x: Math.min(Math.max(thread.anchor.x, 6), 94),
-      y: Math.min(Math.max(thread.anchor.y, 8), 92),
+      x: Math.min(Math.max(thread.anchor.x, 0), 100),
+      y: Math.min(Math.max(thread.anchor.y, 0), 100),
     };
   }
 
@@ -51,12 +52,86 @@ function getAnchorPoint(thread: ReviewThread, index: number) {
   };
 }
 
-function getPinPosition(thread: ReviewThread, index: number) {
-  const point = getAnchorPoint(thread, index);
+function getViewportPoint(
+  point: { x: number; y: number },
+  viewport?: ArtifactViewportState,
+) {
+  if (!viewport) {
+    return {
+      x: Math.min(Math.max(point.x, 6), 94),
+      y: Math.min(Math.max(point.y, 8), 92),
+    };
+  }
+
+  return {
+    x:
+      (((point.x / 100) * viewport.scrollWidth - viewport.scrollX) /
+        Math.max(viewport.viewportWidth, 1)) *
+      100,
+    y:
+      (((point.y / 100) * viewport.scrollHeight - viewport.scrollY) /
+        Math.max(viewport.viewportHeight, 1)) *
+      100,
+  };
+}
+
+function getDocumentPoint(
+  point: { x: number; y: number },
+  viewport?: ArtifactViewportState,
+) {
+  if (!viewport) {
+    return point;
+  }
+
+  return {
+    x:
+      (((point.x / 100) * viewport.viewportWidth + viewport.scrollX) /
+        Math.max(viewport.scrollWidth, 1)) *
+      100,
+    y:
+      (((point.y / 100) * viewport.viewportHeight + viewport.scrollY) /
+        Math.max(viewport.scrollHeight, 1)) *
+      100,
+  };
+}
+
+function clampPercent(value: number) {
+  return Math.min(Math.max(value, 0), 100);
+}
+
+function getPinPosition(
+  thread: ReviewThread,
+  index: number,
+  viewport?: ArtifactViewportState,
+) {
+  const point = getViewportPoint(getAnchorPoint(thread, index), viewport);
 
   return {
     left: `${point.x}%`,
     top: `${point.y}%`,
+  };
+}
+
+function isAnchorVisible(
+  thread: ReviewThread,
+  index: number,
+  viewport?: ArtifactViewportState,
+) {
+  const point = getViewportPoint(getAnchorPoint(thread, index), viewport);
+
+  return point.x >= -5 && point.x <= 105 && point.y >= -5 && point.y <= 105;
+}
+
+function getPopoverPoint(
+  thread: ReviewThread,
+  index: number,
+  viewport?: ArtifactViewportState,
+) {
+  const point = getViewportPoint(getAnchorPoint(thread, index), viewport);
+
+  return {
+    x: Math.min(Math.max(point.x, 4), 96),
+    y: Math.min(Math.max(point.y, 6), 94),
   };
 }
 
@@ -77,16 +152,23 @@ function getAnchorSummary(anchor?: ReviewAnchor) {
 }
 
 function ToolbarTip({
+  align = 'center',
   children,
   label,
 }: {
+  align?: 'center' | 'right';
   children: React.ReactNode;
   label: string;
 }) {
   return (
     <div className="group relative flex">
       {children}
-      <span className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-neutral-950 px-2.5 py-1 text-xs text-white opacity-0 shadow-lg shadow-black/20 transition group-hover:opacity-100 group-focus-within:opacity-100">
+      <span
+        className={cn(
+          'pointer-events-none absolute bottom-full mb-2 whitespace-nowrap rounded-full border border-white/10 bg-neutral-950 px-2.5 py-1 text-xs text-white opacity-0 shadow-lg shadow-black/20 transition group-hover:opacity-100 group-focus-within:opacity-100',
+          align === 'right' ? 'right-0' : 'left-1/2 -translate-x-1/2',
+        )}
+      >
         {label}
       </span>
     </div>
@@ -132,6 +214,8 @@ export function ArtifactWorkspace({
   const [annotationMode, setAnnotationMode] =
     useState<ArtifactAnnotationMode>('idle');
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [artifactViewport, setArtifactViewport] =
+    useState<ArtifactViewportState>();
   const [pendingAnchor, setPendingAnchor] = useState<
     PendingAnchor | undefined
   >();
@@ -262,6 +346,13 @@ export function ArtifactWorkspace({
   }
 
   function openThreadPopover(threadId: string) {
+    if (isReviewOpen) {
+      selectThreadInDrawer(threadId);
+      setPendingAnchor(undefined);
+      setAnnotationMode('idle');
+      return;
+    }
+
     setActiveThreadId(threadId);
     setActiveThreadPopoverId(threadId);
     setPendingAnchor(undefined);
@@ -271,11 +362,19 @@ export function ArtifactWorkspace({
 
   function placeCommentAnchor(event: MouseEvent<HTMLButtonElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    const viewportPoint = {
+      x: ((event.clientX - rect.left) / rect.width) * 100,
+      y: ((event.clientY - rect.top) / rect.height) * 100,
+    };
+    const documentPoint = getDocumentPoint(viewportPoint, artifactViewport);
     const label = `Pin ${threads.length + 1}`;
 
-    setPendingAnchor({ kind: 'point', label, x, y });
+    setPendingAnchor({
+      kind: 'point',
+      label,
+      x: clampPercent(documentPoint.x),
+      y: clampPercent(documentPoint.y),
+    });
     setAnchorLabel(label);
     setActiveDrawerView('review');
     setIsReviewOpen(false);
@@ -545,9 +644,45 @@ export function ArtifactWorkspace({
     );
   }
 
+  const sidebarWidthClass = 'md:right-[420px]';
+  const artifactSurfaceClass = cn(
+    'fixed inset-y-0 left-0 right-0 overflow-hidden transition-[right] duration-200',
+    isReviewOpen && sidebarWidthClass,
+  );
+  const toolbarPositionClass = cn(
+    'fixed bottom-4 z-40 transition-[right] duration-200',
+    isReviewOpen ? 'right-4 md:right-[436px]' : 'right-4',
+  );
+  const activeThreadPopoverPoint =
+    activeThreadPopover && activeThreadPopoverIndex >= 0
+      ? getPopoverPoint(
+          activeThreadPopover,
+          activeThreadPopoverIndex,
+          artifactViewport,
+        )
+      : undefined;
+  const activeThreadPopoverVisible = Boolean(
+    activeThreadPopover &&
+      activeThreadPopoverIndex >= 0 &&
+      isAnchorVisible(
+        activeThreadPopover,
+        activeThreadPopoverIndex,
+        artifactViewport,
+      ),
+  );
+  const pendingViewportPoint = pendingAnchor
+    ? getViewportPoint(pendingAnchor, artifactViewport)
+    : undefined;
+  const pendingPopoverPoint = pendingViewportPoint
+    ? {
+        x: Math.min(Math.max(pendingViewportPoint.x, 4), 96),
+        y: Math.min(Math.max(pendingViewportPoint.y, 6), 94),
+      }
+    : undefined;
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
-      <div className="fixed inset-0">
+      <div className={artifactSurfaceClass}>
         <ArtifactFrame
           annotationBridgeId={annotationBridgeId}
           annotationMode={annotationMode}
@@ -558,10 +693,16 @@ export function ArtifactWorkspace({
           title={artifact.metadata.title}
           onAnnotation={handleArtifactAnnotation}
           onAnnotationCancel={() => setAnnotationMode('idle')}
+          onViewportChange={setArtifactViewport}
         />
       </div>
 
-      <div className="fixed bottom-4 right-4 z-40 flex items-center gap-1 rounded-full border border-white/10 bg-neutral-950/90 p-1 text-white shadow-2xl shadow-black/20 backdrop-blur-xl">
+      <div
+        className={cn(
+          toolbarPositionClass,
+          'flex items-center gap-1 rounded-full border border-white/10 bg-neutral-950/90 p-1 text-white shadow-2xl shadow-black/20 backdrop-blur-xl',
+        )}
+      >
         <ToolbarTip label="Point comment">
           <Button
             aria-label="Place a point comment"
@@ -583,7 +724,7 @@ export function ArtifactWorkspace({
               );
             }}
           >
-            <Plus className="h-4 w-4" />
+            <MessageCircle className="h-4 w-4" />
           </Button>
         </ToolbarTip>
         <ToolbarTip label="Text annotation">
@@ -649,14 +790,17 @@ export function ArtifactWorkspace({
             <span className="text-xs">v{selectedRevision.version}</span>
           </Button>
         </ToolbarTip>
-        <ToolbarTip label="Theme">
+        <ToolbarTip align="right" label="Theme">
           <ThemeToggle
             className="h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white"
             showLabel={false}
           />
         </ToolbarTip>
         <div className="relative">
-          <ToolbarTip label={`Review threads (${openThreads.length} open)`}>
+          <ToolbarTip
+            align="right"
+            label={`Review threads (${openThreads.length} open)`}
+          >
             <Button
               aria-label={`Open review drawer, ${openThreads.length} open threads`}
               className={cn(
@@ -692,7 +836,10 @@ export function ArtifactWorkspace({
       {annotationMode === 'point' ? (
         <button
           aria-label="Place comment on artifact"
-          className="fixed inset-0 z-30 cursor-crosshair bg-primary/5"
+          className={cn(
+            artifactSurfaceClass,
+            'z-30 cursor-crosshair bg-primary/5',
+          )}
           type="button"
           onClick={placeCommentAnchor}
           onKeyDown={(event) => {
@@ -708,17 +855,23 @@ export function ArtifactWorkspace({
       ) : null}
 
       {annotationMode === 'text' || annotationMode === 'element' ? (
-        <div className="pointer-events-none fixed left-1/2 top-20 z-30 -translate-x-1/2 rounded-full border border-primary/30 bg-background px-3 py-1 text-xs text-primary shadow-sm">
-          {annotationMode === 'text'
-            ? 'Select text inside the artifact to comment'
-            : 'Click an element inside the artifact to comment'}
+        <div className={cn(artifactSurfaceClass, 'pointer-events-none z-30')}>
+          <div className="absolute left-1/2 top-20 -translate-x-1/2 rounded-full border border-primary/30 bg-background px-3 py-1 text-xs text-primary shadow-sm">
+            {annotationMode === 'text'
+              ? 'Select text inside the artifact to comment'
+              : 'Click an element inside the artifact to comment'}
+          </div>
         </div>
       ) : null}
 
       {threads.length ? (
-        <div className="pointer-events-none fixed inset-0 z-20">
+        <div className={cn(artifactSurfaceClass, 'pointer-events-none z-20')}>
           {threads.map((thread, index) => {
-            const position = getPinPosition(thread, index);
+            if (!isAnchorVisible(thread, index, artifactViewport)) {
+              return null;
+            }
+
+            const position = getPinPosition(thread, index, artifactViewport);
 
             return (
               <button
@@ -742,20 +895,20 @@ export function ArtifactWorkspace({
         </div>
       ) : null}
 
-      {activeThreadPopover && activeThreadPopoverIndex >= 0 ? (
+      {activeThreadPopover &&
+      activeThreadPopoverPoint &&
+      activeThreadPopoverVisible ? (
         <div
           className="fixed z-50 w-[min(360px,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-neutral-950/95 p-4 text-white shadow-2xl shadow-black/30 backdrop-blur-xl"
           style={{
-            left: `${getAnchorPoint(activeThreadPopover, activeThreadPopoverIndex).x}%`,
-            top: `${getAnchorPoint(activeThreadPopover, activeThreadPopoverIndex).y}%`,
+            left: `${activeThreadPopoverPoint.x}%`,
+            top: `${activeThreadPopoverPoint.y}%`,
             transform: `translate(${
-              getAnchorPoint(activeThreadPopover, activeThreadPopoverIndex).x >
-              62
+              activeThreadPopoverPoint.x > 62
                 ? 'calc(-100% - 14px)'
                 : '14px'
             }, ${
-              getAnchorPoint(activeThreadPopover, activeThreadPopoverIndex).y >
-              58
+              activeThreadPopoverPoint.y > 58
                 ? 'calc(-100% - 14px)'
                 : '14px'
             })`,
@@ -838,30 +991,34 @@ export function ArtifactWorkspace({
         </div>
       ) : null}
 
-      {pendingAnchor ? (
-        <button
-          aria-label="Pending comment pin"
-          className="pointer-events-none fixed z-30 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-background bg-primary text-xs font-semibold text-primary-foreground shadow-sm ring-4 ring-primary/15"
-          style={{
-            left: `${pendingAnchor.x}%`,
-            top: `${pendingAnchor.y}%`,
-          }}
-          type="button"
-        >
-          +
-        </button>
+      {pendingAnchor && pendingViewportPoint ? (
+        <div className={cn(artifactSurfaceClass, 'pointer-events-none z-30')}>
+          <button
+            aria-label="Pending comment pin"
+            className="absolute grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-background bg-primary text-xs font-semibold text-primary-foreground shadow-sm ring-4 ring-primary/15"
+            style={{
+              left: `${pendingViewportPoint.x}%`,
+              top: `${pendingViewportPoint.y}%`,
+            }}
+            type="button"
+          >
+            +
+          </button>
+        </div>
       ) : null}
 
-      {pendingAnchor && !isReviewOpen ? (
+      {pendingAnchor && pendingPopoverPoint && !isReviewOpen ? (
         <form
           className="fixed z-50 w-[min(340px,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-neutral-950/95 p-4 text-white shadow-2xl shadow-black/30 backdrop-blur-xl"
           data-source="pin"
           style={{
-            left: `${pendingAnchor.x}%`,
-            top: `${pendingAnchor.y}%`,
+            left: `${pendingPopoverPoint.x}%`,
+            top: `${pendingPopoverPoint.y}%`,
             transform: `translate(${
-              pendingAnchor.x > 62 ? 'calc(-100% - 14px)' : '14px'
-            }, ${pendingAnchor.y > 58 ? 'calc(-100% - 14px)' : '14px'})`,
+              pendingPopoverPoint.x > 62 ? 'calc(-100% - 14px)' : '14px'
+            }, ${
+              pendingPopoverPoint.y > 58 ? 'calc(-100% - 14px)' : '14px'
+            })`,
           }}
           onSubmit={createThread}
         >
@@ -916,13 +1073,7 @@ export function ArtifactWorkspace({
 
       {isReviewOpen ? (
         <>
-          <button
-            aria-label="Close review drawer"
-            className="fixed inset-0 z-40 bg-background/20 backdrop-blur-[1px]"
-            type="button"
-            onClick={() => setIsReviewOpen(false)}
-          />
-          <aside className="fixed bottom-3 right-3 top-3 z-50 w-[min(420px,calc(100vw-1.5rem))] space-y-4 overflow-y-auto rounded-xl border border-border bg-background/95 p-3 shadow-2xl shadow-black/10 backdrop-blur-xl">
+          <aside className="fixed bottom-0 right-0 top-0 z-50 w-full space-y-4 overflow-y-auto border-l border-border bg-background p-4 shadow-2xl shadow-black/10 md:w-[420px]">
             <div className="flex items-center justify-between gap-3 px-1">
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
@@ -946,37 +1097,39 @@ export function ArtifactWorkspace({
             ) : null}
 
             {activeDrawerView === 'review' ? (
-              <Card className="p-5">
+              <section className="px-1">
                 <div className="flex items-center gap-2">
                   <PanelRightOpen className="h-4 w-4 text-primary" />
                   <h2 className="font-semibold">Review threads</h2>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                  Add new feedback from the canvas with the point, text, or
-                  element annotation tools. This panel is only for reading,
-                  replying, and resolving threads.
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Read, reply, and resolve comments. Add new feedback from the
+                  canvas tools.
                 </p>
-                <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="mr-1 font-medium">Agent context</span>
                   <Button
+                    className="h-7 rounded-full px-2 text-xs text-muted-foreground"
                     size="sm"
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => copyFeedback(feedbackPrompt, 'prompt')}
                   >
-                    <Copy className="h-3.5 w-3.5" />
-                    {copiedBundle === 'prompt' ? 'Copied' : 'Copy for agent'}
+                    <Copy className="h-3 w-3" />
+                    {copiedBundle === 'prompt' ? 'Copied' : 'Prompt'}
                   </Button>
                   <Button
+                    className="h-7 rounded-full px-2 text-xs text-muted-foreground"
                     size="sm"
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => copyFeedback(feedbackJson, 'json')}
                   >
-                    <Copy className="h-3.5 w-3.5" />
-                    {copiedBundle === 'json' ? 'Copied' : 'Copy JSON'}
+                    <Copy className="h-3 w-3" />
+                    {copiedBundle === 'json' ? 'Copied' : 'JSON'}
                   </Button>
                 </div>
-                <div className="mt-5 space-y-4">
+                <div className="mt-5 divide-y divide-border">
                   {threads.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                       No review threads yet. This artifact is ready for first
@@ -986,10 +1139,10 @@ export function ArtifactWorkspace({
                     threads.map((thread, index) => (
                       <div
                         className={cn(
-                          'rounded-lg border bg-card p-4 transition',
+                          'py-5 transition',
                           thread.id === activeThreadId
-                            ? 'border-primary/60 ring-4 ring-primary/10'
-                            : 'border-border',
+                            ? 'rounded-lg bg-primary/5 px-3 ring-1 ring-primary/20'
+                            : '',
                         )}
                         id={`thread-${thread.id}`}
                         key={thread.id}
@@ -1025,7 +1178,7 @@ export function ArtifactWorkspace({
                           </button>
                         </div>
                         {thread.requestedChange ? (
-                          <p className="mt-3 rounded-md bg-secondary/50 p-3 text-xs leading-5 text-muted-foreground">
+                          <p className="mt-3 rounded-lg bg-secondary/50 p-3 text-xs leading-5 text-muted-foreground">
                             {thread.requestedChange}
                           </p>
                         ) : null}
@@ -1046,15 +1199,16 @@ export function ArtifactWorkspace({
                             </div>
                           ))}
                         </div>
-                        <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-3">
+                        <div className="mt-4 flex flex-wrap gap-1.5 border-t border-border pt-3">
                           {thread.status !== 'resolved' ? (
                             <Button
+                              className="h-7 rounded-full px-2 text-xs text-muted-foreground"
                               disabled={
                                 pendingAction === `status-${thread.id}-resolved`
                               }
                               size="sm"
                               type="button"
-                              variant="outline"
+                              variant="ghost"
                               onClick={() =>
                                 updateThreadStatus(thread.id, 'resolved')
                               }
@@ -1063,12 +1217,13 @@ export function ArtifactWorkspace({
                             </Button>
                           ) : (
                             <Button
+                              className="h-7 rounded-full px-2 text-xs text-muted-foreground"
                               disabled={
                                 pendingAction === `status-${thread.id}-open`
                               }
                               size="sm"
                               type="button"
-                              variant="outline"
+                              variant="ghost"
                               onClick={() =>
                                 updateThreadStatus(thread.id, 'open')
                               }
@@ -1078,13 +1233,14 @@ export function ArtifactWorkspace({
                           )}
                           {thread.status !== 'needs-revision' ? (
                             <Button
+                              className="h-7 rounded-full px-2 text-xs text-muted-foreground"
                               disabled={
                                 pendingAction ===
                                 `status-${thread.id}-needs-revision`
                               }
                               size="sm"
                               type="button"
-                              variant="outline"
+                              variant="ghost"
                               onClick={() =>
                                 updateThreadStatus(thread.id, 'needs-revision')
                               }
@@ -1095,7 +1251,7 @@ export function ArtifactWorkspace({
                         </div>
                         <div className="mt-4 space-y-2">
                           <textarea
-                            className="min-h-16 w-full rounded-md border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
+                            className="min-h-16 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
                             placeholder="Reply to this thread"
                             value={commentBodies[thread.id] ?? ''}
                             onChange={(event) =>
@@ -1106,10 +1262,11 @@ export function ArtifactWorkspace({
                             }
                           />
                           <Button
+                            className="h-7 rounded-full px-2 text-xs text-muted-foreground"
                             disabled={pendingAction === `comment-${thread.id}`}
                             size="sm"
                             type="button"
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => addComment(thread.id)}
                           >
                             {pendingAction === `comment-${thread.id}`
@@ -1121,7 +1278,7 @@ export function ArtifactWorkspace({
                     ))
                   )}
                 </div>
-              </Card>
+              </section>
             ) : null}
 
             {activeDrawerView === 'revisions' ? (

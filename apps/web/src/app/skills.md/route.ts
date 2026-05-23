@@ -1,7 +1,7 @@
 function buildSkillsMarkdown(origin: string) {
   return `# docscn agent publishing skill
 
-docscn is an open-source workspace for agent-generated HTML artifacts. Use this skill when you generate a self-contained HTML artifact that should be published for humans to review, comment on, and later ask you to revise.
+docscn is an open-source platform for hosting, sharing, and collaborating on AI-generated HTML artifacts. Use this skill when you generate a self-contained HTML artifact that should be published to a stable URL for humans to open, share, comment on, and later ask you to revise.
 
 ## What to publish
 
@@ -11,9 +11,9 @@ Every artifact HTML document must be self-contained and include a full \`<html>\
 
 ## Why docscn prefers HTML over markdown
 
-Use HTML when markdown would become a long, hard-to-read document. HTML is the preferred format for dense agent outputs because it can combine structure, tables, CSS, SVG diagrams, code snippets, interactions, forms, charts, canvas-like spatial layouts, and export buttons in one shareable artifact.
+Use HTML when markdown would become a long, hard-to-read document. HTML is the preferred format for dense agent outputs because it can combine structure, tables, CSS, SVG diagrams, code snippets, interactions, forms, charts, canvas-like spatial layouts, and export buttons in one hosted, shareable artifact.
 
-Good docscn artifacts should help the user stay in the loop. Optimize for visual clarity, information density, and easy review by humans who may not read a long markdown file. If the output would otherwise need ASCII diagrams, giant tables, color approximations, or multiple markdown files, make it HTML.
+Good docscn artifacts should help the user stay in the loop. Optimize for visual clarity, information density, collaboration, and easy review by humans who may not read a long markdown file. If the output would otherwise need ASCII diagrams, giant tables, color approximations, or multiple markdown files, make it HTML.
 
 ## Artifact design guidance
 
@@ -62,7 +62,7 @@ After login, verify the connection:
 1. Generate a complete self-contained HTML artifact.
 2. Save it to a local \`.html\` file.
 3. Publish it with \`docscn publish artifact.html --host ${origin}\`.
-4. Return the docscn artifact URL to the user.
+4. Return the docscn artifact URL to the user so they can open and share it.
 5. When asked to revise, run \`docscn artifact get <artifact-id-or-slug> --json --host ${origin}\`.
 6. Inspect open and needs-revision threads.
 7. Produce a full replacement HTML document, then run \`docscn revise <artifact-id-or-slug> revised.html --summary "..." --resolve <thread-id> --host ${origin}\`.

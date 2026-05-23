@@ -591,6 +591,110 @@ export const mockArtifacts: Artifact[] = [
 
 export const mockReviewThreads: ReviewThread[] = [
   {
+    id: 'thread-theme-card-contrast',
+    artifactId: 'artifact-annotation-theme-test',
+    revisionId: 'rev-annotation-theme-test-1',
+    status: 'open',
+    title: 'Make the theme switch more obvious',
+    anchor: {
+      kind: 'element',
+      label: 'Theme probe card',
+      elementLabel: 'Theme probe card',
+      selector: 'section.grid > article.card:nth-of-type(1)',
+      x: 18,
+      y: 58,
+      rect: {
+        x: 6,
+        y: 48,
+        width: 28,
+        height: 31,
+      },
+    },
+    requestedChange:
+      'Add a small before/after indicator or token swatch so reviewers can immediately tell the artifact theme changed.',
+    comments: [
+      {
+        id: 'comment-theme-card-1',
+        body: 'The dark mode looks good, but the test case would be clearer if this card had an obvious visual delta when toggling themes.',
+        author: maya,
+        createdAt: '2026-05-14T23:58:00.000Z',
+        role: 'human',
+      },
+      {
+        id: 'comment-theme-card-2',
+        body: 'Good call. I can add a pair of color chips that bind to the same CSS variables as the page.',
+        author: cursorAgent,
+        createdAt: '2026-05-15T00:02:00.000Z',
+        role: 'agent',
+      },
+    ],
+  },
+  {
+    id: 'thread-copy-too-instructional',
+    artifactId: 'artifact-annotation-theme-test',
+    revisionId: 'rev-annotation-theme-test-1',
+    status: 'needs-revision',
+    title: 'Tighten the text annotation instructions',
+    anchor: {
+      kind: 'text',
+      label:
+        'Text: "Select this exact paragraph while the text tool is active..."',
+      quote:
+        'Select this exact paragraph while the text tool is active. The comment composer should appear near the selected text and preserve the quoted text.',
+      selector: 'section.grid > article.card:nth-of-type(3) > div > p',
+      x: 80,
+      y: 61,
+      rect: {
+        x: 70,
+        y: 55,
+        width: 22,
+        height: 12,
+      },
+    },
+    requestedChange:
+      'Make this read less like test scaffolding and more like product copy a real artifact would use.',
+    comments: [
+      {
+        id: 'comment-copy-1',
+        body: 'This is useful for QA, but for the demo artifact it feels a little too meta. Could we make it more natural?',
+        author: sid,
+        createdAt: '2026-05-15T00:05:00.000Z',
+        role: 'human',
+      },
+    ],
+  },
+  {
+    id: 'thread-timeline-actions',
+    artifactId: 'artifact-annotation-theme-test',
+    revisionId: 'rev-annotation-theme-test-1',
+    status: 'open',
+    title: 'Clarify what the timeline buttons do',
+    anchor: {
+      kind: 'point',
+      label: 'Timeline action buttons',
+      x: 86,
+      y: 88,
+    },
+    requestedChange:
+      'The Inspect, Annotate, and Resolve buttons look clickable but do not communicate whether they are examples or real actions.',
+    comments: [
+      {
+        id: 'comment-timeline-actions-1',
+        body: 'Maybe label these as sample controls or add a hover state that explains they are part of the artifact preview.',
+        author: maya,
+        createdAt: '2026-05-15T00:08:00.000Z',
+        role: 'human',
+      },
+      {
+        id: 'comment-timeline-actions-2',
+        body: 'I would keep the buttons, but make their purpose explicit so collaborators know what to evaluate.',
+        author: claudeAgent,
+        createdAt: '2026-05-15T00:10:00.000Z',
+        role: 'agent',
+      },
+    ],
+  },
+  {
     id: 'thread-impact',
     artifactId: 'artifact-incident-timeline',
     revisionId: 'rev-incident-2',

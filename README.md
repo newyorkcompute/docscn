@@ -1,8 +1,9 @@
 # docscn
 
-docscn is an open-source workspace for agent-generated HTML artifacts.
-Publish interactive plans, reports, diagrams, prototypes, and docs. Review them
-with your team. Let agents revise from feedback.
+docscn is an open-source platform for hosting, sharing, and collaborating on
+AI-generated HTML artifacts. Publish interactive plans, reports, diagrams,
+prototypes, and docs from agents, share them at stable URLs, review them with
+your team, and let agents revise from feedback.
 
 The core loop is:
 
@@ -10,11 +11,11 @@ The core loop is:
 publish -> review -> revise
 ```
 
-docscn is not a notes app or markdown editor. It is a collaborative publishing
-and review layer for the self-contained HTML artifacts AI agents increasingly
+docscn is not a notes app or markdown editor. It is a collaborative hosting and
+publishing layer for the self-contained HTML artifacts AI agents increasingly
 produce: incident timelines, migration plans, generated dashboards,
-architecture explainers, animated reports, UI prototypes, and PR review
-artifacts.
+architecture explainers, animated reports, UI prototypes, custom editing
+interfaces, and PR review artifacts.
 
 ## Monorepo
 
@@ -22,7 +23,7 @@ This repo uses Nx with npm workspaces.
 
 ```text
 apps/
-  web/        Next.js app for docscn.ai
+  web/        Next.js app for hosting and collaborating on artifacts
 packages/
   ui/         Shared shadcn-inspired UI primitives
   db/         Drizzle/Postgres schema, migrations, repository, mock fallback
@@ -34,12 +35,22 @@ packages/
 
 ## Local Development
 
+Fastest path, using the built-in mock/runtime fallback:
+
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3000`, then try the local installer:
+
+```bash
+curl http://localhost:3000/install -fsS | bash
+docscn --version
+```
+
+If `~/.local/bin` is not on your shell `PATH`, the installer prints the export
+line to add.
 
 Useful commands:
 
@@ -62,6 +73,7 @@ the AI-native seed examples.
 To run the persistent stack locally:
 
 ```bash
+npm install
 cp .env.example .env.local
 npm run db:up
 npm run db:migrate
@@ -118,7 +130,7 @@ convenient, but the interfaces are meant to be replaceable.
 
 ## MVP Features
 
-- Polished light/dark landing page for `docscn.ai`.
+- Polished light/dark landing page for hosting, sharing, and collaboration.
 - Dashboard with AI-native artifact examples.
 - Better Auth email/password foundation with owner-aware artifact publishing.
 - Hashed API keys for agent and CLI publishing through `Authorization: Bearer`.
@@ -128,7 +140,7 @@ convenient, but the interfaces are meant to be replaceable.
 - Artifact metadata: title, description, author/agent, date, visibility, source.
 - Visibility rules: public artifacts are listed, unlisted artifacts are direct
   link shareable, and private artifacts are owner-only.
-- Review threads and revision history around each artifact.
+- Review threads, revision history, and collaboration metadata around each artifact.
 - Figma-style comment pins over the artifact viewer for review context.
 - SDK contracts shaped for future publish APIs, MCP tools, skills, and agents.
 - Agent-first CLI flow for browser login, local credential storage, publishing,
@@ -157,11 +169,19 @@ docscn is designed so agents operate through the CLI after reading
 and approval, while the CLI stores an API key locally at
 `~/.docscn/config.json`.
 
-For local development:
+For local development with the installed CLI:
 
 ```bash
-npm run cli -- login --host http://localhost:3000
-npm run cli -- whoami --host http://localhost:3000
+curl http://localhost:3000/install -fsS | bash
+docscn login --host http://localhost:3000
+docscn whoami --host http://localhost:3000
+docscn publish artifact.html --host http://localhost:3000
+```
+
+When hacking on the CLI source directly, use the workspace command:
+
+```bash
+npm run cli -- --version
 npm run cli -- publish artifact.html --host http://localhost:3000
 ```
 
@@ -172,16 +192,16 @@ Agents should never ask for the user's password.
 Agent workflow commands:
 
 ```bash
-npm run cli -- artifact get <artifact-id-or-slug> --json --host http://localhost:3000
-npm run cli -- revise <artifact-id-or-slug> revised.html \
+docscn artifact get <artifact-id-or-slug> --json --host http://localhost:3000
+docscn revise <artifact-id-or-slug> revised.html \
   --summary "Addressed review feedback" \
   --resolve <thread-id> \
   --host http://localhost:3000
-npm run cli -- thread create <artifact-id-or-slug> \
+docscn thread create <artifact-id-or-slug> \
   --title "Suggested improvement" \
   --body "..." \
   --host http://localhost:3000
-npm run cli -- comment <thread-id> \
+docscn comment <thread-id> \
   --body "Updated in revision 2." \
   --host http://localhost:3000
 ```

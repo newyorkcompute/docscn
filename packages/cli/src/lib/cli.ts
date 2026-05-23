@@ -351,7 +351,7 @@ function buildArtifactUrl(baseUrl: string, pathOrUrl: string) {
 export function getCliHelp() {
   return `docscn
 
-Publish and automate agent-generated HTML artifacts.
+Host, share, and collaborate on AI-generated HTML artifacts.
 
 Usage:
   docscn --version

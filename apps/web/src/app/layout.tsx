@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: 'docscn',
   description:
-    'Open-source workspace for publishing, reviewing, and revising agent-generated HTML artifacts.',
+    'Open-source platform for hosting, sharing, and collaborating on AI-generated HTML artifacts.',
 };
 
 const themeScript = `
