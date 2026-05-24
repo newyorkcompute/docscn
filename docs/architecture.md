@@ -149,4 +149,5 @@ Current automated coverage focuses on contracts rather than UI snapshots:
 - `npm run test:backend` — auth, publish, thread, revision API flow
 - `npm run smoke:agent` — full CLI publish and reload verification
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for the contributor workflow.
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for the contributor workflow and
+[self-hosting.md](./self-hosting.md) for production deployment.

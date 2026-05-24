@@ -77,6 +77,16 @@ npm run format
 
 ## Self-Hosted Quick Start
 
+For local development with Docker Postgres and MinIO:
+
+```bash
+npm install
+npm run setup:local
+npm run dev:persistent
+```
+
+For production deployment, see [docs/self-hosting.md](./docs/self-hosting.md).
+
 docscn is designed to run locally with replaceable open-source infrastructure:
 Postgres for metadata, MinIO/S3-compatible storage for artifact HTML, and Better
 Auth for sessions. The app is safe to run without configured services: if
@@ -266,6 +276,9 @@ Contributions are welcome. Start with:
 - [CONTRIBUTING.md](./CONTRIBUTING.md) for local setup and PR expectations
 - [CHANGELOG.md](./CHANGELOG.md) for release history
 - [docs/architecture.md](./docs/architecture.md) for the system overview
+- [docs/self-hosting.md](./docs/self-hosting.md) for production deployment
+- [ROADMAP.md](./ROADMAP.md) for project direction
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) for community standards
 - [SECURITY.md](./SECURITY.md) for vulnerability reporting
 - [examples/artifacts/](./examples/artifacts/) for sample HTML to publish locally
 

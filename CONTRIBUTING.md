@@ -54,7 +54,8 @@ npm run cli -- publish examples/artifacts/minimal.html --host http://localhost:3
 
 ## Project layout
 
-See [docs/architecture.md](./docs/architecture.md) for the system overview.
+See [docs/architecture.md](./docs/architecture.md) for the system overview and
+[docs/self-hosting.md](./docs/self-hosting.md) for production deployment.
 
 ```text
 apps/web/          Next.js app, API routes, artifact viewer
