@@ -8,6 +8,8 @@ repo-specific workflows.
 
 | Skill | Source | Use when |
 | --- | --- | --- |
+| [mcp-builder](./mcp-builder/SKILL.md) | [Anthropic skills](https://github.com/anthropics/skills/tree/main/skills/mcp-builder) | Building or extending MCP servers (tools, evals, TypeScript/Python patterns) |
+| [doc-coauthoring](./doc-coauthoring/SKILL.md) | [Anthropic skills](https://github.com/anthropics/skills/tree/main/skills/doc-coauthoring) | Writing specs, RFCs, decision docs, proposals — structured 3-stage co-authoring workflow |
 | [frontend-design](./frontend-design/SKILL.md) | [Anthropic claude-code](https://github.com/anthropics/claude-code/tree/main/plugins/frontend-design/skills/frontend-design) | Building distinctive UI, HTML artifacts, or frontend surfaces |
 
 For publishing hosted HTML artifacts to docscn, also read `/skills.md` on a

@@ -1,0 +1,20 @@
+Apache License 2.0
+
+This skill is vendored from Anthropic's public skills repository:
+https://github.com/anthropics/skills/tree/main/skills/doc-coauthoring
+
+The upstream project states that example skills in that repository are
+open source under Apache 2.0. See:
+https://github.com/anthropics/skills
+
+The "docscn integration" section at the end of SKILL.md is original to this
+repository and is not part of the upstream skill.
+
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   Copyright notices and full license text: see the Apache License 2.0 at
+   http://www.apache.org/licenses/LICENSE-2.0
