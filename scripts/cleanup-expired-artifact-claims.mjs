@@ -9,7 +9,7 @@ async function readEnvLocal() {
     const entries = {};
 
     for (const line of contents.split('\n')) {
-      const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+      const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/m);
       if (!match) {
         continue;
       }
