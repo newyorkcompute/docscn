@@ -1,4 +1,5 @@
 import './global.css';
+import Script from 'next/script';
 import { Geist, Geist_Mono } from 'next/font/google';
 
 const geistSans = Geist({
@@ -43,8 +44,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
-      <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <Script id="docscn-theme-init" strategy="beforeInteractive">
+          {themeScript}
+        </Script>
+        {children}
+      </body>
     </html>
   );
 }
