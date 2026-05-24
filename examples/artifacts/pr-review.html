@@ -6,35 +6,67 @@
     <title>PR review summary</title>
     <style>
       :root {
-        color-scheme: light dark;
+        color-scheme: light;
         font-family: ui-sans-serif, system-ui, sans-serif;
+        --bg: #f8fafc;
+        --fg: #0f172a;
+        --muted: #64748b;
+        --card: #ffffff;
+        --border: #e2e8f0;
+        --add-bg: #ecfdf5;
+        --del-bg: #fef2f2;
+        --high: #dc2626;
+        --med: #d97706;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not(.light):not(.dark) {
+          color-scheme: dark;
+          --bg: #0b1220;
+          --fg: #e2e8f0;
+          --muted: #94a3b8;
+          --card: #111827;
+          --border: #1f2937;
+          --add-bg: rgba(16, 185, 129, 0.12);
+          --del-bg: rgba(239, 68, 68, 0.12);
+          --high: #f87171;
+          --med: #fbbf24;
+        }
+      }
+
+      html.dark,
+      html[data-docscn-theme='dark'] {
+        color-scheme: dark;
+        --bg: #0b1220;
+        --fg: #e2e8f0;
+        --muted: #94a3b8;
+        --card: #111827;
+        --border: #1f2937;
+        --add-bg: rgba(16, 185, 129, 0.12);
+        --del-bg: rgba(239, 68, 68, 0.12);
+        --high: #f87171;
+        --med: #fbbf24;
+      }
+
+      html.light,
+      html[data-docscn-theme='light'] {
+        color-scheme: light;
+        --bg: #f8fafc;
+        --fg: #0f172a;
+        --muted: #64748b;
+        --card: #ffffff;
+        --border: #e2e8f0;
+        --add-bg: #ecfdf5;
+        --del-bg: #fef2f2;
+        --high: #dc2626;
+        --med: #d97706;
       }
 
       body {
         margin: 0;
         min-height: 100vh;
-        background: #f8fafc;
-        color: #0f172a;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        body {
-          background: #0b1220;
-          color: #e2e8f0;
-        }
-
-        .card {
-          background: #111827;
-          border-color: #1f2937;
-        }
-
-        .add {
-          background: rgba(16, 185, 129, 0.12);
-        }
-
-        .del {
-          background: rgba(239, 68, 68, 0.12);
-        }
+        background: var(--bg);
+        color: var(--fg);
       }
 
       main {
@@ -49,7 +81,7 @@
       }
 
       .meta {
-        color: #64748b;
+        color: var(--muted);
         font-size: 0.95rem;
       }
 
@@ -57,8 +89,8 @@
         margin-top: 1.25rem;
         padding: 1.25rem;
         border-radius: 1rem;
-        border: 1px solid #e2e8f0;
-        background: #ffffff;
+        border: 1px solid var(--border);
+        background: var(--card);
       }
 
       .checks {
@@ -83,20 +115,20 @@
       }
 
       .add {
-        background: #ecfdf5;
+        background: var(--add-bg);
       }
 
       .del {
-        background: #fef2f2;
+        background: var(--del-bg);
       }
 
       .severity-high {
-        color: #dc2626;
+        color: var(--high);
         font-weight: 600;
       }
 
       .severity-med {
-        color: #d97706;
+        color: var(--med);
         font-weight: 600;
       }
     </style>

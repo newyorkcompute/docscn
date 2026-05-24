@@ -6,15 +6,67 @@
     <title>Agent evaluation dashboard</title>
     <style>
       :root {
-        color-scheme: dark;
+        color-scheme: light;
         font-family: ui-sans-serif, system-ui, sans-serif;
+        --bg-start: #e0f2fe;
+        --bg-end: #f8fafc;
+        --fg: #0f172a;
+        --muted: #475569;
+        --card-bg: rgba(255, 255, 255, 0.85);
+        --card-border: rgba(15, 23, 42, 0.1);
+        --table-border: rgba(15, 23, 42, 0.08);
+        --pass: #0d9488;
+        --warn: #b45309;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not(.light):not(.dark) {
+          color-scheme: dark;
+          --bg-start: #082f49;
+          --bg-end: #111827;
+          --fg: #ecfeff;
+          --muted: #94a3b8;
+          --card-bg: rgba(255, 255, 255, 0.08);
+          --card-border: rgba(255, 255, 255, 0.16);
+          --table-border: rgba(255, 255, 255, 0.12);
+          --pass: #5eead4;
+          --warn: #fbbf24;
+        }
+      }
+
+      html.dark,
+      html[data-docscn-theme='dark'] {
+        color-scheme: dark;
+        --bg-start: #082f49;
+        --bg-end: #111827;
+        --fg: #ecfeff;
+        --muted: #94a3b8;
+        --card-bg: rgba(255, 255, 255, 0.08);
+        --card-border: rgba(255, 255, 255, 0.16);
+        --table-border: rgba(255, 255, 255, 0.12);
+        --pass: #5eead4;
+        --warn: #fbbf24;
+      }
+
+      html.light,
+      html[data-docscn-theme='light'] {
+        color-scheme: light;
+        --bg-start: #e0f2fe;
+        --bg-end: #f8fafc;
+        --fg: #0f172a;
+        --muted: #475569;
+        --card-bg: rgba(255, 255, 255, 0.85);
+        --card-border: rgba(15, 23, 42, 0.1);
+        --table-border: rgba(15, 23, 42, 0.08);
+        --pass: #0d9488;
+        --warn: #b45309;
       }
 
       body {
         margin: 0;
         min-height: 100vh;
-        color: #ecfeff;
-        background: linear-gradient(135deg, #082f49, #111827);
+        color: var(--fg);
+        background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
       }
 
       main {
@@ -28,6 +80,10 @@
         font-size: clamp(2rem, 4vw, 2.75rem);
       }
 
+      main > p {
+        color: var(--muted);
+      }
+
       .cards {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -38,8 +94,13 @@
       .card {
         padding: 1.125rem;
         border-radius: 1.125rem;
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+      }
+
+      .card > p:first-child {
+        color: var(--muted);
+        margin: 0;
       }
 
       .big {
@@ -59,15 +120,20 @@
       td {
         text-align: left;
         padding: 0.75rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        border-bottom: 1px solid var(--table-border);
+      }
+
+      th {
+        color: var(--muted);
+        font-weight: 600;
       }
 
       .pass {
-        color: #5eead4;
+        color: var(--pass);
       }
 
       .warn {
-        color: #fbbf24;
+        color: var(--warn);
       }
 
       @media (max-width: 800px) {

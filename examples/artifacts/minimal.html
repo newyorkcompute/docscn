@@ -6,15 +6,55 @@
     <title>docscn example artifact</title>
     <style>
       :root {
-        color-scheme: light dark;
+        color-scheme: light;
         font-family: ui-sans-serif, system-ui, sans-serif;
+        --bg: #eef4ff;
+        --bg-end: #ffffff;
+        --fg: #0f172a;
+        --muted: #334155;
+        --card: rgba(255, 255, 255, 0.88);
+        --border: rgba(15, 23, 42, 0.08);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not(.light):not(.dark) {
+          color-scheme: dark;
+          --bg: #0c1220;
+          --bg-end: #111827;
+          --fg: #e2e8f0;
+          --muted: #94a3b8;
+          --card: rgba(17, 24, 39, 0.92);
+          --border: rgba(148, 163, 184, 0.18);
+        }
+      }
+
+      html.dark,
+      html[data-docscn-theme='dark'] {
+        color-scheme: dark;
+        --bg: #0c1220;
+        --bg-end: #111827;
+        --fg: #e2e8f0;
+        --muted: #94a3b8;
+        --card: rgba(17, 24, 39, 0.92);
+        --border: rgba(148, 163, 184, 0.18);
+      }
+
+      html.light,
+      html[data-docscn-theme='light'] {
+        color-scheme: light;
+        --bg: #eef4ff;
+        --bg-end: #ffffff;
+        --fg: #0f172a;
+        --muted: #334155;
+        --card: rgba(255, 255, 255, 0.88);
+        --border: rgba(15, 23, 42, 0.08);
       }
 
       body {
         margin: 0;
         min-height: 100vh;
-        background: linear-gradient(180deg, #eef4ff, #ffffff);
-        color: #0f172a;
+        background: linear-gradient(180deg, var(--bg), var(--bg-end));
+        color: var(--fg);
       }
 
       main {
@@ -32,15 +72,19 @@
       p {
         font-size: 1.05rem;
         line-height: 1.7;
-        color: #334155;
+        color: var(--muted);
       }
 
       .card {
         margin-top: 2rem;
         padding: 1.25rem 1.5rem;
         border-radius: 1rem;
-        background: rgba(255, 255, 255, 0.8);
-        border: 1px solid rgba(15, 23, 42, 0.08);
+        background: var(--card);
+        border: 1px solid var(--border);
+      }
+
+      code {
+        font-size: 0.9em;
       }
     </style>
   </head>

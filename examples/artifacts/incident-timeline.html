@@ -6,15 +6,75 @@
     <title>Checkout latency incident timeline</title>
     <style>
       :root {
-        color-scheme: dark;
+        color-scheme: light;
         font-family: ui-sans-serif, system-ui, sans-serif;
+        --bg: #f1f5f9;
+        --fg: #0f172a;
+        --muted: #475569;
+        --card-bg: linear-gradient(135deg, #ffffff, #f8fafc);
+        --card-border: #cbd5e1;
+        --event-border: #e2e8f0;
+        --accent: #0d9488;
+        --accent-fg: #ffffff;
+        --sev-border: #f43f5e;
+        --sev-fg: #be123c;
+        --pre-bg: #f1f5f9;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not(.light):not(.dark) {
+          color-scheme: dark;
+          --bg: #071016;
+          --fg: #e5f8ff;
+          --muted: #94a3b8;
+          --card-bg: linear-gradient(135deg, #0d1c25, #101820);
+          --card-border: #254453;
+          --event-border: #203642;
+          --accent: #5eead4;
+          --accent-fg: #021014;
+          --sev-border: #fb7185;
+          --sev-fg: #fecdd3;
+          --pre-bg: #0a141c;
+        }
+      }
+
+      html.dark,
+      html[data-docscn-theme='dark'] {
+        color-scheme: dark;
+        --bg: #071016;
+        --fg: #e5f8ff;
+        --muted: #94a3b8;
+        --card-bg: linear-gradient(135deg, #0d1c25, #101820);
+        --card-border: #254453;
+        --event-border: #203642;
+        --accent: #5eead4;
+        --accent-fg: #021014;
+        --sev-border: #fb7185;
+        --sev-fg: #fecdd3;
+        --pre-bg: #0a141c;
+      }
+
+      html.light,
+      html[data-docscn-theme='light'] {
+        color-scheme: light;
+        --bg: #f1f5f9;
+        --fg: #0f172a;
+        --muted: #475569;
+        --card-bg: linear-gradient(135deg, #ffffff, #f8fafc);
+        --card-border: #cbd5e1;
+        --event-border: #e2e8f0;
+        --accent: #0d9488;
+        --accent-fg: #ffffff;
+        --sev-border: #f43f5e;
+        --sev-fg: #be123c;
+        --pre-bg: #f1f5f9;
       }
 
       body {
         margin: 0;
         min-height: 100vh;
-        color: #e5f8ff;
-        background: #071016;
+        color: var(--fg);
+        background: var(--bg);
       }
 
       main {
@@ -25,8 +85,8 @@
 
       .sev {
         display: inline-flex;
-        border: 1px solid #fb7185;
-        color: #fecdd3;
+        border: 1px solid var(--sev-border);
+        color: var(--sev-fg);
         border-radius: 999px;
         padding: 0.25rem 0.75rem;
         font-size: 0.75rem;
@@ -48,10 +108,10 @@
       }
 
       .card {
-        border: 1px solid #254453;
+        border: 1px solid var(--card-border);
         border-radius: 1.25rem;
         padding: 1.25rem;
-        background: linear-gradient(135deg, #0d1c25, #101820);
+        background: var(--card-bg);
       }
 
       .event {
@@ -59,11 +119,11 @@
         grid-template-columns: 5rem 1fr;
         gap: 1rem;
         padding: 0.875rem 0;
-        border-bottom: 1px solid #203642;
+        border-bottom: 1px solid var(--event-border);
       }
 
       .time {
-        color: #5eead4;
+        color: var(--accent);
         font-family: ui-monospace, monospace;
       }
 
@@ -75,13 +135,22 @@
 
       button {
         margin-top: 1rem;
-        background: #5eead4;
+        background: var(--accent);
         border: 0;
         border-radius: 0.625rem;
         padding: 0.625rem 0.875rem;
-        color: #021014;
+        color: var(--accent-fg);
         font-weight: 700;
         cursor: pointer;
+      }
+
+      pre {
+        margin-top: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        background: var(--pre-bg);
+        font-size: 0.85rem;
+        color: var(--muted);
       }
 
       .hidden {
