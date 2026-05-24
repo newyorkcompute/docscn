@@ -1,11 +1,15 @@
 import './global.css';
+import type { Metadata } from 'next';
 import Script from 'next/script';
 import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
+import { getAppOrigin } from '../lib/app-origin';
 
 const display = Fraunces({
   subsets: ['latin'],
   variable: '--font-family-display',
   display: 'swap',
+  adjustFontFallback: true,
+  preload: false,
 });
 
 const sans = IBM_Plex_Sans({
@@ -13,6 +17,8 @@ const sans = IBM_Plex_Sans({
   weight: ['400', '500', '600'],
   variable: '--font-family-sans',
   display: 'swap',
+  adjustFontFallback: true,
+  preload: true,
 });
 
 const mono = IBM_Plex_Mono({
@@ -20,12 +26,34 @@ const mono = IBM_Plex_Mono({
   weight: ['400', '500'],
   variable: '--font-family-mono',
   display: 'swap',
+  preload: false,
 });
 
-export const metadata = {
-  title: 'docscn',
+const appOrigin = getAppOrigin();
+
+export const metadata: Metadata = {
+  metadataBase: new URL(appOrigin),
+  title: {
+    default: 'docscn',
+    template: '%s | docscn',
+  },
   description:
     'Open-source platform for hosting, sharing, and collaborating on AI-generated HTML artifacts.',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: appOrigin,
+    siteName: 'docscn',
+    title: 'docscn',
+    description:
+      'Open-source platform for hosting, sharing, and collaborating on AI-generated HTML artifacts.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'docscn',
+    description:
+      'Open-source platform for hosting, sharing, and collaborating on AI-generated HTML artifacts.',
+  },
 };
 
 const themeScript = `

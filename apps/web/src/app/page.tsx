@@ -14,27 +14,17 @@ import {
   RefreshCcw,
   Server,
 } from 'lucide-react';
-import { listArtifacts } from '@docscn/db';
 import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
-import { exampleArtifacts } from '../lib/example-artifacts';
 import { GITHUB_REPO_URL } from '../lib/constants';
-import { getGalleryArtifactHref } from '../lib/gallery-artifacts';
-import { getServerSession } from '../lib/session';
-import { getRequestOrigin } from '../lib/request-origin';
+import { getAppOrigin } from '../lib/app-origin';
+import { HomeGallerySection } from '../components/home-gallery-section';
+import { HeroInstallCommand } from '../components/hero-install-command';
 import { SiteHeader } from '../components/site-header';
-import { TerminalCommand } from '../components/terminal-command';
 
-export const dynamic = 'force-dynamic';
-
-const featuredExamples = exampleArtifacts.slice(0, 4);
-
-export default async function Index() {
-  const session = await getServerSession();
-  const artifacts = await listArtifacts({ viewerUserId: session?.user.id });
-  const origin = await getRequestOrigin();
+export default function Index() {
+  const origin = getAppOrigin();
   const installCommand = `curl ${origin}/install -fsS | bash`;
   const publishCommand = `docscn publish artifact.html --host ${origin}`;
-  const hasLiveArtifacts = artifacts.length > 0;
 
   const agentIntegrations = [
     {
@@ -87,18 +77,16 @@ export default async function Index() {
       <main>
         <section className="relative overflow-hidden border-b border-border/60">
           <div className="hero-grid pointer-events-none absolute inset-0 opacity-60" />
-          <div className="pointer-events-none absolute -right-24 top-8 h-72 w-72 rounded-full bg-glow/20 blur-3xl animate-drift" />
-          <div className="pointer-events-none absolute -left-16 bottom-0 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
 
           <Shell className="relative grid gap-10 py-10 sm:py-14 lg:min-h-[calc(100svh-4.5rem)] lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-16 lg:py-16">
             <section>
               <Badge className="animate-fade-up" tone="outline">
                 no-login publish / cloud or self-host / agent-native
               </Badge>
-              <h1 className="animate-fade-up delay-1 mt-6 font-display text-[2.35rem] font-semibold leading-[1.03] tracking-[-0.03em] sm:text-[2.75rem] md:text-6xl xl:text-7xl">
+              <h1 className="mt-6 font-display text-[2.35rem] font-semibold leading-[1.03] tracking-[-0.03em] sm:text-[2.75rem] md:text-6xl xl:text-7xl">
                 Host, share, and collaborate on AI-generated HTML artifacts.
               </h1>
-              <p className="animate-fade-up delay-2 mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
+              <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
                 Publish AI-generated HTML to stable URLs without an account. Use
                 the hosted workspace or self-host with your own storage. Sign in
                 when you want comments, revisions, ownership, and private
@@ -121,7 +109,7 @@ export default async function Index() {
                   </Link>
                 </Button>
               </div>
-              <TerminalCommand
+              <HeroInstallCommand
                 className="animate-fade-up delay-4 mt-10"
                 command={installCommand}
                 label="Get started in 30 seconds"
@@ -223,86 +211,7 @@ export default async function Index() {
           ))}
         </Shell>
 
-        <Shell className="py-4 pb-20">
-          <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-            <div>
-              <Eyebrow>artifact examples</Eyebrow>
-              <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight md:text-4xl">
-                Real outputs from agent workflows.
-              </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-                {hasLiveArtifacts
-                  ? 'Recently published artifacts from this instance.'
-                  : 'Starter demos open in the full artifact workspace. Your published artifacts replace them here.'}
-              </p>
-            </div>
-            <Button asChild variant="outline">
-              <Link href="/examples">
-                {hasLiveArtifacts ? 'View gallery' : 'Browse all examples'}{' '}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-
-          <div className="mt-8 grid gap-4 lg:grid-cols-4">
-            {hasLiveArtifacts
-              ? artifacts.map((artifact) => (
-                  <Link href={`/artifacts/${artifact.slug}`} key={artifact.id}>
-                    <Card className="feature-card group h-full p-5">
-                      <PanelsTopLeft className="h-5 w-5 text-primary" />
-                      <h3 className="mt-5 font-display text-lg font-semibold tracking-tight">
-                        {artifact.metadata.title}
-                      </h3>
-                      <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">
-                        {artifact.metadata.description}
-                      </p>
-                      <div className="mt-4 flex items-center justify-between gap-2">
-                        <Badge tone="muted">{artifact.metadata.kind}</Badge>
-                        <ArrowUpRight className="h-4 w-4 text-muted-foreground transition group-hover:text-primary" />
-                      </div>
-                    </Card>
-                  </Link>
-                ))
-              : featuredExamples.map((example) => (
-                  <Link
-                    href={getGalleryArtifactHref(example.id)}
-                    key={example.id}
-                  >
-                    <Card className="feature-card group h-full p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <PanelsTopLeft className="h-5 w-5 text-primary" />
-                        <Badge tone="outline">Starter demo</Badge>
-                      </div>
-                      <h3 className="mt-5 font-display text-lg font-semibold tracking-tight">
-                        {example.title}
-                      </h3>
-                      <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">
-                        {example.description}
-                      </p>
-                      <div className="mt-4 flex items-center justify-between gap-2">
-                        <Badge tone="muted">{example.kind}</Badge>
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground transition group-hover:text-primary">
-                          Open artifact
-                          <ArrowUpRight className="h-3.5 w-3.5" />
-                        </span>
-                      </div>
-                    </Card>
-                  </Link>
-                ))}
-          </div>
-
-          {!hasLiveArtifacts ? (
-            <p className="mt-6 text-sm text-muted-foreground">
-              Ready to make one yours?{' '}
-              <Link
-                className="font-medium text-primary underline-offset-4 hover:underline"
-                href="/dashboard"
-              >
-                Open workspace
-              </Link>
-            </p>
-          ) : null}
-        </Shell>
+        <HomeGallerySection />
 
         <Shell className="pb-24">
           <Card className="feature-card relative overflow-hidden grid gap-8 p-8 lg:grid-cols-[0.7fr_1.3fr]">
