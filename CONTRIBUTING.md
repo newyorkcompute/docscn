@@ -96,6 +96,41 @@ Use the same voice as commit subjects — short, imperative, no ticket prefixes:
 Link related issues in the PR body or commit with `Closes #123` when the PR
 resolves a ticket.
 
+### Conventional Commits (optional)
+
+We follow a human-first imperative style by default. If you prefer
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), map our
+verbs to types like this:
+
+| Imperative subject | Conventional type |
+| --- | --- |
+| `Add …`, `Expand …` | `feat:` |
+| `Fix …` | `fix:` |
+| `Bump …` | `chore:` or `build:` |
+| `Improve …`, `Polish …`, `Refactor …` | `refactor:` |
+| Docs-only changes | `docs:` |
+| Test-only changes | `test:` |
+| CI/workflow-only changes | `ci:` |
+
+Examples:
+
+- `feat: add anonymous artifact recovery`
+- `fix: prevent Postgres pool exhaustion in dev`
+- `chore: bump Next.js to 16.2.6`
+
+Use Conventional Commits on **squash-merge titles** when you want structured
+history on `main`. Individual commits on a branch can stay imperative — we do
+not enforce types locally.
+
+For breaking API, CLI, or schema changes, add a footer:
+
+```text
+BREAKING CHANGE: describe what callers must update
+```
+
+We do not run commitlint or other commit hooks yet. If we later automate
+releases or changelogs from commit history, we may adopt tooling then.
+
 ## Checks to run
 
 Always:

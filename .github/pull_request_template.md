@@ -1,6 +1,6 @@
 ## Summary
 
-<!-- What changed and why? 1–3 bullets. Use "Closes #123" when this resolves an issue. -->
+<!-- What changed and why? 1–3 bullets. Use "Closes #123" when this resolves an issue. Squash-merge titles may use Conventional Commits (feat:, fix:, chore:) — see CONTRIBUTING.md. -->
 
 ## Type of change
 
