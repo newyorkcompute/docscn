@@ -1,0 +1,22 @@
+---
+description: Verify bot and automated review fixes before declaring PRs merge-ready
+alwaysApply: true
+---
+
+# Automated Fix Verification
+
+When applying Bugbot, Dependabot, agent-authored, or other automated review
+fixes, do not treat the bot result as merge-ready by itself.
+
+Before saying a PR is ready to merge after automated fixes, run the affected CI
+suite locally when practical:
+
+```bash
+npm run ci:affected -- --base=origin/main --head=HEAD
+```
+
+If the change touches API, auth, persistence, CLI/MCP behavior, or the browser
+runtime, also run the relevant integration command from the PR template.
+
+Always check GitHub PR checks after pushing automated fixes. CI is the final
+authority; Bugbot passing does not mean required GitHub Actions are green.

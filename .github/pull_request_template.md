@@ -20,6 +20,7 @@
 - [ ] `npm run openapi:check`
 - [ ] `npm run test:cli`
 - [ ] `npm run test:mcp`
+- [ ] Automated/bot fixes checked with affected CI (`npm run ci:affected -- --base=origin/main --head=HEAD`) when applicable
 - [ ] Persistent stack checked (`setup:local`, `dev:persistent`, `test:backend`, `test:mcp:integration`, or `smoke:agent`)
 
 ## Screenshots / recordings

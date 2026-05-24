@@ -16,6 +16,7 @@
     "start": "node apps/web/.next/standalone/apps/web/server.js",
     "build:cli:release": "node scripts/build-cli-release.mjs",
     "lint": "nx run-many -t lint -p web,ui,db,storage,sdk,cli,mcp,config",
+    "ci:affected": "node scripts/ci-affected.mjs",
     "ci:affected:lint": "nx affected -t lint --exclude=docscn --parallel=3",
     "ci:affected:build": "nx affected -t build --exclude=docscn --parallel=3",
     "ci:affected:unit": "nx affected -t unit --exclude=docscn --parallel=2",
