@@ -762,7 +762,7 @@ export async function claimAnonymousArtifacts(
         (candidate) => candidate.artifactId === receipt.artifactId,
       );
 
-      if (!artifact || !claim) {
+      if (!artifact) {
         result.skipped.push({
           artifactId: receipt.artifactId,
           reason: 'not-found',
@@ -774,6 +774,14 @@ export async function claimAnonymousArtifacts(
         result.skipped.push({
           artifactId: receipt.artifactId,
           reason: 'already-owned',
+        });
+        continue;
+      }
+
+      if (!claim) {
+        result.skipped.push({
+          artifactId: receipt.artifactId,
+          reason: 'expired-token',
         });
         continue;
       }
@@ -822,7 +830,7 @@ export async function claimAnonymousArtifacts(
       .where(eq(artifactClaims.artifactId, receipt.artifactId))
       .limit(1);
 
-    if (!artifact || !claim) {
+    if (!artifact) {
       result.skipped.push({
         artifactId: receipt.artifactId,
         reason: 'not-found',
@@ -834,6 +842,14 @@ export async function claimAnonymousArtifacts(
       result.skipped.push({
         artifactId: receipt.artifactId,
         reason: 'already-owned',
+      });
+      continue;
+    }
+
+    if (!claim) {
+      result.skipped.push({
+        artifactId: receipt.artifactId,
+        reason: 'expired-token',
       });
       continue;
     }

@@ -75,6 +75,31 @@ async function expireArtifactClaim(artifactId) {
   }
 }
 
+async function cleanupExpiredArtifactClaim(artifactId) {
+  const databaseUrl = await getDatabaseUrl();
+
+  assert.ok(
+    databaseUrl,
+    'DATABASE_URL or .env.local DATABASE_URL is required for claim cleanup tests.',
+  );
+
+  const sql = postgres(databaseUrl, { max: 1 });
+
+  try {
+    const deletedRows = await sql`
+      DELETE FROM artifact_claims
+      WHERE artifact_id = ${artifactId}
+        AND claimed_at IS NULL
+        AND expires_at <= now()
+      RETURNING artifact_id
+    `;
+
+    assert.equal(deletedRows.length, 1);
+  } finally {
+    await sql.end({ timeout: 5 });
+  }
+}
+
 async function createApiKeyViaCliAuth(cookie) {
   const start = await jsonFetch('/api/cli/auth/start', { method: 'POST' });
 
@@ -241,6 +266,33 @@ const expiredClaimResult = await jsonFetch('/api/artifacts/claims', {
 });
 assert.deepEqual(expiredClaimResult.payload.claimed, []);
 assert.deepEqual(expiredClaimResult.payload.skipped, [
+  {
+    artifactId: expiredAnonymousPublished.payload.result.artifactId,
+    reason: 'expired-token',
+  },
+]);
+
+await cleanupExpiredArtifactClaim(
+  expiredAnonymousPublished.payload.result.artifactId,
+);
+
+const cleanedUpExpiredClaimResult = await jsonFetch('/api/artifacts/claims', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', cookie, origin: base },
+  body: JSON.stringify({
+    receipts: [
+      {
+        artifactId: expiredAnonymousPublished.payload.result.artifactId,
+        slug: expiredAnonymousPublished.payload.result.slug,
+        title: 'Expired anonymous claim artifact',
+        claimToken: expiredAnonymousPublished.payload.result.claimToken,
+        createdAt: new Date().toISOString(),
+      },
+    ],
+  }),
+});
+assert.deepEqual(cleanedUpExpiredClaimResult.payload.claimed, []);
+assert.deepEqual(cleanedUpExpiredClaimResult.payload.skipped, [
   {
     artifactId: expiredAnonymousPublished.payload.result.artifactId,
     reason: 'expired-token',
