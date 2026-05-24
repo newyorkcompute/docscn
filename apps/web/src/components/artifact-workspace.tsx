@@ -264,11 +264,7 @@ export function ArtifactWorkspace({
       return undefined;
     }
 
-    return buildAgentFeedbackContext(
-      artifact,
-      selectedRevision.id,
-      threads,
-    );
+    return buildAgentFeedbackContext(artifact, selectedRevision.id, threads);
   }, [artifact, selectedRevision, threads]);
 
   const feedbackJson = feedbackBundle
@@ -654,12 +650,12 @@ export function ArtifactWorkspace({
       : undefined;
   const activeThreadPopoverVisible = Boolean(
     activeThreadPopover &&
-      activeThreadPopoverIndex >= 0 &&
-      isAnchorVisible(
-        activeThreadPopover,
-        activeThreadPopoverIndex,
-        artifactViewport,
-      ),
+    activeThreadPopoverIndex >= 0 &&
+    isAnchorVisible(
+      activeThreadPopover,
+      activeThreadPopoverIndex,
+      artifactViewport,
+    ),
   );
   const pendingViewportPoint = pendingAnchor
     ? getViewportPoint(pendingAnchor, artifactViewport)
@@ -911,13 +907,9 @@ export function ArtifactWorkspace({
             left: `${activeThreadPopoverPoint.x}%`,
             top: `${activeThreadPopoverPoint.y}%`,
             transform: `translate(${
-              activeThreadPopoverPoint.x > 62
-                ? 'calc(-100% - 14px)'
-                : '14px'
+              activeThreadPopoverPoint.x > 62 ? 'calc(-100% - 14px)' : '14px'
             }, ${
-              activeThreadPopoverPoint.y > 58
-                ? 'calc(-100% - 14px)'
-                : '14px'
+              activeThreadPopoverPoint.y > 58 ? 'calc(-100% - 14px)' : '14px'
             })`,
           }}
         >
@@ -991,7 +983,8 @@ export function ArtifactWorkspace({
             <Button
               className="rounded-full bg-primary px-4 text-primary-foreground hover:bg-primary/90"
               disabled={
-                !canComment || pendingAction === `comment-${activeThreadPopover.id}`
+                !canComment ||
+                pendingAction === `comment-${activeThreadPopover.id}`
               }
               size="sm"
               type="button"
@@ -1030,9 +1023,7 @@ export function ArtifactWorkspace({
             top: `${pendingPopoverPoint.y}%`,
             transform: `translate(${
               pendingPopoverPoint.x > 62 ? 'calc(-100% - 14px)' : '14px'
-            }, ${
-              pendingPopoverPoint.y > 58 ? 'calc(-100% - 14px)' : '14px'
-            })`,
+            }, ${pendingPopoverPoint.y > 58 ? 'calc(-100% - 14px)' : '14px'})`,
           }}
           onSubmit={createThread}
         >
@@ -1134,7 +1125,9 @@ export function ArtifactWorkspace({
                     </p>
                     <Button asChild className="mt-3" size="sm">
                       <Link href={isAuthenticated ? '/publish' : '/sign-in'}>
-                        {isAuthenticated ? 'Publish your own' : 'Sign in to unlock'}
+                        {isAuthenticated
+                          ? 'Publish your own'
+                          : 'Sign in to unlock'}
                       </Link>
                     </Button>
                   </Card>
@@ -1302,7 +1295,8 @@ export function ArtifactWorkspace({
                           <Button
                             className="h-7 rounded-full px-2 text-xs text-muted-foreground"
                             disabled={
-                              !canComment || pendingAction === `comment-${thread.id}`
+                              !canComment ||
+                              pendingAction === `comment-${thread.id}`
                             }
                             size="sm"
                             type="button"
@@ -1333,13 +1327,17 @@ export function ArtifactWorkspace({
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
                       placeholder="Revision summary"
                       value={revisionSummary}
-                      onChange={(event) => setRevisionSummary(event.target.value)}
+                      onChange={(event) =>
+                        setRevisionSummary(event.target.value)
+                      }
                     />
                     <input
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
                       placeholder="Author / agent"
                       value={revisionAuthor}
-                      onChange={(event) => setRevisionAuthor(event.target.value)}
+                      onChange={(event) =>
+                        setRevisionAuthor(event.target.value)
+                      }
                     />
                     <textarea
                       className="min-h-40 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs outline-none ring-ring focus:ring-2"
@@ -1367,7 +1365,9 @@ export function ArtifactWorkspace({
                                   setResolvedThreadIds((current) =>
                                     event.target.checked
                                       ? [...current, thread.id]
-                                      : current.filter((id) => id !== thread.id),
+                                      : current.filter(
+                                          (id) => id !== thread.id,
+                                        ),
                                   );
                                 }}
                               />
