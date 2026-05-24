@@ -75,6 +75,10 @@ scripts/           Setup, smoke tests, release helpers
 4. Update docs when behavior or setup changes
 5. Run the checks below before opening a PR
 
+Git hooks install automatically on `npm install` (via Husky). Before each
+commit, lint-staged runs Prettier and ESLint on staged files only. CI remains
+the required gate — skip hooks in a pinch with `git commit --no-verify`.
+
 ### Commit messages
 
 Use short, imperative subject lines:
