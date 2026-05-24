@@ -37,6 +37,9 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
+      - name: Check OpenAPI sync
+        run: npm run openapi:check
+
       - name: Test CLI
         run: npm run test:cli
 
@@ -81,6 +84,9 @@ jobs:
 
       - name: Run backend API tests
         run: npm run test:backend
+
+      - name: Run MCP integration tests
+        run: npm run test:mcp:integration
 
       - name: Stop web app
         if: always()
