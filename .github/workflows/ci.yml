@@ -37,7 +37,12 @@ jobs:
         run: npm run typecheck
 
       - name: Check formatting
-        run: npm run format:check
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            npx nx format:check --base="origin/${{ github.base_ref }}" --head=HEAD
+          else
+            npx nx format:check --base="${{ github.event.before }}" --head=HEAD
+          fi
 
       - name: Check OpenAPI sync
         run: npm run openapi:check
