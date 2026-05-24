@@ -38,13 +38,7 @@ export function ThemeToggle({
 }: {
   className?: string;
   showLabel?: boolean;
-  variant?:
-    | 'outline'
-    | 'ghost'
-    | 'default'
-    | 'destructive'
-    | 'secondary'
-    | 'link';
+  variant?: 'default' | 'secondary' | 'ghost' | 'outline';
 }) {
   const [theme, setTheme] = useState<ThemePreference>('system');
 
