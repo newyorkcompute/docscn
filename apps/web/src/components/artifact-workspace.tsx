@@ -800,6 +800,7 @@ export function ArtifactWorkspace({
           <ThemeToggle
             className="h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white"
             showLabel={false}
+            variant="ghost"
           />
         </ToolbarTip>
         <div className="relative">

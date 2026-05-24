@@ -34,9 +34,11 @@ function getStoredTheme(): ThemePreference {
 export function ThemeToggle({
   className,
   showLabel = false,
+  variant = 'outline',
 }: {
   className?: string;
   showLabel?: boolean;
+  variant?: 'outline' | 'ghost' | 'default' | 'destructive' | 'secondary' | 'link';
 }) {
   const [theme, setTheme] = useState<ThemePreference>('system');
 
@@ -83,7 +85,7 @@ export function ThemeToggle({
       onClick={cycleTheme}
       size="sm"
       title={`Theme: ${label}`}
-      variant="outline"
+      variant={variant}
     >
       <Icon className="h-4 w-4" />
       {showLabel ? <span className="hidden sm:inline">{label}</span> : null}
