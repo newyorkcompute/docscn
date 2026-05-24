@@ -83,6 +83,54 @@ Use short, imperative subject lines:
 - `Fix unlisted artifact page access`
 - `Polish review sidebar empty state`
 
+### Pull request titles
+
+Use the same voice as commit subjects — short, imperative, no ticket prefixes:
+
+- `Add …` for features
+- `Fix …` for bugs
+- `Bump …` for dependency or CI updates
+- `Improve …` or `Polish …` for UX and copy
+- `Expand …` when extending an existing surface
+
+Link related issues in the PR body or commit with `Closes #123` when the PR
+resolves a ticket.
+
+### Conventional Commits (optional)
+
+We follow a human-first imperative style by default. If you prefer
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), map our
+verbs to types like this:
+
+| Imperative subject                    | Conventional type    |
+| ------------------------------------- | -------------------- |
+| `Add …`, `Expand …`                   | `feat:`              |
+| `Fix …`                               | `fix:`               |
+| `Bump …`                              | `chore:` or `build:` |
+| `Improve …`, `Polish …`, `Refactor …` | `refactor:`          |
+| Docs-only changes                     | `docs:`              |
+| Test-only changes                     | `test:`              |
+| CI/workflow-only changes              | `ci:`                |
+
+Examples:
+
+- `feat: add anonymous artifact recovery`
+- `fix: prevent Postgres pool exhaustion in dev`
+- `chore: bump Next.js to 16.2.6`
+
+Use Conventional Commits on **squash-merge titles** when you want structured
+history on `main`. Individual commits on a branch can stay imperative — we do
+not enforce types locally.
+
+For breaking API, CLI, or schema changes, add a footer:
+
+```text
+BREAKING CHANGE: describe what callers must update
+```
+
+We do not run commitlint or other commit hooks yet. If we later automate
+releases or changelogs from commit history, we may adopt tooling then.
+
 ## Checks to run
 
 Always:
@@ -91,7 +139,9 @@ Always:
 npm run lint
 npm run typecheck
 npm run format:check
+npm run openapi:check
 npm run test:cli
+npm run test:mcp
 ```
 
 For auth, API, or persistence changes, also run the persistent stack:
@@ -101,23 +151,27 @@ npm run setup:local
 npm run dev:persistent
 npm run doctor
 npm run test:backend
+npm run test:mcp:integration
 npm run smoke:agent
 ```
 
-`test:backend` and `smoke:agent` expect the app at `http://localhost:3000`
-with Postgres and MinIO available.
+`test:backend`, `test:mcp:integration`, and `smoke:agent` expect the app at
+`http://localhost:3000` with Postgres and MinIO available.
 
 ## Pull requests
 
-Open a PR against `main` with:
+Open a PR against `main` and fill out
+[the PR template](.github/pull_request_template.md):
 
-- What changed and why
-- Screenshots or recordings for UI changes
-- Test plan / commands run
-- Notes on migrations, env vars, or breaking changes
+- **Summary** — what changed and why (1–3 bullets)
+- **Type of change** — check the relevant box
+- **Test plan** — check commands you actually ran
+- **Screenshots / recordings** — required for UI changes when possible
+- **Notes** — migrations, env vars, breaking changes, deferrals, follow-ups
 
-CI runs lint, typecheck, formatting, CLI tests, and a backend integration
-check on pull requests.
+CI runs three jobs on pull requests: static checks (lint, typecheck, formatting,
+OpenAPI sync) and unit tests (CLI, MCP) in parallel, then a backend integration
+job with Postgres and MinIO.
 
 ## Reporting security issues
 

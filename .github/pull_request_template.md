@@ -1,6 +1,6 @@
 ## Summary
 
-<!-- What changed and why? -->
+<!-- What changed and why? 1–3 bullets. Use "Closes #123" when this resolves an issue. Squash-merge titles may use Conventional Commits (feat:, fix:, chore:) — see CONTRIBUTING.md. -->
 
 ## Type of change
 
@@ -12,18 +12,20 @@
 
 ## Test plan
 
-<!-- Commands run and manual checks performed -->
+<!-- Check commands you actually ran. -->
 
 - [ ] `npm run lint`
 - [ ] `npm run typecheck`
 - [ ] `npm run format:check`
+- [ ] `npm run openapi:check`
 - [ ] `npm run test:cli`
-- [ ] Persistent flow checked (`setup:local`, `dev:persistent`, `test:backend`, or `smoke:agent`)
+- [ ] `npm run test:mcp`
+- [ ] Persistent stack checked (`setup:local`, `dev:persistent`, `test:backend`, `test:mcp:integration`, or `smoke:agent`)
 
 ## Screenshots / recordings
 
-<!-- Required for UI changes when possible -->
+<!-- Required for UI changes when possible. Skip for CI, deps, and docs-only PRs. -->
 
 ## Notes
 
-<!-- Migrations, env vars, breaking changes, follow-ups -->
+<!-- Migrations, env vars, breaking changes, deferrals, follow-ups -->
