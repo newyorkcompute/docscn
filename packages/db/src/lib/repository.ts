@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { and, eq, isNull, lte, or } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
 import type {
   Actor,
   AgentFeedbackBundle,
@@ -889,43 +889,6 @@ export async function claimAnonymousArtifacts(
   }
 
   return result;
-}
-
-async function cleanupExpiredAnonymousArtifactClaims(
-  now: Date = new Date(),
-): Promise<{ deletedClaims: number }> {
-  const nowIso = now.toISOString();
-
-  if (!isDatabaseConfigured()) {
-    let deletedClaims = 0;
-
-    for (let index = runtimeArtifactClaims.length - 1; index >= 0; index -= 1) {
-      const claim = runtimeArtifactClaims[index];
-
-      if (
-        claim &&
-        !claim.claimedAt &&
-        isExpired(claim.expiresAt, now.getTime())
-      ) {
-        runtimeArtifactClaims.splice(index, 1);
-        deletedClaims += 1;
-      }
-    }
-
-    return { deletedClaims };
-  }
-
-  const deletedRows = await getDb()
-    .delete(artifactClaims)
-    .where(
-      and(
-        isNull(artifactClaims.claimedAt),
-        lte(artifactClaims.expiresAt, nowIso),
-      ),
-    )
-    .returning({ artifactId: artifactClaims.artifactId });
-
-  return { deletedClaims: deletedRows.length };
 }
 
 export async function createReviewThread(
