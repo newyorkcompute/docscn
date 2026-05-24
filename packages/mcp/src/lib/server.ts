@@ -101,7 +101,7 @@ export async function createDocscnMcpServer() {
 
   server.tool(
     'publish_artifact',
-    'Publish a self-contained HTML artifact to docscn and return its stable URL. Works without an API key for anonymous unlisted artifacts.',
+    'Publish a self-contained HTML artifact to docscn and return its stable URL. Works without an API key for anonymous unlisted artifacts and may return claim metadata for recovery after login.',
     publishArtifactShape,
     async (input) => jsonToolResult(await client.publishArtifact(input)),
   );

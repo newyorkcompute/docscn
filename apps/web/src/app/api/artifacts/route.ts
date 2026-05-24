@@ -10,8 +10,49 @@ import {
 } from '@docscn/sdk';
 import { getRequestPrincipal, hasBearerToken } from '../../../lib/publisher';
 
+const anonymousHtmlMaxBytes = 1024 * 1024;
+const anonymousPublishLimit = 20;
+const anonymousPublishWindowMs = 60 * 60 * 1000;
+const anonymousPublishBuckets = new Map<
+  string,
+  { count: number; resetAt: number }
+>();
+
 function isString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+function getClientIp(request: Request) {
+  return (
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
+
+function getUtf8ByteLength(value: string) {
+  return new TextEncoder().encode(value).length;
+}
+
+function hitAnonymousPublishLimit(request: Request) {
+  const key = getClientIp(request);
+  const now = Date.now();
+  const bucket = anonymousPublishBuckets.get(key);
+
+  if (!bucket || bucket.resetAt <= now) {
+    anonymousPublishBuckets.set(key, {
+      count: 1,
+      resetAt: now + anonymousPublishWindowMs,
+    });
+    return false;
+  }
+
+  if (bucket.count >= anonymousPublishLimit) {
+    return true;
+  }
+
+  bucket.count += 1;
+  return false;
 }
 
 function parseCreateArtifactInput(
@@ -86,6 +127,28 @@ export async function POST(request: Request) {
       { error: 'Invalid artifact publish payload.' },
       { status: 400 },
     );
+  }
+
+  if (!principal) {
+    if (getUtf8ByteLength(input.html) > anonymousHtmlMaxBytes) {
+      return NextResponse.json(
+        {
+          error:
+            'Anonymous artifacts must be 1 MB or smaller. Sign in to publish larger artifacts.',
+        },
+        { status: 413 },
+      );
+    }
+
+    if (hitAnonymousPublishLimit(request)) {
+      return NextResponse.json(
+        {
+          error:
+            'Anonymous publish limit reached. Sign in to publish more artifacts.',
+        },
+        { status: 429 },
+      );
+    }
   }
 
   const published = await publishArtifact({

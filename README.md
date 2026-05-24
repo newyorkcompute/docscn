@@ -149,8 +149,9 @@ The core stack is intentionally OSS-friendly and provider-portable:
   way as Neon, Supabase, RDS, or another Postgres-compatible host.
 - **Object storage:** S3-compatible adapter. Local MinIO can be swapped for
   Cloudflare R2, AWS S3, Tigris, or another compatible provider through env vars.
-- **Publishing credentials:** first publish can be anonymous and unlisted; hashed
-  API keys stored in Postgres unlock owned/private artifacts and collaboration.
+- **Publishing credentials:** first publish can be anonymous and unlisted with a
+  local recovery receipt; hashed API keys stored in Postgres unlock owned/private
+  artifacts and collaboration.
 
 No core data path depends on a single hosted vendor. Hosted defaults can be
 convenient, but the interfaces are meant to be replaceable.
@@ -160,8 +161,9 @@ convenient, but the interfaces are meant to be replaceable.
 - Polished light/dark landing page for hosting, sharing, and collaboration.
 - Dashboard with AI-native artifact examples.
 - Better Auth email/password foundation with owner-aware artifact publishing.
-- Anonymous unlisted publishing plus hashed API keys for owned agent and CLI
-  publishing through `Authorization: Bearer`.
+- Anonymous unlisted publishing with automatic recovery after sign-in, plus
+  hashed API keys for owned agent and CLI publishing through `Authorization:
+  Bearer`.
 - Publish Artifact flow backed by `/api/artifacts`, with Drizzle/Postgres when
   configured and a local runtime fallback otherwise.
 - Sandboxed artifact viewer using iframe `srcDoc`.

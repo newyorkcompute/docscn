@@ -136,6 +136,21 @@ export const artifacts = pgTable('artifacts', {
   }),
 });
 
+export const artifactClaims = pgTable('artifact_claims', {
+  artifactId: text('artifact_id')
+    .primaryKey()
+    .references(() => artifacts.id, { onDelete: 'cascade' }),
+  claimTokenHash: text('claim_token_hash').notNull().unique(),
+  createdAt: timestamp('created_at', {
+    mode: 'string',
+    withTimezone: true,
+  }).notNull(),
+  claimedAt: timestamp('claimed_at', {
+    mode: 'string',
+    withTimezone: true,
+  }),
+});
+
 export const artifactRevisions = pgTable('artifact_revisions', {
   id: text('id').primaryKey(),
   artifactId: text('artifact_id')

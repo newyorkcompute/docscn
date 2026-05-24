@@ -20,8 +20,9 @@ These tools call the same REST API documented in `/skills.md` and
 2. Optional: a docscn API key for private/public ownership, comments, and revisions
 
 `publish_artifact` works without an API key for anonymous unlisted, view-only
-artifacts. Create an API key from **Settings** in the web UI, or run this before
-using `submit_revision` or owned/private publishing:
+artifacts. The publish response may include claim metadata so a host can recover
+the artifact after login. Create an API key from **Settings** in the web UI, or
+run this before using `submit_revision` or owned/private publishing:
 
 ```bash
 docscn login --host http://localhost:3000
@@ -88,9 +89,11 @@ artifacts or submit revisions.
 
 1. `publish_artifact` with complete HTML
 2. Share the returned URL for human review
-3. Sign in or provide `DOCSCN_API_KEY` before using collaboration features
-4. `get_feedback` when reviewers leave threads
-5. `submit_revision` with updated HTML and `resolvedThreadIds` from open threads
+3. If the publish response includes a claim token, keep it in local host storage
+   rather than exposing it to the user
+4. Sign in or provide `DOCSCN_API_KEY` before using collaboration features
+5. `get_feedback` when reviewers leave threads
+6. `submit_revision` with updated HTML and `resolvedThreadIds` from open threads
 
 ## Related docs
 

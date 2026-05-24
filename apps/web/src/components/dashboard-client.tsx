@@ -13,16 +13,19 @@ import {
 import type { Artifact } from '@docscn/sdk';
 import type { ExampleArtifactDefinition } from '../lib/example-artifacts';
 import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
+import { AnonymousClaimSync } from './anonymous-claim-sync';
 import { ExampleGallery } from './example-gallery';
 import { CommandSnippet, TerminalCommand } from './terminal-command';
 
 export function DashboardClient({
   artifacts,
   examples,
+  isAuthenticated,
   origin,
 }: {
   artifacts: Artifact[];
   examples: ExampleArtifactDefinition[];
+  isAuthenticated: boolean;
   origin: string;
 }) {
   const installCommand = `curl ${origin}/install -fsS | bash`;
@@ -36,6 +39,7 @@ export function DashboardClient({
 
   return (
     <Shell className="space-y-8 py-10">
+      <AnonymousClaimSync isAuthenticated={isAuthenticated} />
       <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
         <div>
           <Eyebrow>artifact workspace</Eyebrow>

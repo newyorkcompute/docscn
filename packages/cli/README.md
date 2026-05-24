@@ -12,9 +12,10 @@ Run `nx build cli` to build the library.
 npm run cli -- publish artifact.html
 ```
 
-Publishing without an API key creates an anonymous unlisted, view-only artifact.
-Use `docscn login` or `DOCSCN_API_KEY=docscn_sk_...` for private/public owned
-artifacts, comments, and revisions.
+Publishing without an API key creates an anonymous unlisted, view-only artifact
+and saves a local recovery receipt. `docscn login` automatically recovers saved
+anonymous artifacts, then unlocks private/public owned artifacts, comments, and
+revisions.
 
 Defaults:
 

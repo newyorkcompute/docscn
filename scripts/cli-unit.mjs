@@ -11,6 +11,9 @@ const {
   getConfigPath,
   normalizeHost,
   readCliConfig,
+  getAnonymousClaimReceipts,
+  removeAnonymousClaimReceipts,
+  saveAnonymousClaimReceipt,
   saveDefaultProfile,
 } = await import('../dist/packages/cli/src/lib/config.js');
 const { getCliHelp, publishArtifactFromCli, runDocscnCli } = await import(
@@ -65,6 +68,25 @@ assert.equal(
 assert.equal(
   findProfileForHost(savedConfig, 'http://localhost:3000')?.apiKey,
   'docscn_sk_unit',
+);
+
+await saveAnonymousClaimReceipt('http://localhost:3000', {
+  artifactId: 'artifact-anon-unit',
+  slug: 'anonymous-unit',
+  title: 'Anonymous unit',
+  claimToken: 'docscn_claim_unit',
+  createdAt: new Date().toISOString(),
+});
+assert.equal(
+  (await getAnonymousClaimReceipts('http://localhost:3000')).length,
+  1,
+);
+await removeAnonymousClaimReceipts('http://localhost:3000', [
+  'artifact-anon-unit',
+]);
+assert.equal(
+  (await getAnonymousClaimReceipts('http://localhost:3000')).length,
+  0,
 );
 
 const help = getCliHelp();

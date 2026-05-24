@@ -12,6 +12,7 @@ import {
   visibilityOptions,
 } from '@docscn/sdk';
 import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
+import { saveAnonymousClaimReceipt } from '../lib/anonymous-claim-receipts';
 
 const starterHtml = `<!doctype html>
 <html>
@@ -95,6 +96,15 @@ export function PublishArtifactForm({
       }
 
       const payload = (await response.json()) as { result: PublishResult };
+      if (!isAuthenticated && payload.result.claimToken) {
+        saveAnonymousClaimReceipt({
+          artifactId: payload.result.artifactId,
+          slug: payload.result.slug,
+          title,
+          claimToken: payload.result.claimToken,
+          createdAt: new Date().toISOString(),
+        });
+      }
       router.push(payload.result.url);
       router.refresh();
     } catch (publishError) {

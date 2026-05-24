@@ -18,6 +18,7 @@ export default async function DashboardPage() {
         <DashboardClient
           artifacts={await listArtifacts({ viewerUserId: session?.user.id })}
           examples={exampleArtifacts}
+          isAuthenticated={Boolean(session)}
           origin={origin}
         />
       </main>

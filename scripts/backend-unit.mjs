@@ -88,6 +88,116 @@ const me = await jsonFetch('/api/me', {
 });
 assert.equal(me.payload.principal.kind, 'api-key');
 
+const anonymousPublished = await jsonFetch('/api/artifacts', {
+  method: 'POST',
+  headers: {
+    'content-type': 'application/json',
+    'x-forwarded-for': `claim-test-${Date.now()}`,
+  },
+  body: JSON.stringify({
+    title: 'Anonymous claim artifact',
+    description: 'Anonymous artifact to claim after sign-in.',
+    html: '<!doctype html><html><body><main><h1>Anonymous claim</h1></main></body></html>',
+    visibility: 'private',
+    authorName: 'Anonymous Backend API agent',
+    source: 'automation',
+    kind: 'custom-html',
+  }),
+});
+assert.equal(
+  anonymousPublished.payload.artifact.metadata.visibility,
+  'unlisted',
+);
+assert.ok(anonymousPublished.payload.result.claimToken);
+
+const claimResult = await jsonFetch('/api/artifacts/claims', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', cookie, origin: base },
+  body: JSON.stringify({
+    receipts: [
+      {
+        artifactId: anonymousPublished.payload.result.artifactId,
+        slug: anonymousPublished.payload.result.slug,
+        title: 'Anonymous claim artifact',
+        claimToken: anonymousPublished.payload.result.claimToken,
+        createdAt: new Date().toISOString(),
+      },
+    ],
+  }),
+});
+assert.equal(claimResult.payload.claimed.length, 1);
+
+const claimedThread = await jsonFetch(
+  `/api/artifacts/${anonymousPublished.payload.result.slug}/threads`,
+  {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', cookie, origin: base },
+    body: JSON.stringify({
+      title: 'Claimed artifact thread',
+      body: 'Claimed artifacts should unlock review threads.',
+      authorName: 'Backend API Test',
+      status: 'open',
+    }),
+  },
+);
+assert.equal(claimedThread.payload.thread.status, 'open');
+
+const oversized = await fetch(`${base}/api/artifacts`, {
+  method: 'POST',
+  headers: {
+    'content-type': 'application/json',
+    'x-forwarded-for': `size-test-${Date.now()}`,
+  },
+  body: JSON.stringify({
+    title: 'Oversized anonymous artifact',
+    description: 'Should be rejected.',
+    html: `<!doctype html><html><body>${'x'.repeat(1024 * 1024)}</body></html>`,
+    visibility: 'unlisted',
+    authorName: 'Backend API agent',
+    source: 'automation',
+    kind: 'custom-html',
+  }),
+});
+assert.equal(oversized.status, 413);
+
+const rateIp = `rate-test-${Date.now()}`;
+for (let index = 0; index < 20; index += 1) {
+  const response = await fetch(`${base}/api/artifacts`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-forwarded-for': rateIp,
+    },
+    body: JSON.stringify({
+      title: `Rate test ${index}`,
+      description: 'Rate limit warmup.',
+      html: '<!doctype html><html><body><main>rate</main></body></html>',
+      visibility: 'unlisted',
+      authorName: 'Backend API agent',
+      source: 'automation',
+      kind: 'custom-html',
+    }),
+  });
+  assert.equal(response.status, 201);
+}
+const rateLimited = await fetch(`${base}/api/artifacts`, {
+  method: 'POST',
+  headers: {
+    'content-type': 'application/json',
+    'x-forwarded-for': rateIp,
+  },
+  body: JSON.stringify({
+    title: 'Rate limited',
+    description: 'Should be rejected.',
+    html: '<!doctype html><html><body><main>rate</main></body></html>',
+    visibility: 'unlisted',
+    authorName: 'Backend API agent',
+    source: 'automation',
+    kind: 'custom-html',
+  }),
+});
+assert.equal(rateLimited.status, 429);
+
 const published = await jsonFetch('/api/artifacts', {
   method: 'POST',
   headers: authHeaders(apiKey),

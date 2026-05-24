@@ -234,6 +234,49 @@ components:
           type: string
         revisionId:
           type: string
+        claimToken:
+          type: string
+          description: Returned once for anonymous publishes so the artifact can be recovered after sign-in.
+    AnonymousClaimReceipt:
+      type: object
+      required: [artifactId, slug, title, claimToken, createdAt]
+      properties:
+        artifactId:
+          type: string
+        slug:
+          type: string
+        title:
+          type: string
+        claimToken:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    ClaimArtifactsResponse:
+      type: object
+      required: [claimed, skipped]
+      properties:
+        claimed:
+          type: array
+          items:
+            type: object
+            required: [artifactId, slug]
+            properties:
+              artifactId:
+                type: string
+              slug:
+                type: string
+        skipped:
+          type: array
+          items:
+            type: object
+            required: [artifactId, reason]
+            properties:
+              artifactId:
+                type: string
+              reason:
+                type: string
+                enum: [already-owned, invalid-token, not-found]
         status:
           $ref: '#/components/schemas/ReviewThreadStatus'
         title:
@@ -579,6 +622,56 @@ paths:
                 $ref: '#/components/schemas/PublishArtifactResponse'
         '400':
           description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Anonymous artifact too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Anonymous publish rate limit reached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/artifacts/claims:
+    post:
+      tags: [Artifacts]
+      summary: Recover anonymous artifacts for the authenticated caller
+      description: Claims unowned anonymous artifacts when the caller provides local claim receipts from browser or CLI storage.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [receipts]
+              properties:
+                receipts:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AnonymousClaimReceipt'
+      responses:
+        '200':
+          description: Claim summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimArtifactsResponse'
+        '400':
+          description: Invalid claim payload
           content:
             application/json:
               schema:

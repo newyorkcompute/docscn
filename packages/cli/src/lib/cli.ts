@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { basename, extname } from 'node:path';
 import type {
+  ClaimArtifactsResult,
   ArtifactKind,
   ArtifactVisibility,
   CreateArtifactInput,
@@ -9,9 +10,12 @@ import type {
 } from '@docscn/sdk';
 import {
   findProfileForHost,
+  getAnonymousClaimReceipts,
   getConfigPath,
   normalizeHost,
   readCliConfig,
+  removeAnonymousClaimReceipts,
+  saveAnonymousClaimReceipt,
   saveDefaultProfile,
 } from './config.js';
 
@@ -79,6 +83,7 @@ interface PublishResponse {
     slug: string;
     url: string;
     revisionId: string;
+    claimToken?: string;
   };
   error?: string;
 }
@@ -397,6 +402,36 @@ function buildArtifactUrl(baseUrl: string, pathOrUrl: string) {
   return pathOrUrl.startsWith('http') ? pathOrUrl : `${baseUrl}${pathOrUrl}`;
 }
 
+async function claimSavedAnonymousArtifacts(credentials: Credentials) {
+  const receipts = await getAnonymousClaimReceipts(credentials.baseUrl);
+  if (!receipts.length) {
+    return;
+  }
+
+  const result = await apiFetch<ClaimArtifactsResult>(
+    credentials,
+    '/api/artifacts/claims',
+    {
+      method: 'POST',
+      body: JSON.stringify({ receipts }),
+    },
+  );
+  const completedIds = [
+    ...(result?.claimed ?? []).map((artifact) => artifact.artifactId),
+    ...(result?.skipped ?? []).map((artifact) => artifact.artifactId),
+  ];
+
+  await removeAnonymousClaimReceipts(credentials.baseUrl, completedIds);
+
+  if (result?.claimed.length) {
+    console.log(
+      `Recovered ${result.claimed.length} anonymous artifact${
+        result.claimed.length === 1 ? '' : 's'
+      }.`,
+    );
+  }
+}
+
 export function getCliHelp() {
   return `docscn
 
@@ -414,7 +449,7 @@ Usage:
   docscn comment <thread-id> --body <text>
 
 Options:
-  --api-key <key>          API key. Defaults to DOCSCN_API_KEY or ~/.docscn/config.json. Publish can run without this for unlisted view-only artifacts.
+  --api-key <key>          API key. Defaults to DOCSCN_API_KEY or ~/.docscn/config.json. Publish can run without this for unlisted view-only artifacts and saves a recovery receipt.
   --host, --url <url>      docscn server URL. Defaults to DOCSCN_URL, saved config, or http://localhost:3000.
   --title <title>          Artifact title. Defaults to the file name.
   --description <text>     Artifact description.
@@ -473,8 +508,17 @@ export async function publishArtifactFromCli(args: string[]) {
   }
 
   if (!options.apiKey) {
+    if (result.result.claimToken) {
+      await saveAnonymousClaimReceipt(options.baseUrl, {
+        artifactId: result.result.artifactId,
+        slug: result.result.slug,
+        title: payload.title,
+        claimToken: result.result.claimToken,
+        createdAt: new Date().toISOString(),
+      });
+    }
     console.warn(
-      'Published as an anonymous unlisted artifact. Sign in with "docscn login" to unlock comments, revisions, private sharing, and future analytics.',
+      'Published as an anonymous unlisted artifact and saved a local recovery receipt. Sign in with "docscn login" to recover ownership and unlock comments, revisions, private sharing, and future analytics.',
     );
   }
 
@@ -537,6 +581,7 @@ export async function loginFromCli(args: string[]) {
     if (poll?.status === 'approved' && poll.token) {
       await saveDefaultProfile({ apiKey: poll.token, host: baseUrl });
       console.log(`Saved docscn credentials to ${getConfigPath()}`);
+      await claimSavedAnonymousArtifacts({ apiKey: poll.token, baseUrl });
       return;
     }
 

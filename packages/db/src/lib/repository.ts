@@ -7,6 +7,8 @@ import type {
   ApiKeyPrincipal,
   Artifact,
   ArtifactRevision,
+  ClaimArtifactsInput,
+  ClaimArtifactsResult,
   CliLoginApproval,
   CliLoginPollResult,
   CliLoginRequest,
@@ -26,6 +28,7 @@ import { getArtifactStorage } from '@docscn/storage';
 import { getDb, isDatabaseConfigured } from './client';
 import {
   apiKeys,
+  artifactClaims,
   artifactRevisions,
   artifacts,
   cliDeviceLogins,
@@ -41,12 +44,14 @@ import {
 
 const runtimeArtifacts: Artifact[] = [];
 const runtimeThreads: ReviewThread[] = [];
+const runtimeArtifactClaims: Array<typeof artifactClaims.$inferSelect> = [];
 const runtimeCliDeviceLogins: Array<
   typeof cliDeviceLogins.$inferSelect & { deviceCode: string }
 > = [];
 const apiKeyTokenPrefix = 'docscn_sk_';
 const cliLoginTtlMs = 10 * 60 * 1000;
 const cliLoginIntervalSeconds = 2;
+const claimTokenPrefix = 'docscn_claim_';
 
 interface ArtifactAccessOptions {
   includeUnlisted?: boolean;
@@ -149,6 +154,14 @@ function createCliUserCode() {
 
 function hashCliDeviceCode(deviceCode: string) {
   return createHash('sha256').update(deviceCode).digest('hex');
+}
+
+function createClaimToken() {
+  return `${claimTokenPrefix}${randomBytes(32).toString('base64url')}`;
+}
+
+function hashClaimToken(claimToken: string) {
+  return createHash('sha256').update(claimToken).digest('hex');
 }
 
 function isExpired(expiresAt: string) {
@@ -635,6 +648,7 @@ export async function publishArtifact(input: CreateArtifactInput): Promise<{
 }> {
   const artifact = createPublishedArtifact(input);
   const revision = artifact.revisions[0];
+  const claimToken = input.ownerUserId ? undefined : createClaimToken();
 
   if (!revision) {
     throw new Error('Published artifact must include an initial revision.');
@@ -642,6 +656,14 @@ export async function publishArtifact(input: CreateArtifactInput): Promise<{
 
   if (!isDatabaseConfigured()) {
     runtimeArtifacts.unshift(artifact);
+    if (claimToken) {
+      runtimeArtifactClaims.push({
+        artifactId: artifact.id,
+        claimTokenHash: hashClaimToken(claimToken),
+        createdAt: artifact.metadata.createdAt,
+        claimedAt: null,
+      });
+    }
 
     return {
       artifact,
@@ -650,6 +672,7 @@ export async function publishArtifact(input: CreateArtifactInput): Promise<{
         slug: artifact.slug,
         url: `/artifacts/${artifact.slug}`,
         revisionId: revision.id,
+        claimToken,
       },
     };
   }
@@ -687,6 +710,14 @@ export async function publishArtifact(input: CreateArtifactInput): Promise<{
     author: revision.author,
     changeRequestIds: revision.changeRequestIds,
   });
+  if (claimToken) {
+    await db.insert(artifactClaims).values({
+      artifactId: artifact.id,
+      claimTokenHash: hashClaimToken(claimToken),
+      createdAt: artifact.metadata.createdAt,
+      claimedAt: null,
+    });
+  }
 
   return {
     artifact,
@@ -695,8 +726,124 @@ export async function publishArtifact(input: CreateArtifactInput): Promise<{
       slug: artifact.slug,
       url: `/artifacts/${artifact.slug}`,
       revisionId: revision.id,
+      claimToken,
     },
   };
+}
+
+export async function claimAnonymousArtifacts(
+  input: ClaimArtifactsInput,
+): Promise<ClaimArtifactsResult> {
+  const result: ClaimArtifactsResult = {
+    claimed: [],
+    skipped: [],
+  };
+  const now = new Date().toISOString();
+
+  if (!isDatabaseConfigured()) {
+    for (const receipt of input.receipts) {
+      const artifact = runtimeArtifacts.find(
+        (candidate) => candidate.id === receipt.artifactId,
+      );
+      const claim = runtimeArtifactClaims.find(
+        (candidate) => candidate.artifactId === receipt.artifactId,
+      );
+
+      if (!artifact || !claim) {
+        result.skipped.push({
+          artifactId: receipt.artifactId,
+          reason: 'not-found',
+        });
+        continue;
+      }
+
+      if (artifact.ownerUserId) {
+        result.skipped.push({
+          artifactId: receipt.artifactId,
+          reason: 'already-owned',
+        });
+        continue;
+      }
+
+      if (
+        claim.claimedAt ||
+        claim.claimTokenHash !== hashClaimToken(receipt.claimToken)
+      ) {
+        result.skipped.push({
+          artifactId: receipt.artifactId,
+          reason: 'invalid-token',
+        });
+        continue;
+      }
+
+      artifact.ownerUserId = input.userId;
+      claim.claimedAt = now;
+      result.claimed.push({
+        artifactId: artifact.id,
+        slug: artifact.slug,
+      });
+    }
+
+    return result;
+  }
+
+  const db = getDb();
+
+  for (const receipt of input.receipts) {
+    const [artifact] = await db
+      .select()
+      .from(artifacts)
+      .where(eq(artifacts.id, receipt.artifactId))
+      .limit(1);
+    const [claim] = await db
+      .select()
+      .from(artifactClaims)
+      .where(eq(artifactClaims.artifactId, receipt.artifactId))
+      .limit(1);
+
+    if (!artifact || !claim) {
+      result.skipped.push({
+        artifactId: receipt.artifactId,
+        reason: 'not-found',
+      });
+      continue;
+    }
+
+    if (artifact.ownerUserId) {
+      result.skipped.push({
+        artifactId: receipt.artifactId,
+        reason: 'already-owned',
+      });
+      continue;
+    }
+
+    if (
+      claim.claimedAt ||
+      claim.claimTokenHash !== hashClaimToken(receipt.claimToken)
+    ) {
+      result.skipped.push({
+        artifactId: receipt.artifactId,
+        reason: 'invalid-token',
+      });
+      continue;
+    }
+
+    await db
+      .update(artifacts)
+      .set({ ownerUserId: input.userId })
+      .where(eq(artifacts.id, artifact.id));
+    await db
+      .update(artifactClaims)
+      .set({ claimedAt: now })
+      .where(eq(artifactClaims.artifactId, artifact.id));
+
+    result.claimed.push({
+      artifactId: artifact.id,
+      slug: artifact.slug,
+    });
+  }
+
+  return result;
 }
 
 export async function createReviewThread(

@@ -109,6 +109,30 @@ export interface CreateArtifactInput {
   kind: ArtifactKind;
 }
 
+export interface AnonymousClaimReceipt {
+  artifactId: string;
+  slug: string;
+  title: string;
+  claimToken: string;
+  createdAt: string;
+}
+
+export interface ClaimArtifactsInput {
+  receipts: AnonymousClaimReceipt[];
+  userId: string;
+}
+
+export interface ClaimArtifactsResult {
+  claimed: Array<{
+    artifactId: string;
+    slug: string;
+  }>;
+  skipped: Array<{
+    artifactId: string;
+    reason: 'already-owned' | 'invalid-token' | 'not-found';
+  }>;
+}
+
 export interface CreateRevisionInput {
   artifactId: string;
   html: string;
@@ -200,6 +224,7 @@ export interface PublishResult {
   slug: string;
   url: string;
   revisionId: string;
+  claimToken?: string;
 }
 
 export interface AgentFeedbackBundle {

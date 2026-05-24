@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import type { AnonymousClaimReceipt } from '@docscn/sdk';
 
 export interface DocscnCliProfile {
   apiKey: string;
@@ -10,6 +11,7 @@ export interface DocscnCliProfile {
 export interface DocscnCliConfig {
   defaultHost: string;
   profiles: Record<string, DocscnCliProfile>;
+  anonymousClaims?: Record<string, AnonymousClaimReceipt[]>;
 }
 
 export function normalizeHost(value: string) {
@@ -68,6 +70,61 @@ export async function saveDefaultProfile(input: DocscnCliProfile) {
         apiKey: input.apiKey,
         host,
       },
+    },
+    anonymousClaims: existing?.anonymousClaims,
+  });
+}
+
+export async function saveAnonymousClaimReceipt(
+  hostValue: string,
+  receipt: AnonymousClaimReceipt,
+) {
+  const existing = await readCliConfig();
+  const host = normalizeHost(hostValue);
+  const claimsForHost = existing?.anonymousClaims?.[host] ?? [];
+
+  await writeCliConfig({
+    defaultHost: existing?.defaultHost ?? host,
+    profiles: existing?.profiles ?? {},
+    anonymousClaims: {
+      ...(existing?.anonymousClaims ?? {}),
+      [host]: [
+        ...claimsForHost.filter(
+          (claim) => claim.artifactId !== receipt.artifactId,
+        ),
+        receipt,
+      ],
+    },
+  });
+}
+
+export async function getAnonymousClaimReceipts(hostValue: string) {
+  const config = await readCliConfig();
+  const host = normalizeHost(hostValue);
+
+  return config?.anonymousClaims?.[host] ?? [];
+}
+
+export async function removeAnonymousClaimReceipts(
+  hostValue: string,
+  artifactIds: string[],
+) {
+  const existing = await readCliConfig();
+  if (!existing?.anonymousClaims) {
+    return;
+  }
+
+  const host = normalizeHost(hostValue);
+  const completed = new Set(artifactIds);
+  const remaining = (existing.anonymousClaims[host] ?? []).filter(
+    (receipt) => !completed.has(receipt.artifactId),
+  );
+
+  await writeCliConfig({
+    ...existing,
+    anonymousClaims: {
+      ...existing.anonymousClaims,
+      [host]: remaining,
     },
   });
 }
