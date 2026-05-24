@@ -147,3 +147,6 @@ vite.config.ts.timestamp-*
 
 .nx/cache
 .nx/workspace-data
+
+# Local scratch and generated Nx build outputs
+tmp/
