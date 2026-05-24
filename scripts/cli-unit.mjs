@@ -86,8 +86,10 @@ await assertRejectsWith(
       'artifact.html',
       '--host',
       'http://unconfigured.example',
+      '--visibility',
+      'private',
     ]),
-  /Missing API key/,
+  /Anonymous publish only supports unlisted artifacts/,
 );
 if (previousKey) {
   process.env.DOCSCN_API_KEY = previousKey;

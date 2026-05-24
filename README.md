@@ -149,8 +149,8 @@ The core stack is intentionally OSS-friendly and provider-portable:
   way as Neon, Supabase, RDS, or another Postgres-compatible host.
 - **Object storage:** S3-compatible adapter. Local MinIO can be swapped for
   Cloudflare R2, AWS S3, Tigris, or another compatible provider through env vars.
-- **Publishing credentials:** hashed API keys stored in Postgres. Raw keys are
-  only shown once.
+- **Publishing credentials:** first publish can be anonymous and unlisted; hashed
+  API keys stored in Postgres unlock owned/private artifacts and collaboration.
 
 No core data path depends on a single hosted vendor. Hosted defaults can be
 convenient, but the interfaces are meant to be replaceable.
@@ -160,7 +160,8 @@ convenient, but the interfaces are meant to be replaceable.
 - Polished light/dark landing page for hosting, sharing, and collaboration.
 - Dashboard with AI-native artifact examples.
 - Better Auth email/password foundation with owner-aware artifact publishing.
-- Hashed API keys for agent and CLI publishing through `Authorization: Bearer`.
+- Anonymous unlisted publishing plus hashed API keys for owned agent and CLI
+  publishing through `Authorization: Bearer`.
 - Publish Artifact flow backed by `/api/artifacts`, with Drizzle/Postgres when
   configured and a local runtime fallback otherwise.
 - Sandboxed artifact viewer using iframe `srcDoc`.
@@ -170,8 +171,8 @@ convenient, but the interfaces are meant to be replaceable.
 - Review threads, revision history, and collaboration metadata around each artifact.
 - Figma-style comment pins over the artifact viewer for review context.
 - SDK contracts shaped for publish APIs, MCP tools, skills, and agents.
-- Agent-first CLI flow for browser login, local credential storage, publishing,
-  reading feedback, comments, and revisions.
+- Agent-first CLI flow for no-login unlisted publishing, browser login, local
+  credential storage, reading feedback, comments, and revisions.
 - MCP server with `publish_artifact`, `get_feedback`, and `submit_revision` tools.
 - Public `/skills.md` endpoint that tells agents how to interact with docscn.
 - OpenAPI spec at `/openapi.json` for REST integrations.

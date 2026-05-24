@@ -84,9 +84,9 @@ export function DashboardClient({
                   'Downloads the latest standalone binary from GitHub Releases.',
                 ],
                 [
-                  'Log in and save an API key',
+                  'Optional: log in for ownership',
                   loginCommand,
-                  'Approve the browser prompt, then retry publish commands.',
+                  'Unlock comments, revisions, private artifacts, and analytics.',
                 ],
                 [
                   'Publish an example artifact',

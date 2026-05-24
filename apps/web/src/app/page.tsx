@@ -87,20 +87,20 @@ export default async function Index() {
           <Shell className="relative grid gap-10 py-10 sm:py-14 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-16 lg:py-20">
             <section>
               <Badge className="animate-fade-up" tone="outline">
-                open-source / localhost-first / agent-native
+                no-login publish / localhost-first / agent-native
               </Badge>
               <h1 className="animate-fade-up delay-1 mt-6 font-display text-[2.35rem] font-semibold leading-[1.03] tracking-[-0.03em] sm:text-[2.75rem] md:text-6xl xl:text-7xl">
                 Host, share, and collaborate on AI-generated HTML artifacts.
               </h1>
               <p className="animate-fade-up delay-2 mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
-                Publish AI-generated HTML to stable URLs. Review visually,
-                collect structured feedback, and send agents into the next
-                revision.
+                Publish AI-generated HTML to stable URLs without an account.
+                Sign in when you want comments, revisions, private sharing, and
+                analytics.
               </p>
               <div className="animate-fade-up delay-3 mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Button asChild size="lg">
-                  <Link href="/dashboard">
-                    Open workspace <ArrowRight className="h-4 w-4" />
+                  <Link href="/publish">
+                    Publish now <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
                 <Button
@@ -137,7 +137,7 @@ export default async function Index() {
                 </div>
                 <div className="grid gap-3 py-5">
                   {[
-                    ['Publish', 'stable URL for a self-contained HTML artifact'],
+                    ['Publish', 'unlisted URL for a self-contained HTML artifact'],
                     ['Review', 'point, text, and element feedback on the render'],
                     ['Revise', 'structured threads returned to the next agent run'],
                   ].map((item, index) => (

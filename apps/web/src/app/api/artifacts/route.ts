@@ -73,15 +73,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const principal = await getRequestPrincipal(request);
 
-  if (!principal) {
-    return NextResponse.json(
-      {
-        error: hasBearerToken(request)
-          ? 'Invalid API key.'
-          : 'Sign in to publish artifacts.',
-      },
-      { status: 401 },
-    );
+  if (!principal && hasBearerToken(request)) {
+    return NextResponse.json({ error: 'Invalid API key.' }, { status: 401 });
   }
 
   const input = parseCreateArtifactInput(
@@ -97,11 +90,12 @@ export async function POST(request: Request) {
 
   const published = await publishArtifact({
     ...input,
+    visibility: principal ? input.visibility : 'unlisted',
     authorName:
-      principal.kind === 'session'
+      principal?.kind === 'session'
         ? principal.name || input.authorName
         : input.authorName,
-    ownerUserId: principal.userId,
+    ownerUserId: principal?.userId,
   });
 
   return NextResponse.json(published, { status: 201 });

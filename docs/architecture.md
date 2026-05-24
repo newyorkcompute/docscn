@@ -113,6 +113,9 @@ CLI login uses a device-code flow:
 | `unlisted` | no                | yes                | yes          |
 | `private`  | no                | owner/API key only | yes          |
 
+Anonymous publishes are always `unlisted` and view-only until a user signs in
+and publishes owned artifacts.
+
 ## Key files
 
 | Area             | Files                                                       |

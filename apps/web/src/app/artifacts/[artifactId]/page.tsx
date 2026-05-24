@@ -18,12 +18,23 @@ export default async function ArtifactPage({
       viewerUserId: session?.user.id,
     })) ?? (await findGalleryArtifact(artifactId));
   const threads = artifact ? await listReviewThreads(artifact.id) : [];
+  const isGalleryArtifact = artifact?.id.startsWith('gallery-') ?? false;
+  const isAuthenticated = Boolean(session);
+  const canComment = isAuthenticated && Boolean(artifact) && !isGalleryArtifact;
+  const canRevise = Boolean(
+    session?.user.id &&
+      artifact?.ownerUserId &&
+      artifact.ownerUserId === session.user.id,
+  );
 
   return (
     <main>
       <ArtifactWorkspace
         artifact={artifact}
         artifactId={artifactId}
+        canComment={canComment}
+        canRevise={canRevise}
+        isAuthenticated={isAuthenticated}
         threads={threads}
       />
     </main>

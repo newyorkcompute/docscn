@@ -17,9 +17,11 @@ These tools call the same REST API documented in `/skills.md` and
 ## Prerequisites
 
 1. A running docscn instance (local or hosted)
-2. A docscn API key
+2. Optional: a docscn API key for private/public ownership, comments, and revisions
 
-Create an API key from **Settings** in the web UI, or run:
+`publish_artifact` works without an API key for anonymous unlisted, view-only
+artifacts. Create an API key from **Settings** in the web UI, or run this before
+using `submit_revision` or owned/private publishing:
 
 ```bash
 docscn login --host http://localhost:3000
@@ -33,7 +35,7 @@ Build and start the stdio MCP server:
 npm run mcp
 ```
 
-Set credentials with environment variables:
+Set host and optional credentials with environment variables:
 
 ```bash
 export DOCSCN_URL=http://localhost:3000
@@ -41,7 +43,8 @@ export DOCSCN_API_KEY=docscn_sk_...
 npm run mcp
 ```
 
-The server also reads `~/.docscn/config.json` from `docscn login`.
+Omit `DOCSCN_API_KEY` for anonymous unlisted publish-only usage. The server also
+reads `~/.docscn/config.json` from `docscn login`.
 
 ## Cursor configuration
 
@@ -54,8 +57,7 @@ Add this to `.cursor/mcp.json` (or Cursor MCP settings):
       "command": "node",
       "args": ["/absolute/path/to/docscn/dist/packages/mcp/src/index.js"],
       "env": {
-        "DOCSCN_URL": "http://localhost:3000",
-        "DOCSCN_API_KEY": "docscn_sk_..."
+        "DOCSCN_URL": "http://localhost:3000"
       }
     }
   }
@@ -63,6 +65,8 @@ Add this to `.cursor/mcp.json` (or Cursor MCP settings):
 ```
 
 Replace the path with your local clone after `npm run build` or `nx build mcp`.
+Add `DOCSCN_API_KEY` when the MCP host should create public/private owned
+artifacts or submit revisions.
 
 ## Claude Desktop configuration
 
@@ -73,8 +77,7 @@ Replace the path with your local clone after `npm run build` or `nx build mcp`.
       "command": "node",
       "args": ["/absolute/path/to/docscn/dist/packages/mcp/src/index.js"],
       "env": {
-        "DOCSCN_URL": "http://localhost:3000",
-        "DOCSCN_API_KEY": "docscn_sk_..."
+        "DOCSCN_URL": "http://localhost:3000"
       }
     }
   }
@@ -85,8 +88,9 @@ Replace the path with your local clone after `npm run build` or `nx build mcp`.
 
 1. `publish_artifact` with complete HTML
 2. Share the returned URL for human review
-3. `get_feedback` when reviewers leave threads
-4. `submit_revision` with updated HTML and `resolvedThreadIds` from open threads
+3. Sign in or provide `DOCSCN_API_KEY` before using collaboration features
+4. `get_feedback` when reviewers leave threads
+5. `submit_revision` with updated HTML and `resolvedThreadIds` from open threads
 
 ## Related docs
 

@@ -46,6 +46,7 @@ export async function POST(
   }
 
   const artifact = await findArtifact(thread.artifactId, {
+    includeUnlisted: true,
     viewerUserId: principal.userId,
   });
 

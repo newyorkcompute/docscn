@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { ChangeEvent, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileCode2, UploadCloud } from 'lucide-react';
@@ -35,7 +36,11 @@ const starterHtml = `<!doctype html>
   </body>
 </html>`;
 
-export function PublishArtifactForm() {
+export function PublishArtifactForm({
+  isAuthenticated,
+}: {
+  isAuthenticated: boolean;
+}) {
   const router = useRouter();
   const [title, setTitle] = useState('Interactive launch plan from agent');
   const [description, setDescription] = useState(
@@ -47,6 +52,10 @@ export function PublishArtifactForm() {
   const [html, setHtml] = useState(starterHtml);
   const [isPublishing, setIsPublishing] = useState(false);
   const [error, setError] = useState<string | undefined>();
+
+  const availableVisibilityOptions = isAuthenticated
+    ? visibilityOptions
+    : visibilityOptions.filter((option) => option === 'unlisted');
 
   const canPublish = useMemo(
     () =>
@@ -115,27 +124,48 @@ export function PublishArtifactForm() {
     <Shell className="grid gap-8 py-10 lg:grid-cols-[0.9fr_1.1fr]">
       <div className="space-y-6">
         <div>
-          <Eyebrow>manual publish fallback</Eyebrow>
+          <Eyebrow>
+            {isAuthenticated ? 'manual publish fallback' : 'instant publish'}
+          </Eyebrow>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
-            Agents should publish artifacts. This form is for testing.
+            {isAuthenticated
+              ? 'Agents should publish artifacts. This form is for testing.'
+              : 'Publish an artifact now. No account required.'}
           </h1>
           <p className="mt-4 text-muted-foreground">
-            The primary docscn path is API-key publishing from Cursor, Claude,
-            scheduled reports, CLIs, and future MCP workflows. Keep this page
-            around for local smoke tests and one-off manual uploads.
+            {isAuthenticated
+              ? 'The primary docscn path is API-key publishing from Cursor, Claude, scheduled reports, CLIs, and MCP workflows. Keep this page around for local smoke tests and one-off manual uploads.'
+              : 'Anonymous publishes are unlisted, view-only links. Sign in when you want comments, revisions, analytics, private sharing, and artifact ownership.'}
           </p>
         </div>
         <Card className="p-5">
           <div className="flex items-center gap-3">
             <FileCode2 className="h-5 w-5 text-primary" />
             <div>
-              <p className="font-medium">Agent publishing contract</p>
+              <p className="font-medium">
+                {isAuthenticated
+                  ? 'Agent publishing contract'
+                  : 'Want review features?'}
+              </p>
               <p className="text-sm text-muted-foreground">
-                Point agents to{' '}
-                <a className="text-primary hover:underline" href="/skills.md">
-                  /skills.md
-                </a>{' '}
-                so they can run the CLI login flow and publish end to end.
+                {isAuthenticated ? (
+                  <>
+                    Point agents to{' '}
+                    <a className="text-primary hover:underline" href="/skills.md">
+                      /skills.md
+                    </a>{' '}
+                    so they can run the CLI login flow and publish end to end.
+                  </>
+                ) : (
+                  <>
+                    Publish instantly, then{' '}
+                    <Link className="text-primary hover:underline" href="/sign-in">
+                      sign in
+                    </Link>{' '}
+                    for comments, revisions, private artifacts, and future
+                    analytics.
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -181,10 +211,16 @@ export function PublishArtifactForm() {
                 setVisibility(event.target.value as ArtifactVisibility)
               }
             >
-              {visibilityOptions.map((option) => (
+              {availableVisibilityOptions.map((option) => (
                 <option key={option}>{option}</option>
               ))}
             </select>
+            {!isAuthenticated ? (
+              <span className="block text-xs leading-5 text-muted-foreground">
+                Anonymous artifacts are always unlisted. Sign in for private or
+                public ownership controls.
+              </span>
+            ) : null}
           </label>
           <label className="space-y-2 text-sm">
             <span className="text-muted-foreground">Artifact type</span>
@@ -237,7 +273,9 @@ export function PublishArtifactForm() {
         >
           {isPublishing
             ? 'Publishing artifact...'
-            : 'Generate shareable artifact page'}
+            : isAuthenticated
+              ? 'Generate shareable artifact page'
+              : 'Publish unlisted artifact'}
         </Button>
       </Card>
     </Shell>

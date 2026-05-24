@@ -107,17 +107,17 @@ For two-way interaction, include an explicit export path such as "copy as JSON",
 
 ## Golden path: use the CLI
 
-Agents should use the docscn CLI whenever possible. It stores a local API key in \`~/.docscn/config.json\`, so the user does not need to paste credentials repeatedly.
+Agents should use the docscn CLI whenever possible. The first publish can run without login and creates an unlisted, view-only artifact. Login adds an API key to \`~/.docscn/config.json\` for comments, revisions, private artifacts, analytics, and ownership.
 
 First, install the CLI if \`docscn\` is not already available:
 
     curl ${origin}/install -fsS | bash
 
-Then verify or create a local login:
+Optional, but recommended before review/revision work:
 
     docscn login --host ${origin}
 
-This opens a browser window. The user signs in or creates an account, approves the CLI login, and the CLI saves a token locally. Do not ask for the user's password. Do not create accounts on behalf of users.
+This opens a browser window. The user signs in or creates an account, approves the CLI login, and the CLI saves a token locally. Do not ask for the user's password. Do not create accounts on behalf of users. If the user only wants a quick share link, skip login and publish unlisted.
 
 After login, verify the connection:
 
@@ -127,12 +127,13 @@ After login, verify the connection:
 
 1. Generate a complete self-contained HTML artifact.
 2. Save it to a local \`.html\` file.
-3. Publish it with \`docscn publish artifact.html --host ${origin}\`.
+3. Publish it with \`docscn publish artifact.html --host ${origin}\`. Without login this returns an unlisted view-only URL.
 4. Return the docscn artifact URL to the user so they can open and share it.
-5. When asked to revise, run \`docscn artifact feedback <artifact-id-or-slug> --host ${origin}\`.
-6. Inspect open and needs-revision threads from the bundle or prompt.
-7. Produce a full replacement HTML document, then run \`docscn revise <artifact-id-or-slug> revised.html --summary "..." --resolve <thread-id> --host ${origin}\`.
-8. Reply to reviewers when useful with \`docscn comment <thread-id> --body "..." --host ${origin}\`.
+5. For comments, feedback bundles, private artifacts, and revisions, run \`docscn login --host ${origin}\` first.
+6. When asked to revise, run \`docscn artifact feedback <artifact-id-or-slug> --host ${origin}\`.
+7. Inspect open and needs-revision threads from the bundle or prompt.
+8. Produce a full replacement HTML document, then run \`docscn revise <artifact-id-or-slug> revised.html --summary "..." --resolve <thread-id> --host ${origin}\`.
+9. Reply to reviewers when useful with \`docscn comment <thread-id> --body "..." --host ${origin}\`.
 
 ## CLI commands
 
@@ -196,7 +197,8 @@ Users can also create API keys manually from:
 
 ### Auth and access rules
 
-- **Publish, revise, create threads, and comment** require a valid session cookie or Bearer API key.
+- **Publish** can be anonymous for unlisted, view-only artifacts. Invalid Bearer tokens still return \`401\`; omit the header to publish anonymously.
+- **Revise, create threads, comment, private artifacts, analytics, and ownership features** require a valid session cookie or Bearer API key.
 - **Private artifacts** are visible only to the owner (session or their API key). Public and unlisted artifacts are readable without auth unless you pass an invalid Bearer token (which returns \`401\`).
 - **Revise and resolve threads** require the artifact owner. Other callers get \`403\`.
 - On failure, report the HTTP status and JSON \`error\` field. Do not retry blindly.
@@ -243,6 +245,8 @@ Body:
 Allowed \`visibility\` values:
 
     public, unlisted, private
+
+Anonymous publish requests are forced to \`unlisted\`. Use a session or Bearer API key for \`public\`, \`private\`, comments, revisions, ownership, and future analytics.
 
 Allowed \`source\` values:
 

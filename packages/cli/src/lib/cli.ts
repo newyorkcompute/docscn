@@ -64,7 +64,7 @@ const valueFlags = new Set([
 
 interface CliPublishOptions {
   filePath: string;
-  apiKey: string;
+  apiKey?: string;
   baseUrl: string;
   title?: string;
   description: string;
@@ -172,6 +172,11 @@ interface CommentResponse extends ApiErrorResponse {
 
 interface Credentials {
   apiKey: string;
+  baseUrl: string;
+}
+
+interface PublishTarget {
+  apiKey?: string;
   baseUrl: string;
 }
 
@@ -292,6 +297,23 @@ async function resolveCredentials(args: string[]): Promise<Credentials> {
   return { apiKey, baseUrl };
 }
 
+async function resolvePublishTarget(args: string[]): Promise<PublishTarget> {
+  const config = await readCliConfig();
+  const baseUrl = normalizeHost(
+    parseFlagValue(args, '--host') ??
+      parseFlagValue(args, '--url') ??
+      process.env['DOCSCN_URL'] ??
+      config?.defaultHost ??
+      'http://localhost:3000',
+  );
+  const apiKey =
+    parseFlagValue(args, '--api-key') ??
+    process.env['DOCSCN_API_KEY'] ??
+    findProfileForHost(config, baseUrl)?.apiKey;
+
+  return { apiKey, baseUrl };
+}
+
 async function parsePublishOptions(args: string[]): Promise<CliPublishOptions> {
   const [filePath] = getPositionals(args);
 
@@ -299,18 +321,25 @@ async function parsePublishOptions(args: string[]): Promise<CliPublishOptions> {
     throw new Error('Missing artifact HTML file path.');
   }
 
-  const credentials = await resolveCredentials(args);
+  const target = await resolvePublishTarget(args);
+  const visibility = parseVisibility(
+    parseFlagValue(args, '--visibility') ?? 'unlisted',
+  );
+
+  if (!target.apiKey && visibility !== 'unlisted') {
+    throw new Error(
+      `Anonymous publish only supports unlisted artifacts. Run "docscn login --host ${target.baseUrl}" to publish ${visibility} artifacts.`,
+    );
+  }
 
   return {
     filePath,
-    apiKey: credentials.apiKey,
-    baseUrl: credentials.baseUrl,
+    apiKey: target.apiKey,
+    baseUrl: target.baseUrl,
     title: parseFlagValue(args, '--title'),
     description:
       parseFlagValue(args, '--description') ?? 'Published from docscn CLI.',
-    visibility: parseVisibility(
-      parseFlagValue(args, '--visibility') ?? 'unlisted',
-    ),
+    visibility,
     authorName: parseFlagValue(args, '--author') ?? 'docscn CLI',
     kind: parseKind(parseFlagValue(args, '--kind') ?? 'custom-html'),
   };
@@ -385,7 +414,7 @@ Usage:
   docscn comment <thread-id> --body <text>
 
 Options:
-  --api-key <key>          API key. Defaults to DOCSCN_API_KEY or ~/.docscn/config.json.
+  --api-key <key>          API key. Defaults to DOCSCN_API_KEY or ~/.docscn/config.json. Publish can run without this for unlisted view-only artifacts.
   --host, --url <url>      docscn server URL. Defaults to DOCSCN_URL, saved config, or http://localhost:3000.
   --title <title>          Artifact title. Defaults to the file name.
   --description <text>     Artifact description.
@@ -398,6 +427,7 @@ Options:
 
 Examples:
   docscn login --host http://localhost:3000
+  docscn publish report.html --host http://localhost:3000
   docscn publish report.html --visibility private
   docscn artifact get artifact-slug --json
   docscn artifact feedback artifact-slug --json
@@ -427,7 +457,7 @@ export async function publishArtifactFromCli(args: string[]) {
   const response = await fetch(`${options.baseUrl}/api/artifacts`, {
     method: 'POST',
     headers: {
-      authorization: `Bearer ${options.apiKey}`,
+      ...(options.apiKey ? { authorization: `Bearer ${options.apiKey}` } : {}),
       'content-type': 'application/json',
     },
     body: JSON.stringify(payload),
@@ -440,6 +470,12 @@ export async function publishArtifactFromCli(args: string[]) {
 
   if (!result?.result) {
     throw new Error('Publish response did not include artifact details.');
+  }
+
+  if (!options.apiKey) {
+    console.warn(
+      'Published as an anonymous unlisted artifact. Sign in with "docscn login" to unlock comments, revisions, private sharing, and future analytics.',
+    );
   }
 
   return {

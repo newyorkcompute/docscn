@@ -90,15 +90,18 @@ export async function createDocscnMcpServer() {
       instructions: [
         'docscn hosts self-contained HTML artifacts for publish → review → revise workflows.',
         `Connected to ${credentials.baseUrl}.`,
+        credentials.apiKey
+          ? 'Authenticated with an API key, so public/private publishing and revisions are available.'
+          : 'No API key found; publish_artifact can still create anonymous unlisted view-only artifacts.',
         'Use publish_artifact to publish HTML, get_feedback before revising, and submit_revision with resolvedThreadIds from open threads.',
-        'Artifacts must include a complete <html> document. Prefer unlisted visibility unless the user asks otherwise.',
+        'Artifacts must include a complete <html> document. Prefer unlisted visibility unless the user asks otherwise. Public/private artifacts and submit_revision require login or DOCSCN_API_KEY.',
       ].join(' '),
     },
   );
 
   server.tool(
     'publish_artifact',
-    'Publish a self-contained HTML artifact to docscn and return its stable URL.',
+    'Publish a self-contained HTML artifact to docscn and return its stable URL. Works without an API key for anonymous unlisted artifacts.',
     publishArtifactShape,
     async (input) => jsonToolResult(await client.publishArtifact(input)),
   );

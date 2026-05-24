@@ -3,7 +3,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
 export interface DocscnCredentials {
-  apiKey: string;
+  apiKey?: string;
   baseUrl: string;
 }
 
@@ -68,12 +68,6 @@ export async function resolveDocscnCredentials(): Promise<DocscnCredentials> {
   );
   const apiKey =
     process.env['DOCSCN_API_KEY'] ?? findProfileForHost(config, baseUrl)?.apiKey;
-
-  if (!apiKey) {
-    throw new Error(
-      `Missing docscn API key. Run "docscn login --host ${baseUrl}" or set DOCSCN_API_KEY.`,
-    );
-  }
 
   return { apiKey, baseUrl };
 }

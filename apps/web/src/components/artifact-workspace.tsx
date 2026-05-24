@@ -182,10 +182,16 @@ function ToolbarTip({
 
 export function ArtifactWorkspace({
   artifact: initialArtifact,
+  canComment,
+  canRevise,
+  isAuthenticated,
   threads,
   artifactId,
 }: {
   artifact?: Artifact;
+  canComment: boolean;
+  canRevise: boolean;
+  isAuthenticated: boolean;
   threads: ReviewThread[];
   artifactId: string;
 }) {
@@ -301,6 +307,15 @@ export function ArtifactWorkspace({
     }, 0);
   }
 
+  function showReviewUnlock() {
+    setActionError(undefined);
+    setPendingAnchor(undefined);
+    setAnnotationMode('idle');
+    setActiveThreadPopoverId(undefined);
+    setActiveDrawerView('review');
+    setIsReviewOpen(true);
+  }
+
   function openThreadPopover(threadId: string) {
     if (isReviewOpen) {
       selectThreadInDrawer(threadId);
@@ -396,6 +411,11 @@ export function ArtifactWorkspace({
       return;
     }
 
+    if (!canComment) {
+      showReviewUnlock();
+      return;
+    }
+
     setPendingAction('thread');
     setActionError(undefined);
 
@@ -448,6 +468,11 @@ export function ArtifactWorkspace({
       return;
     }
 
+    if (!canComment) {
+      showReviewUnlock();
+      return;
+    }
+
     setPendingAction(`comment-${threadId}`);
     setActionError(undefined);
 
@@ -481,6 +506,11 @@ export function ArtifactWorkspace({
     threadId: string,
     status: ReviewThreadStatus,
   ) {
+    if (!canRevise) {
+      setActionError('Only the artifact owner can update review status.');
+      return;
+    }
+
     setPendingAction(`status-${threadId}-${status}`);
     setActionError(undefined);
 
@@ -507,6 +537,11 @@ export function ArtifactWorkspace({
 
   async function submitRevision(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canRevise) {
+      setActionError('Only the artifact owner can submit revisions.');
+      return;
+    }
+
     if (
       !artifact ||
       !revisionSummary.trim() ||
@@ -670,6 +705,11 @@ export function ArtifactWorkspace({
             type="button"
             variant="ghost"
             onClick={() => {
+              if (!canComment) {
+                showReviewUnlock();
+                return;
+              }
+
               setPendingAnchor(undefined);
               setActiveThreadPopoverId(undefined);
               setActionError(undefined);
@@ -694,6 +734,11 @@ export function ArtifactWorkspace({
             type="button"
             variant="ghost"
             onClick={() => {
+              if (!canComment) {
+                showReviewUnlock();
+                return;
+              }
+
               setPendingAnchor(undefined);
               setActiveThreadPopoverId(undefined);
               setActionError(undefined);
@@ -717,6 +762,11 @@ export function ArtifactWorkspace({
             type="button"
             variant="ghost"
             onClick={() => {
+              if (!canComment) {
+                showReviewUnlock();
+                return;
+              }
+
               setPendingAnchor(undefined);
               setActiveThreadPopoverId(undefined);
               setActionError(undefined);
@@ -915,7 +965,12 @@ export function ArtifactWorkspace({
           </div>
           <textarea
             className="mt-4 min-h-16 w-full resize-none rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35 focus:ring-2 focus:ring-primary"
-            placeholder="Reply to this thread"
+            disabled={!canComment}
+            placeholder={
+              canComment
+                ? 'Reply to this thread'
+                : 'Sign in to reply to review threads'
+            }
             value={commentBodies[activeThreadPopover.id] ?? ''}
             onChange={(event) =>
               setCommentBodies((current) => ({
@@ -934,7 +989,9 @@ export function ArtifactWorkspace({
             </button>
             <Button
               className="rounded-full bg-primary px-4 text-primary-foreground hover:bg-primary/90"
-              disabled={pendingAction === `comment-${activeThreadPopover.id}`}
+              disabled={
+                !canComment || pendingAction === `comment-${activeThreadPopover.id}`
+              }
               size="sm"
               type="button"
               onClick={() => addComment(activeThreadPopover.id)}
@@ -1062,6 +1119,25 @@ export function ArtifactWorkspace({
                   Read, reply, and resolve comments. Add new feedback from the
                   canvas tools.
                 </p>
+                {!canComment ? (
+                  <Card className="mt-4 border-primary/25 bg-primary/10 p-4">
+                    <p className="text-sm font-medium">
+                      {isAuthenticated
+                        ? 'Starter demos are view-only.'
+                        : 'Sign in to comment and collaborate.'}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {isAuthenticated
+                        ? 'Publish your own artifact to attach review threads and revisions.'
+                        : 'Anonymous artifacts are easy to share. Login unlocks comments, revision workflows, private sharing, and future analytics.'}
+                    </p>
+                    <Button asChild className="mt-3" size="sm">
+                      <Link href={isAuthenticated ? '/publish' : '/sign-in'}>
+                        {isAuthenticated ? 'Publish your own' : 'Sign in to unlock'}
+                      </Link>
+                    </Button>
+                  </Card>
+                ) : null}
                 <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="mr-1 font-medium">Agent context</span>
                   <Button
@@ -1208,7 +1284,12 @@ export function ArtifactWorkspace({
                         <div className="mt-4 space-y-2">
                           <textarea
                             className="min-h-16 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
-                            placeholder="Reply to this thread"
+                            disabled={!canComment}
+                            placeholder={
+                              canComment
+                                ? 'Reply to this thread'
+                                : 'Sign in to reply'
+                            }
                             value={commentBodies[thread.id] ?? ''}
                             onChange={(event) =>
                               setCommentBodies((current) => ({
@@ -1219,7 +1300,9 @@ export function ArtifactWorkspace({
                           />
                           <Button
                             className="h-7 rounded-full px-2 text-xs text-muted-foreground"
-                            disabled={pendingAction === `comment-${thread.id}`}
+                            disabled={
+                              !canComment || pendingAction === `comment-${thread.id}`
+                            }
                             size="sm"
                             type="button"
                             variant="ghost"
@@ -1243,65 +1326,83 @@ export function ArtifactWorkspace({
                   <GitCommitHorizontal className="h-4 w-4 text-primary" />
                   <h2 className="font-semibold">Revision history</h2>
                 </div>
-                <form className="mt-5 space-y-3" onSubmit={submitRevision}>
-                  <input
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
-                    placeholder="Revision summary"
-                    value={revisionSummary}
-                    onChange={(event) => setRevisionSummary(event.target.value)}
-                  />
-                  <input
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
-                    placeholder="Author / agent"
-                    value={revisionAuthor}
-                    onChange={(event) => setRevisionAuthor(event.target.value)}
-                  />
-                  <textarea
-                    className="min-h-40 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs outline-none ring-ring focus:ring-2"
-                    value={revisionHtml}
-                    onChange={(event) => setRevisionHtml(event.target.value)}
-                  />
-                  {threads.filter((thread) => thread.status !== 'resolved')
-                    .length ? (
-                    <div className="space-y-2 rounded-lg border border-border bg-secondary/40 p-3">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Mark threads resolved by this revision
-                      </p>
-                      {threads
-                        .filter((thread) => thread.status !== 'resolved')
-                        .map((thread) => (
-                          <label
-                            className="flex items-start gap-2 text-xs text-muted-foreground"
-                            key={thread.id}
-                          >
-                            <input
-                              className="mt-0.5"
-                              checked={resolvedThreadIds.includes(thread.id)}
-                              type="checkbox"
-                              onChange={(event) => {
-                                setResolvedThreadIds((current) =>
-                                  event.target.checked
-                                    ? [...current, thread.id]
-                                    : current.filter((id) => id !== thread.id),
-                                );
-                              }}
-                            />
-                            <span>{thread.title}</span>
-                          </label>
-                        ))}
-                    </div>
-                  ) : null}
-                  <Button
-                    className="w-full"
-                    disabled={pendingAction === 'revision'}
-                    size="sm"
-                    type="submit"
-                  >
-                    {pendingAction === 'revision'
-                      ? 'Submitting revision...'
-                      : 'Submit revision'}
-                  </Button>
-                </form>
+                {canRevise ? (
+                  <form className="mt-5 space-y-3" onSubmit={submitRevision}>
+                    <input
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                      placeholder="Revision summary"
+                      value={revisionSummary}
+                      onChange={(event) => setRevisionSummary(event.target.value)}
+                    />
+                    <input
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                      placeholder="Author / agent"
+                      value={revisionAuthor}
+                      onChange={(event) => setRevisionAuthor(event.target.value)}
+                    />
+                    <textarea
+                      className="min-h-40 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs outline-none ring-ring focus:ring-2"
+                      value={revisionHtml}
+                      onChange={(event) => setRevisionHtml(event.target.value)}
+                    />
+                    {threads.filter((thread) => thread.status !== 'resolved')
+                      .length ? (
+                      <div className="space-y-2 rounded-lg border border-border bg-secondary/40 p-3">
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Mark threads resolved by this revision
+                        </p>
+                        {threads
+                          .filter((thread) => thread.status !== 'resolved')
+                          .map((thread) => (
+                            <label
+                              className="flex items-start gap-2 text-xs text-muted-foreground"
+                              key={thread.id}
+                            >
+                              <input
+                                className="mt-0.5"
+                                checked={resolvedThreadIds.includes(thread.id)}
+                                type="checkbox"
+                                onChange={(event) => {
+                                  setResolvedThreadIds((current) =>
+                                    event.target.checked
+                                      ? [...current, thread.id]
+                                      : current.filter((id) => id !== thread.id),
+                                  );
+                                }}
+                              />
+                              <span>{thread.title}</span>
+                            </label>
+                          ))}
+                      </div>
+                    ) : null}
+                    <Button
+                      className="w-full"
+                      disabled={pendingAction === 'revision'}
+                      size="sm"
+                      type="submit"
+                    >
+                      {pendingAction === 'revision'
+                        ? 'Submitting revision...'
+                        : 'Submit revision'}
+                    </Button>
+                  </form>
+                ) : (
+                  <Card className="mt-5 border-primary/25 bg-primary/10 p-4">
+                    <p className="text-sm font-medium">
+                      Revisions are available for owned artifacts.
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      Anonymous and starter artifacts are view-only. Sign in and
+                      publish with your account to submit revisions from review
+                      feedback.
+                    </p>
+                    <Button asChild className="mt-3" size="sm">
+                      <Link href={isAuthenticated ? '/publish' : '/sign-in'}>
+                        {isAuthenticated ? 'Publish owned artifact' : 'Sign in'}
+                      </Link>
+                    </Button>
+                  </Card>
+                )}
                 <div className="mt-5 space-y-4">
                   {artifact.revisions
                     .slice()

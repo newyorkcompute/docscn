@@ -9,7 +9,8 @@ info:
     spec: `/openapi.json`.
 
     Authentication uses `Authorization: Bearer <api_key>` for CLI, MCP, and automation.
-    Browser sessions use Better Auth cookies for the web UI.
+    Browser sessions use Better Auth cookies for the web UI. Publishing can be
+    anonymous for unlisted, view-only artifacts; omit Authorization for that flow.
   license:
     name: MIT
     url: https://github.com/newyorkcompute/docscn/blob/main/LICENSE
@@ -110,6 +111,7 @@ components:
           format: date-time
         visibility:
           $ref: '#/components/schemas/ArtifactVisibility'
+          description: Anonymous publish requests are forced to `unlisted`.
         kind:
           $ref: '#/components/schemas/ArtifactKind'
         tags:
@@ -558,8 +560,10 @@ paths:
     post:
       tags: [Artifacts]
       summary: Publish a new artifact
+      description: Bearer auth is optional for unlisted, view-only anonymous publishing. Authenticated callers can publish public/private owned artifacts. Invalid bearer tokens return 401.
       security:
         - bearerAuth: []
+        - {}
       requestBody:
         required: true
         content:

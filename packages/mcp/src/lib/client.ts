@@ -38,7 +38,9 @@ async function apiFetch<T>(
   const response = await fetch(`${credentials.baseUrl}${path}`, {
     ...init,
     headers: {
-      authorization: `Bearer ${credentials.apiKey}`,
+      ...(credentials.apiKey
+        ? { authorization: `Bearer ${credentials.apiKey}` }
+        : {}),
       'content-type': 'application/json',
       ...init.headers,
     },
@@ -88,12 +90,19 @@ export function createDocscnApiClient(credentials: DocscnCredentials) {
           'Artifact HTML must be a self-contained document including <html>.',
         );
       }
+      const visibility = input.visibility ?? 'unlisted';
+
+      if (!credentials.apiKey && visibility !== 'unlisted') {
+        throw new Error(
+          `Anonymous MCP publish only supports unlisted artifacts. Run "docscn login --host ${credentials.baseUrl}" or set DOCSCN_API_KEY to publish ${visibility} artifacts.`,
+        );
+      }
 
       const payload: CreateArtifactInput = {
         title: input.title,
         description: input.description,
         html: input.html,
-        visibility: input.visibility ?? 'unlisted',
+        visibility,
         authorName: input.authorName ?? 'docscn MCP',
         source: 'mcp',
         kind: input.kind ?? 'custom-html',
@@ -139,6 +148,12 @@ export function createDocscnApiClient(credentials: DocscnCredentials) {
     },
 
     async submitRevision(input: SubmitRevisionRequest) {
+      if (!credentials.apiKey) {
+        throw new Error(
+          `Submitting revisions requires a docscn API key. Run "docscn login --host ${credentials.baseUrl}" or set DOCSCN_API_KEY.`,
+        );
+      }
+
       if (!input.html.toLowerCase().includes('<html')) {
         throw new Error(
           'Revision HTML must be a self-contained document including <html>.',
