@@ -38,7 +38,13 @@ export function ThemeToggle({
 }: {
   className?: string;
   showLabel?: boolean;
-  variant?: 'outline' | 'ghost' | 'default' | 'destructive' | 'secondary' | 'link';
+  variant?:
+    | 'outline'
+    | 'ghost'
+    | 'default'
+    | 'destructive'
+    | 'secondary'
+    | 'link';
 }) {
   const [theme, setTheme] = useState<ThemePreference>('system');
 
@@ -78,7 +84,7 @@ export function ThemeToggle({
     <Button
       aria-label={`Theme: ${label}. Click to change theme.`}
       className={cn(
-        !showLabel && 'h-8 w-8 px-0',
+        !showLabel && 'h-8 px-0',
         showLabel && 'px-2 sm:px-3',
         className,
       )}

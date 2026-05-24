@@ -1,11 +1,10 @@
 import Link from 'next/link';
 import type { SVGProps } from 'react';
 import { Button, Shell } from '@docscn/ui';
+import { GITHUB_REPO_URL } from '../lib/constants';
 import { getServerSession } from '../lib/session';
 import { ThemeToggle } from './theme-toggle';
 import { UserMenu } from './user-menu';
-
-const githubRepoUrl = 'https://github.com/newyorkcompute/docscn';
 
 function GitHubMark(props: SVGProps<SVGSVGElement>) {
   return (
@@ -39,7 +38,7 @@ export async function SiteHeader() {
           >
             <a
               aria-label="View and star docscn on GitHub."
-              href={githubRepoUrl}
+              href={GITHUB_REPO_URL}
               rel="noopener noreferrer"
               target="_blank"
             >

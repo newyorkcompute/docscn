@@ -17,6 +17,7 @@ import {
 import { listArtifacts } from '@docscn/db';
 import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
 import { exampleArtifacts } from '../lib/example-artifacts';
+import { GITHUB_REPO_URL } from '../lib/constants';
 import { getGalleryArtifactHref } from '../lib/gallery-artifacts';
 import { getServerSession } from '../lib/session';
 import { getRequestOrigin } from '../lib/request-origin';
@@ -26,8 +27,6 @@ import { TerminalCommand } from '../components/terminal-command';
 export const dynamic = 'force-dynamic';
 
 const featuredExamples = exampleArtifacts.slice(0, 4);
-
-const githubRepo = 'https://github.com/newyorkcompute/docscn';
 
 export default async function Index() {
   const session = await getServerSession();
@@ -62,21 +61,21 @@ export default async function Index() {
     {
       title: 'MCP tools',
       body: 'Expose publish, feedback, and revision actions to MCP hosts.',
-      href: `${githubRepo}/blob/main/docs/mcp.md`,
+      href: `${GITHUB_REPO_URL}/blob/main/docs/mcp.md`,
       label: 'docs/mcp.md',
       Icon: PlugZap,
     },
     {
       title: 'Local publishing',
       body: 'Install once, then publish from local agent workflows and scripts.',
-      href: `${githubRepo}/releases`,
+      href: `${GITHUB_REPO_URL}/releases`,
       label: 'GitHub Releases',
       Icon: PackageCheck,
     },
     {
       title: 'Self-hosting',
       body: 'Run your own instance with Postgres and S3-compatible storage.',
-      href: `${githubRepo}/blob/main/docs/self-hosting.md`,
+      href: `${GITHUB_REPO_URL}/blob/main/docs/self-hosting.md`,
       label: 'docs/self-hosting.md',
       Icon: Server,
     },
