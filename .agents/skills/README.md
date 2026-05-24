@@ -8,6 +8,7 @@ repo-specific workflows.
 
 | Skill | Source | Use when |
 | --- | --- | --- |
+| [web-artifacts-builder](./web-artifacts-builder/SKILL.md) | [Anthropic skills](https://github.com/anthropics/skills/tree/main/skills/web-artifacts-builder) | Complex React + Tailwind + shadcn/ui artifacts bundled to a single HTML file |
 | [mcp-builder](./mcp-builder/SKILL.md) | [Anthropic skills](https://github.com/anthropics/skills/tree/main/skills/mcp-builder) | Building or extending MCP servers (tools, evals, TypeScript/Python patterns) |
 | [doc-coauthoring](./doc-coauthoring/SKILL.md) | [Anthropic skills](https://github.com/anthropics/skills/tree/main/skills/doc-coauthoring) | Writing specs, RFCs, decision docs, proposals — structured 3-stage co-authoring workflow |
 | [frontend-design](./frontend-design/SKILL.md) | [Anthropic claude-code](https://github.com/anthropics/claude-code/tree/main/plugins/frontend-design/skills/frontend-design) | Building distinctive UI, HTML artifacts, or frontend surfaces |
