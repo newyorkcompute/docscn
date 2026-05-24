@@ -33,7 +33,7 @@ function getStoredTheme(): ThemePreference {
 
 export function ThemeToggle({
   className,
-  showLabel = true,
+  showLabel = false,
 }: {
   className?: string;
   showLabel?: boolean;
@@ -75,11 +75,15 @@ export function ThemeToggle({
   return (
     <Button
       aria-label={`Theme: ${label}. Click to change theme.`}
-      className={cn('px-2 sm:px-3', className)}
+      className={cn(
+        !showLabel && 'h-8 w-8 px-0',
+        showLabel && 'px-2 sm:px-3',
+        className,
+      )}
       onClick={cycleTheme}
       size="sm"
       title={`Theme: ${label}`}
-      variant="ghost"
+      variant="outline"
     >
       <Icon className="h-4 w-4" />
       {showLabel ? <span className="hidden sm:inline">{label}</span> : null}

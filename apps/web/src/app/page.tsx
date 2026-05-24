@@ -39,36 +39,43 @@ export default async function Index() {
 
   const agentIntegrations = [
     {
-      title: 'Agent skills',
-      body: 'Teach agents how to publish, read feedback, and revise.',
+      title: 'Hosted workspace',
+      body: 'Publish from the browser now; sign in later for ownership and review.',
+      href: '/publish',
+      label: 'Publish now',
+      Icon: PanelsTopLeft,
+    },
+    {
+      title: 'Agent instructions',
+      body: 'Teach coding agents how to publish, read feedback, and revise.',
       href: `${origin}/skills.md`,
       label: '/skills.md',
       Icon: BookOpenText,
     },
     {
-      title: 'REST + OpenAPI',
+      title: 'API automation',
       body: 'Automate artifacts, threads, comments, and feedback bundles.',
       href: `${origin}/openapi.json`,
       label: 'openapi.json',
       Icon: Braces,
     },
     {
-      title: 'MCP server',
-      body: 'Expose publish, feedback, and revision tools to MCP hosts.',
+      title: 'MCP tools',
+      body: 'Expose publish, feedback, and revision actions to MCP hosts.',
       href: `${githubRepo}/blob/main/docs/mcp.md`,
       label: 'docs/mcp.md',
       Icon: PlugZap,
     },
     {
-      title: 'CLI binary',
-      body: 'Install once, then publish from local agent workflows.',
+      title: 'Local publishing',
+      body: 'Install once, then publish from local agent workflows and scripts.',
       href: `${githubRepo}/releases`,
       label: 'GitHub Releases',
       Icon: PackageCheck,
     },
     {
       title: 'Self-hosting',
-      body: 'Run docscn with Postgres and S3-compatible storage.',
+      body: 'Run your own instance with Postgres and S3-compatible storage.',
       href: `${githubRepo}/blob/main/docs/self-hosting.md`,
       label: 'docs/self-hosting.md',
       Icon: Server,
@@ -84,18 +91,19 @@ export default async function Index() {
           <div className="pointer-events-none absolute -right-24 top-8 h-72 w-72 rounded-full bg-glow/20 blur-3xl animate-drift" />
           <div className="pointer-events-none absolute -left-16 bottom-0 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
 
-          <Shell className="relative grid gap-10 py-10 sm:py-14 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-16 lg:py-20">
+          <Shell className="relative grid gap-10 py-10 sm:py-14 lg:min-h-[calc(100svh-4.5rem)] lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-16 lg:py-16">
             <section>
               <Badge className="animate-fade-up" tone="outline">
-                no-login publish / localhost-first / agent-native
+                no-login publish / cloud or self-host / agent-native
               </Badge>
               <h1 className="animate-fade-up delay-1 mt-6 font-display text-[2.35rem] font-semibold leading-[1.03] tracking-[-0.03em] sm:text-[2.75rem] md:text-6xl xl:text-7xl">
                 Host, share, and collaborate on AI-generated HTML artifacts.
               </h1>
               <p className="animate-fade-up delay-2 mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
-                Publish AI-generated HTML to stable URLs without an account.
-                Sign in when you want comments, revisions, private sharing, and
-                analytics.
+                Publish AI-generated HTML to stable URLs without an account. Use
+                the hosted workspace or self-host with your own storage. Sign in
+                when you want comments, revisions, ownership, and private
+                sharing.
               </p>
               <div className="animate-fade-up delay-3 mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Button asChild size="lg">
@@ -137,9 +145,18 @@ export default async function Index() {
                 </div>
                 <div className="grid gap-3 py-5">
                   {[
-                    ['Publish', 'unlisted URL for a self-contained HTML artifact'],
-                    ['Review', 'point, text, and element feedback on the render'],
-                    ['Revise', 'structured threads returned to the next agent run'],
+                    [
+                      'Publish',
+                      'unlisted URL for a self-contained HTML artifact',
+                    ],
+                    [
+                      'Review',
+                      'point, text, and element feedback on the render',
+                    ],
+                    [
+                      'Revise',
+                      'structured threads returned to the next agent run',
+                    ],
                   ].map((item, index) => (
                     <div
                       className="flex items-center gap-3 rounded-lg border border-border/80 bg-card/80 p-3.5"
@@ -212,7 +229,7 @@ export default async function Index() {
             <div>
               <Eyebrow>artifact examples</Eyebrow>
               <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight md:text-4xl">
-                Built for AI-native work surfaces.
+                Real outputs from agent workflows.
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
                 {hasLiveArtifacts
@@ -248,7 +265,10 @@ export default async function Index() {
                   </Link>
                 ))
               : featuredExamples.map((example) => (
-                  <Link href={getGalleryArtifactHref(example.id)} key={example.id}>
+                  <Link
+                    href={getGalleryArtifactHref(example.id)}
+                    key={example.id}
+                  >
                     <Card className="feature-card group h-full p-5">
                       <div className="flex items-start justify-between gap-3">
                         <PanelsTopLeft className="h-5 w-5 text-primary" />
@@ -293,11 +313,11 @@ export default async function Index() {
                 <Bot className="h-6 w-6 text-primary" />
               </span>
               <h2 className="mt-5 font-display text-3xl font-semibold tracking-tight md:text-4xl">
-                Ready for MCP, skills, APIs, and CLI publishing.
+                Use it from any agent workflow.
               </h2>
               <p className="mt-4 text-sm leading-7 text-muted-foreground">
-                Point agents at skills, OpenAPI, or MCP — then close the loop
-                with structured review feedback and revised HTML uploads.
+                Publish from the browser, CLI, MCP, OpenAPI, or skills.md, then
+                send structured review feedback back into the next run.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -307,12 +327,14 @@ export default async function Index() {
                   href={item.href}
                   key={item.label}
                   rel={
-                    item.href.startsWith('http') && !item.href.startsWith(origin)
+                    item.href.startsWith('http') &&
+                    !item.href.startsWith(origin)
                       ? 'noopener noreferrer'
                       : undefined
                   }
                   target={
-                    item.href.startsWith('http') && !item.href.startsWith(origin)
+                    item.href.startsWith('http') &&
+                    !item.href.startsWith(origin)
                       ? '_blank'
                       : undefined
                   }
