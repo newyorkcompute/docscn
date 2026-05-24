@@ -148,6 +148,13 @@ npm run test:cli
 npm run test:mcp
 ```
 
+After applying Bugbot, Dependabot, agent-authored, or other automated review
+fixes, run the affected CI suite before marking a PR merge-ready when practical:
+
+```bash
+npm run ci:affected -- --base=origin/main --head=HEAD
+```
+
 For auth, API, or persistence changes, also run the persistent stack:
 
 ```bash
