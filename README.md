@@ -175,7 +175,7 @@ convenient, but the interfaces are meant to be replaceable.
 - SDK contracts shaped for publish APIs, MCP tools, skills, and agents.
 - Agent-first CLI flow for no-login unlisted publishing, browser login, local
   credential storage, reading feedback, comments, and revisions.
-- MCP server with `publish_artifact`, `get_feedback`, and `submit_revision` tools.
+- MCP server with tools for publish, list, fetch, feedback, review threads, revisions, claims, and identity.
 - Public `/skills.md` endpoint that tells agents how to interact with docscn.
 - OpenAPI spec at `/openapi.json` for REST integrations.
 
@@ -265,7 +265,7 @@ For MCP-native clients (Cursor, Claude Desktop), use the docscn MCP server:
 npm run mcp
 ```
 
-It exposes `publish_artifact`, `get_feedback`, and `submit_revision` over stdio.
+It exposes the full docscn REST API as MCP tools over stdio (see [docs/mcp.md](./docs/mcp.md)).
 See [docs/mcp.md](./docs/mcp.md) for configuration examples.
 
 REST clients can use the OpenAPI spec at `/openapi.json` (source: `packages/sdk/openapi.yaml`).

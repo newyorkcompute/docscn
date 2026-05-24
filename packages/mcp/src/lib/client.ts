@@ -1,12 +1,24 @@
 import type {
   AgentFeedbackContext,
+  AnonymousClaimReceipt,
+  Artifact,
   ArtifactKind,
   ArtifactRevision,
   ArtifactVisibility,
+  ClaimArtifactsResult,
   CreateArtifactInput,
   PublishResult,
+  ReviewAnchor,
+  ReviewComment,
+  ReviewThread,
+  ReviewThreadStatus,
 } from '@docscn/sdk';
 import type { DocscnCredentials } from './credentials.js';
+import {
+  getAnonymousClaimReceipts,
+  removeAnonymousClaimReceipts,
+  saveAnonymousClaimReceipt,
+} from './credentials.js';
 
 interface ApiErrorResponse {
   error?: string;
@@ -26,34 +38,53 @@ interface SubmitRevisionResponse extends ApiErrorResponse {
   revision?: ArtifactRevision;
 }
 
+interface ListArtifactsResponse extends ApiErrorResponse {
+  artifacts?: Artifact[];
+}
+
+interface GetArtifactResponse extends ApiErrorResponse {
+  artifact?: Artifact;
+  threads?: ReviewThread[];
+}
+
+interface CreateThreadResponse extends ApiErrorResponse {
+  thread?: ReviewThread;
+}
+
+interface CreateCommentResponse extends ApiErrorResponse {
+  comment?: ReviewComment;
+}
+
+interface UpdateThreadResponse extends ApiErrorResponse {
+  thread?: ReviewThread;
+}
+
+interface ClaimArtifactsResponse extends ApiErrorResponse {
+  claimed?: ClaimArtifactsResult['claimed'];
+  skipped?: ClaimArtifactsResult['skipped'];
+}
+
+interface MeResponse extends ApiErrorResponse {
+  principal?: {
+    userId: string;
+    name?: string;
+    apiKeyId?: string;
+    kind: 'session' | 'api-key';
+  };
+}
+
 async function readJsonResponse<T>(response: Response): Promise<T | null> {
   return response.json().catch(() => null) as Promise<T | null>;
 }
 
-async function apiFetch<T>(
-  credentials: DocscnCredentials,
-  path: string,
-  init: RequestInit = {},
-) {
-  const response = await fetch(`${credentials.baseUrl}${path}`, {
-    ...init,
-    headers: {
-      ...(credentials.apiKey
-        ? { authorization: `Bearer ${credentials.apiKey}` }
-        : {}),
-      'content-type': 'application/json',
-      ...init.headers,
-    },
-  });
-  const payload = await readJsonResponse<T & ApiErrorResponse>(response);
-
-  if (!response.ok) {
+function requireApiKey(credentials: DocscnCredentials, operation: string) {
+  if (!credentials.apiKey) {
     throw new Error(
-      payload?.error ?? `Request failed with ${response.status}.`,
+      `${operation} requires a docscn API key. Run "docscn login --host ${credentials.baseUrl}" or set DOCSCN_API_KEY.`,
     );
   }
 
-  return payload as T;
+  return credentials.apiKey;
 }
 
 function buildArtifactUrl(baseUrl: string, pathOrUrl: string) {
@@ -82,7 +113,67 @@ export interface SubmitRevisionRequest {
   authorName?: string;
 }
 
+export interface CreateThreadRequest {
+  artifactIdOrSlug: string;
+  title: string;
+  body: string;
+  authorName?: string;
+  status?: ReviewThreadStatus;
+  requestedChange?: string;
+  revisionId?: string;
+  anchorLabel?: string;
+  anchorKind?: ReviewAnchor['kind'];
+  anchorX?: number;
+  anchorY?: number;
+  anchor?: ReviewAnchor;
+}
+
+export interface AddCommentRequest {
+  threadId: string;
+  body: string;
+  authorName?: string;
+}
+
+export interface UpdateThreadStatusRequest {
+  threadId: string;
+  status: ReviewThreadStatus;
+}
+
+export interface ClaimArtifactsRequest {
+  receipts?: AnonymousClaimReceipt[];
+}
+
 export function createDocscnApiClient(credentials: DocscnCredentials) {
+  async function apiFetch<T>(
+    path: string,
+    init: RequestInit = {},
+    options: { requireAuth?: boolean } = {},
+  ) {
+    if (options.requireAuth) {
+      requireApiKey(credentials, 'This operation');
+    }
+
+    const response = await fetch(`${credentials.baseUrl}${path}`, {
+      ...init,
+      headers: {
+        ...(credentials.apiKey
+          ? { authorization: `Bearer ${credentials.apiKey}` }
+          : {}),
+        'content-type': 'application/json',
+        ...init.headers,
+      },
+    });
+    const payload = await readJsonResponse<T & ApiErrorResponse>(response);
+
+    if (!response.ok) {
+      throw new Error(
+        payload?.error ?? `Request failed with ${response.status}.`,
+      );
+    }
+
+    return payload as T;
+  }
+
   return {
     async publishArtifact(input: PublishArtifactRequest) {
       if (!input.html.toLowerCase().includes('<html')) {
@@ -109,7 +200,6 @@ export function createDocscnApiClient(credentials: DocscnCredentials) {
       };
 
       const result = await apiFetch<PublishArtifactResponse>(
-        credentials,
         '/api/artifacts',
         {
           method: 'POST',
@@ -121,9 +211,43 @@ export function createDocscnApiClient(credentials: DocscnCredentials) {
         throw new Error('Publish response did not include artifact details.');
       }
 
+      if (!credentials.apiKey && result.result.claimToken) {
+        await saveAnonymousClaimReceipt(credentials.baseUrl, {
+          artifactId: result.result.artifactId,
+          slug: result.result.slug,
+          title: input.title,
+          claimToken: result.result.claimToken,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
       return {
         ...result.result,
         url: buildArtifactUrl(credentials.baseUrl, result.result.url),
+        claimReceiptSaved: Boolean(
+          !credentials.apiKey && result.result.claimToken,
+        ),
+      };
+    },
+
+    async listArtifacts() {
+      const result = await apiFetch<ListArtifactsResponse>('/api/artifacts');
+
+      return result.artifacts ?? [];
+    },
+
+    async getArtifact(artifactIdOrSlug: string) {
+      const result = await apiFetch<GetArtifactResponse>(
+        `/api/artifacts/${encodeURIComponent(artifactIdOrSlug)}`,
+      );
+
+      if (!result.artifact) {
+        throw new Error('Artifact response did not include artifact details.');
+      }
+
+      return {
+        artifact: result.artifact,
+        threads: result.threads ?? [],
       };
     },
 
@@ -133,7 +257,6 @@ export function createDocscnApiClient(credentials: DocscnCredentials) {
         : '';
 
       const result = await apiFetch<ArtifactFeedbackResponse>(
-        credentials,
         `/api/artifacts/${encodeURIComponent(input.artifactIdOrSlug)}/feedback${query}`,
       );
 
@@ -148,11 +271,7 @@ export function createDocscnApiClient(credentials: DocscnCredentials) {
     },
 
     async submitRevision(input: SubmitRevisionRequest) {
-      if (!credentials.apiKey) {
-        throw new Error(
-          `Submitting revisions requires a docscn API key. Run "docscn login --host ${credentials.baseUrl}" or set DOCSCN_API_KEY.`,
-        );
-      }
+      requireApiKey(credentials, 'Submitting revisions');
 
       if (!input.html.toLowerCase().includes('<html')) {
         throw new Error(
@@ -161,7 +280,6 @@ export function createDocscnApiClient(credentials: DocscnCredentials) {
       }
 
       const result = await apiFetch<SubmitRevisionResponse>(
-        credentials,
         `/api/artifacts/${encodeURIComponent(input.artifactIdOrSlug)}/revisions`,
         {
           method: 'POST',
@@ -173,6 +291,7 @@ export function createDocscnApiClient(credentials: DocscnCredentials) {
             resolvedThreadIds: input.resolvedThreadIds ?? [],
           }),
         },
+        { requireAuth: true },
       );
 
       if (!result.revision) {
@@ -181,7 +300,136 @@ export function createDocscnApiClient(credentials: DocscnCredentials) {
 
       return result.revision;
     },
+
+    async createThread(input: CreateThreadRequest) {
+      requireApiKey(credentials, 'Creating review threads');
+
+      const result = await apiFetch<CreateThreadResponse>(
+        `/api/artifacts/${encodeURIComponent(input.artifactIdOrSlug)}/threads`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            title: input.title,
+            body: input.body,
+            authorName: input.authorName ?? 'docscn MCP',
+            role: 'agent',
+            status: input.status ?? 'open',
+            requestedChange: input.requestedChange,
+            revisionId: input.revisionId,
+            anchorLabel: input.anchorLabel,
+            anchorKind: input.anchorKind,
+            anchorX: input.anchorX,
+            anchorY: input.anchorY,
+            anchor: input.anchor,
+          }),
+        },
+        { requireAuth: true },
+      );
+
+      if (!result.thread) {
+        throw new Error('Thread response did not include thread details.');
+      }
+
+      return result.thread;
+    },
+
+    async addComment(input: AddCommentRequest) {
+      requireApiKey(credentials, 'Adding review comments');
+
+      const result = await apiFetch<CreateCommentResponse>(
+        `/api/review-threads/${encodeURIComponent(input.threadId)}/comments`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            body: input.body,
+            authorName: input.authorName ?? 'docscn MCP',
+            role: 'agent',
+          }),
+        },
+        { requireAuth: true },
+      );
+
+      if (!result.comment) {
+        throw new Error('Comment response did not include comment details.');
+      }
+
+      return result.comment;
+    },
+
+    async updateThreadStatus(input: UpdateThreadStatusRequest) {
+      requireApiKey(credentials, 'Updating review thread status');
+
+      const result = await apiFetch<UpdateThreadResponse>(
+        `/api/review-threads/${encodeURIComponent(input.threadId)}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ status: input.status }),
+        },
+        { requireAuth: true },
+      );
+
+      if (!result.thread) {
+        throw new Error('Thread response did not include thread details.');
+      }
+
+      return result.thread;
+    },
+
+    async claimArtifacts(input: ClaimArtifactsRequest = {}) {
+      requireApiKey(credentials, 'Claiming anonymous artifacts');
+
+      const receipts =
+        input.receipts ??
+        (await getAnonymousClaimReceipts(credentials.baseUrl));
+
+      if (!receipts.length) {
+        return {
+          claimed: [],
+          skipped: [],
+          message: 'No saved anonymous claim receipts found for this host.',
+        };
+      }
+
+      const result = await apiFetch<ClaimArtifactsResponse>(
+        '/api/artifacts/claims',
+        {
+          method: 'POST',
+          body: JSON.stringify({ receipts }),
+        },
+        { requireAuth: true },
+      );
+
+      const completedIds = [
+        ...(result.claimed ?? []).map((artifact) => artifact.artifactId),
+        ...(result.skipped ?? []).map((artifact) => artifact.artifactId),
+      ];
+
+      await removeAnonymousClaimReceipts(credentials.baseUrl, completedIds);
+
+      return {
+        claimed: result.claimed ?? [],
+        skipped: result.skipped ?? [],
+      };
+    },
+
+    async getMe() {
+      requireApiKey(credentials, 'Reading caller identity');
+
+      const result = await apiFetch<MeResponse>('/api/me', {}, { requireAuth: true });
+
+      if (!result.principal) {
+        throw new Error('Identity response did not include a principal.');
+      }
+
+      return result.principal;
+    },
   };
 }
 
 export type DocscnApiClient = ReturnType<typeof createDocscnApiClient>;
+
+export async function claimSavedAnonymousArtifacts(
+  client: DocscnApiClient,
+) {
+  return client.claimArtifacts();
+}

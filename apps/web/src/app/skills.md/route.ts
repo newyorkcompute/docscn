@@ -8,7 +8,7 @@ docscn is an open-source platform for hosting, sharing, and collaborating on AI-
 | Approach | Best for |
 | --- | --- |
 | **CLI** (\`docscn\`) | Local agents with shell access. Handles login and stores credentials in \`~/.docscn/config.json\`. |
-| **MCP server** | Cursor, Claude Desktop, and other MCP hosts. Same API via \`publish_artifact\`, \`get_feedback\`, \`submit_revision\`. |
+| **MCP server** | Cursor, Claude Desktop, and other MCP hosts. Same REST API via MCP tools such as \`publish_artifact\`, \`list_artifacts\`, \`get_artifact\`, \`get_feedback\`, \`create_thread\`, \`add_comment\`, \`submit_revision\`, \`update_thread_status\`, \`claim_artifacts\`, and \`get_me\`. |
 | **Raw REST API** | Headless automation, CI, or custom clients. Use \`Authorization: Bearer\` and see \`/openapi.json\` for the full schema. |
 
 Core loop for all paths:
@@ -410,11 +410,24 @@ Use this when wiring custom clients, SDKs, or automation outside the CLI and MCP
 
 ## MCP server
 
-docscn ships an MCP server with three tools. Each tool returns JSON text in the tool result.
+docscn ships an MCP server that mirrors the REST API. Each tool returns JSON text in the tool result.
+
+| Tool | REST equivalent | Auth |
+| --- | --- | --- |
+| \`publish_artifact\` | \`POST /api/artifacts\` | Optional |
+| \`list_artifacts\` | \`GET /api/artifacts\` | Optional |
+| \`get_artifact\` | \`GET /api/artifacts/{id}\` | Optional |
+| \`get_feedback\` | \`GET /api/artifacts/{id}/feedback\` | Optional |
+| \`submit_revision\` | \`POST /api/artifacts/{id}/revisions\` | Required |
+| \`create_thread\` | \`POST /api/artifacts/{id}/threads\` | Required |
+| \`add_comment\` | \`POST /api/review-threads/{id}/comments\` | Required |
+| \`update_thread_status\` | \`PATCH /api/review-threads/{id}\` | Required |
+| \`claim_artifacts\` | \`POST /api/artifacts/claims\` | Required |
+| \`get_me\` | \`GET /api/me\` | Required |
 
 ### \`publish_artifact\`
 
-Publish self-contained HTML and return \`artifactId\`, \`slug\`, \`url\`, and \`revisionId\`.
+Publish self-contained HTML and return \`artifactId\`, \`slug\`, \`url\`, \`revisionId\`, and optionally \`claimReceiptSaved\` for anonymous publishes.
 
 Inputs:
 
@@ -427,7 +440,19 @@ Inputs:
       "authorName": "Cursor agent"
     }
 
-\`visibility\`, \`kind\`, and \`authorName\` are optional.
+\`visibility\`, \`kind\`, and \`authorName\` are optional. Anonymous publishes save a local claim receipt in \`~/.docscn/config.json\`.
+
+### \`list_artifacts\`
+
+List artifacts visible to the caller. No inputs.
+
+### \`get_artifact\`
+
+Fetch artifact metadata, revisions, and review threads.
+
+Inputs:
+
+    { "artifactIdOrSlug": "agent-generated-incident-timeline-..." }
 
 ### \`get_feedback\`
 
@@ -457,6 +482,59 @@ Inputs:
     }
 
 \`resolvedThreadIds\` and \`authorName\` are optional.
+
+### \`create_thread\`
+
+Create a review thread on an artifact. Returns the new \`thread\` object.
+
+Inputs:
+
+    {
+      "artifactIdOrSlug": "agent-generated-incident-timeline-...",
+      "title": "Clarify rollback timing",
+      "body": "The rollback step should show exact timestamps.",
+      "requestedChange": "Add timestamps to each rollback event.",
+      "anchorLabel": "Rollback section",
+      "anchorKind": "element",
+      "anchorX": 42,
+      "anchorY": 68
+    }
+
+Only \`artifactIdOrSlug\`, \`title\`, and \`body\` are required.
+
+### \`add_comment\`
+
+Add a comment to an existing review thread. Returns the new \`comment\` object.
+
+Inputs:
+
+    {
+      "threadId": "thread_...",
+      "body": "Updated in revision 2.",
+      "authorName": "Cursor agent"
+    }
+
+### \`update_thread_status\`
+
+Update thread status. Only the artifact owner can change status.
+
+Inputs:
+
+    { "threadId": "thread_...", "status": "resolved" }
+
+### \`claim_artifacts\`
+
+Recover anonymous artifacts for the authenticated caller. Uses saved local claim receipts when \`receipts\` is omitted.
+
+Inputs:
+
+    { "receipts": [{ "artifactId": "...", "slug": "...", "title": "...", "claimToken": "...", "createdAt": "..." }] }
+
+\`receipts\` is optional.
+
+### \`get_me\`
+
+Return the authenticated caller identity. No inputs.
 
 ### Run and configure
 

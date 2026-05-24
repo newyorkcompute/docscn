@@ -9,8 +9,15 @@ const { createDocscnApiClient } = await import(
 
 assert.deepEqual(docscnMcpToolNames, [
   'publish_artifact',
+  'list_artifacts',
+  'get_artifact',
   'get_feedback',
   'submit_revision',
+  'create_thread',
+  'add_comment',
+  'update_thread_status',
+  'claim_artifacts',
+  'get_me',
 ]);
 
 const previousKey = process.env.DOCSCN_API_KEY;
@@ -75,6 +82,45 @@ await assertRejectsWith(
       html: validHtml,
       summary: 'Needs auth',
     }),
+  /requires a docscn API key/,
+);
+
+await assertRejectsWith(
+  () =>
+    anonymousClient.createThread({
+      artifactIdOrSlug: 'artifact-example',
+      title: 'Needs auth',
+      body: 'Thread body',
+    }),
+  /requires a docscn API key/,
+);
+
+await assertRejectsWith(
+  () =>
+    anonymousClient.addComment({
+      threadId: 'thread-example',
+      body: 'Needs auth',
+    }),
+  /requires a docscn API key/,
+);
+
+await assertRejectsWith(
+  () =>
+    anonymousClient.updateThreadStatus({
+      threadId: 'thread-example',
+      status: 'resolved',
+    }),
+  /requires a docscn API key/,
+);
+
+await assertRejectsWith(
+  () =>
+    anonymousClient.claimArtifacts(),
+  /requires a docscn API key/,
+);
+
+await assertRejectsWith(
+  () => anonymousClient.getMe(),
   /requires a docscn API key/,
 );
 

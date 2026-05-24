@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import type { AnonymousClaimReceipt } from '@docscn/sdk';
 
 export interface DocscnCredentials {
   apiKey?: string;
@@ -15,6 +16,7 @@ export interface DocscnCliProfile {
 export interface DocscnCliConfig {
   defaultHost: string;
   profiles: Record<string, DocscnCliProfile>;
+  anonymousClaims?: Record<string, AnonymousClaimReceipt[]>;
 }
 
 export function normalizeHost(value: string) {
@@ -39,7 +41,7 @@ export async function readCliConfig(): Promise<DocscnCliConfig | undefined> {
   }
 }
 
-export async function writeCliConfig(config: DocscnCliConfig) {
+async function writeCliConfig(config: DocscnCliConfig) {
   const configPath = getConfigPath();
 
   await mkdir(dirname(configPath), { mode: 0o700, recursive: true });
@@ -70,4 +72,58 @@ export async function resolveDocscnCredentials(): Promise<DocscnCredentials> {
     process.env['DOCSCN_API_KEY'] ?? findProfileForHost(config, baseUrl)?.apiKey;
 
   return { apiKey, baseUrl };
+}
+
+export async function saveAnonymousClaimReceipt(
+  hostValue: string,
+  receipt: AnonymousClaimReceipt,
+) {
+  const existing = await readCliConfig();
+  const host = normalizeHost(hostValue);
+  const claimsForHost = existing?.anonymousClaims?.[host] ?? [];
+
+  await writeCliConfig({
+    defaultHost: existing?.defaultHost ?? host,
+    profiles: existing?.profiles ?? {},
+    anonymousClaims: {
+      ...(existing?.anonymousClaims ?? {}),
+      [host]: [
+        ...claimsForHost.filter(
+          (claim) => claim.artifactId !== receipt.artifactId,
+        ),
+        receipt,
+      ],
+    },
+  });
+}
+
+export async function getAnonymousClaimReceipts(hostValue: string) {
+  const config = await readCliConfig();
+  const host = normalizeHost(hostValue);
+
+  return config?.anonymousClaims?.[host] ?? [];
+}
+
+export async function removeAnonymousClaimReceipts(
+  hostValue: string,
+  artifactIds: string[],
+) {
+  const existing = await readCliConfig();
+  if (!existing?.anonymousClaims) {
+    return;
+  }
+
+  const host = normalizeHost(hostValue);
+  const completed = new Set(artifactIds);
+  const remaining = (existing.anonymousClaims[host] ?? []).filter(
+    (receipt) => !completed.has(receipt.artifactId),
+  );
+
+  await writeCliConfig({
+    ...existing,
+    anonymousClaims: {
+      ...existing.anonymousClaims,
+      [host]: remaining,
+    },
+  });
 }
