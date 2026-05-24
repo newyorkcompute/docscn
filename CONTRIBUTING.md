@@ -132,8 +132,8 @@ For breaking API, CLI, or schema changes, add a footer:
 BREAKING CHANGE: describe what callers must update
 ```
 
-We do not run commitlint or other commit hooks yet. If we later automate
-releases or changelogs from commit history, we may adopt tooling then.
+We do not run commitlint or commit-message hooks yet. If we later automate
+releases or changelogs from commit history, we may adopt that tooling then.
 
 ## Checks to run
 
@@ -173,9 +173,10 @@ Open a PR against `main` and fill out
 - **Screenshots / recordings** — required for UI changes when possible
 - **Notes** — migrations, env vars, breaking changes, deferrals, follow-ups
 
-CI runs three jobs on pull requests: static checks (lint, typecheck, formatting,
-OpenAPI sync) and unit tests (CLI, MCP) in parallel, then a backend integration
-job with Postgres and MinIO.
+CI runs three jobs on pull requests: static checks (affected lint/build,
+formatting, OpenAPI sync) and affected unit tests in parallel, then a backend
+integration job with Postgres and MinIO. The workflow uses npm's package cache
+through `actions/setup-node`; it does not cache `node_modules`.
 
 ## Reporting security issues
 

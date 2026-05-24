@@ -14,6 +14,15 @@
         "tsConfig": "packages/mcp/tsconfig.lib.json",
         "assets": ["packages/mcp/*.md"]
       }
+    },
+    "unit": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "cache": true,
+      "inputs": ["default", "^default", "{workspaceRoot}/scripts/mcp-unit.mjs"],
+      "options": {
+        "command": "node scripts/mcp-unit.mjs"
+      }
     }
   }
 }
