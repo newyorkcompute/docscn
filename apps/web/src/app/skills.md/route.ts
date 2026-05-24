@@ -48,7 +48,46 @@ docscn itself uses a shadcn/Tailwind-inspired design language: clean typography,
 
 Artifacts are rendered as sandboxed self-contained HTML. Do not assume Tailwind CSS, shadcn/ui, React, or any app-level styles are available inside the artifact iframe unless you include the required CSS and JavaScript yourself. Prefer plain HTML, CSS variables, inline SVG, and small vanilla JavaScript.
 
-Support light and dark mode inside the artifact when possible. Use CSS variables and \`prefers-color-scheme\`, for example define neutral backgrounds, text colors, borders, and accent colors for both themes. Avoid hardcoding a dark-only or light-only artifact unless the user asks for it.
+### Light and dark mode
+
+docscn **syncs the app theme into the artifact iframe**. When a reviewer toggles light/dark on the site, docscn sets \`light\` or \`dark\` on the artifact's \`<html>\` element and sets \`data-docscn-theme\` to match. Artifacts should look correct in **both** modes unless the user explicitly asks for a single-theme design.
+
+**Do not rely on \`prefers-color-scheme\` alone** — that only follows the OS and will not track docscn's theme toggle. Use it only as a fallback before classes are applied.
+
+Recommended pattern:
+
+1. Define shared tokens on \`:root\` (default to a light palette).
+2. Override tokens for \`html.dark\` and \`html[data-docscn-theme='dark']\`.
+3. Optionally pin light tokens on \`html.light\` and \`html[data-docscn-theme='light']\`.
+4. Use \`var(--…)\` for backgrounds, text, borders, and accents — avoid hardcoded hex on \`body\` only.
+
+Example (abbreviated):
+
+    :root {
+      color-scheme: light;
+      --bg: #f8fafc;
+      --fg: #0f172a;
+      --muted: #64748b;
+      --card: #ffffff;
+      --border: #e2e8f0;
+    }
+
+    html.dark,
+    html[data-docscn-theme='dark'] {
+      color-scheme: dark;
+      --bg: #0b1220;
+      --fg: #e2e8f0;
+      --muted: #94a3b8;
+      --card: #111827;
+      --border: #1f2937;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+    }
+
+Reference implementations: \`examples/artifacts/*.html\` in the repo (e.g. \`minimal.html\`, \`pr-review.html\`).
 
 Use responsive layouts so artifacts are readable in narrow and wide viewports. Prefer semantic HTML, keyboard-friendly controls, readable font sizes, and sufficient color contrast.
 
@@ -444,7 +483,7 @@ See [docs/mcp.md](https://github.com/newyorkcompute/docscn/blob/main/docs/mcp.md
 - Use the full viewport by default; avoid wasting the top of the page on empty margins or generic title cards.
 - Include export/copy actions for interactive artifacts so users can turn UI changes back into prompts, JSON, diffs, or settings.
 - Match docscn's shadcn/Tailwind-inspired taste with self-contained CSS; do not rely on Tailwind or shadcn being globally available inside the artifact.
-- Support light and dark mode within the artifact where practical.
+- Support light and dark mode: sync with \`html.light\` / \`html.dark\` and \`data-docscn-theme\` (see **Light and dark mode** above), not OS \`prefers-color-scheme\` alone.
 - Keep HTML portable: no build step, no framework runtime required, no secret values embedded.
 - Use \`unlisted\` by default unless the user asks for public or private.
 - Use \`private\` for sensitive content. Private artifacts require the owner's session or API key to read.
