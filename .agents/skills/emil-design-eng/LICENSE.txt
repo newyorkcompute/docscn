@@ -1,0 +1,12 @@
+This skill is a docscn-local adaptation inspired by Emil Kowalski's public
+design-engineering skill:
+
+https://github.com/emilkowalski/skill/blob/main/skills/emil-design-eng/SKILL.md
+
+No explicit upstream license file was found in the referenced repository at the
+time this adaptation was added. To avoid vendoring the upstream text verbatim,
+this directory contains original docscn-specific guidance and attribution rather
+than a full copy of the upstream skill.
+
+If the upstream project later publishes license terms, review this notice and
+update it accordingly before copying additional upstream content.
