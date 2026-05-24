@@ -33,7 +33,12 @@
     "db:down": "docker compose down",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "dotenv -e .env.local -- drizzle-kit migrate",
-    "db:studio": "dotenv -e .env.local -- drizzle-kit studio"
+    "db:studio": "dotenv -e .env.local -- drizzle-kit studio",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,mjs,cjs,ts,tsx,json,css,scss,md,html,yml,yaml}": "prettier --write",
+    "*.{js,mjs,cjs,ts,tsx}": "eslint --fix --no-warn-ignored"
   },
   "repository": {
     "type": "git",
@@ -83,7 +88,9 @@
     "eslint-plugin-jsx-a11y": "6.10.2",
     "eslint-plugin-react": "7.37.5",
     "eslint-plugin-react-hooks": "5.0.0",
+    "husky": "^9.1.7",
     "jsonc-eslint-parser": "^2.1.0",
+    "lint-staged": "^16.4.0",
     "nx": "22.7.3",
     "prettier": "~3.8.3",
     "tailwindcss": "^4.3.0",
