@@ -40,6 +40,9 @@ jobs:
       - name: Test CLI
         run: npm run test:cli
 
+      - name: Test MCP
+        run: npm run test:mcp
+
   integration:
     name: Backend API integration
     runs-on: ubuntu-latest

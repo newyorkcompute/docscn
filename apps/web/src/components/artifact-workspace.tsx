@@ -20,6 +20,11 @@ import type {
   ReviewThread,
   ReviewThreadStatus,
 } from '@docscn/sdk';
+import {
+  buildAgentFeedbackContext,
+  formatAgentFeedbackJson,
+  formatAgentFeedbackPrompt,
+} from '@docscn/sdk';
 import { Badge, Button, Card, Eyebrow, Shell, cn } from '@docscn/ui';
 import {
   ArtifactFrame,
@@ -253,68 +258,19 @@ export function ArtifactWorkspace({
       return undefined;
     }
 
-    return {
-      artifact: {
-        id: artifact.id,
-        slug: artifact.slug,
-        title: artifact.metadata.title,
-        description: artifact.metadata.description,
-        visibility: artifact.metadata.visibility,
-        kind: artifact.metadata.kind,
-      },
-      revision: {
-        id: selectedRevision.id,
-        version: selectedRevision.version,
-        summary: selectedRevision.summary,
-      },
-      instructions: {
-        goal: 'Revise the self-contained HTML artifact using the review feedback.',
-        constraints: [
-          'Return a complete self-contained HTML document.',
-          'Preserve useful existing interactions unless feedback asks to change them.',
-          'Address each requested change explicitly.',
-        ],
-      },
-      openThreads: openThreads.map((thread) => ({
-        id: thread.id,
-        status: thread.status,
-        title: thread.title,
-        anchor: thread.anchor,
-        requestedChange: thread.requestedChange,
-        comments: thread.comments.map((comment) => ({
-          author: comment.author.name,
-          role: comment.role,
-          body: comment.body,
-        })),
-      })),
-    };
-  }, [artifact, openThreads, selectedRevision]);
+    return buildAgentFeedbackContext(
+      artifact,
+      selectedRevision.id,
+      threads,
+    );
+  }, [artifact, selectedRevision, threads]);
 
   const feedbackJson = feedbackBundle
-    ? JSON.stringify(feedbackBundle, null, 2)
+    ? formatAgentFeedbackJson(feedbackBundle)
     : '';
 
   const feedbackPrompt = feedbackBundle
-    ? [
-        `Revise "${feedbackBundle.artifact.title}" from revision v${feedbackBundle.revision.version}.`,
-        '',
-        feedbackBundle.openThreads.length
-          ? 'Address these open review threads:'
-          : 'There are no open review threads. Improve clarity without changing the intent.',
-        ...feedbackBundle.openThreads.flatMap((thread, index) => [
-          '',
-          `${index + 1}. ${thread.title} (${thread.status})`,
-          thread.requestedChange
-            ? `Requested change: ${thread.requestedChange}`
-            : 'Requested change: infer from comments.',
-          ...thread.comments.map(
-            (comment) =>
-              `- ${comment.author} (${comment.role}): ${comment.body}`,
-          ),
-        ]),
-        '',
-        'Return only a complete self-contained HTML document.',
-      ].join('\n')
+    ? formatAgentFeedbackPrompt(feedbackBundle)
     : '';
 
   async function copyFeedback(value: string, label: string) {

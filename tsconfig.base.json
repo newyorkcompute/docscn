@@ -19,6 +19,7 @@
       "@docscn/sdk": ["./packages/sdk/src/index.ts"],
       "@docscn/config": ["./packages/config/src/index.ts"],
       "@docscn/cli": ["./packages/cli/src/index.ts"],
+      "@docscn/mcp": ["./packages/mcp/src/index.ts"],
       "@docscn/storage": ["./packages/storage/src/index.ts"]
     }
   },

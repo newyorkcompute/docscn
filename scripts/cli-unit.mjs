@@ -70,6 +70,7 @@ assert.equal(
 const help = getCliHelp();
 assert.match(help, /docscn login/);
 assert.match(help, /docscn artifact get/);
+assert.match(help, /docscn artifact feedback/);
 assert.match(help, /docscn revise/);
 
 await assertRejectsWith(

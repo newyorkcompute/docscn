@@ -63,8 +63,8 @@ After login, verify the connection:
 2. Save it to a local \`.html\` file.
 3. Publish it with \`docscn publish artifact.html --host ${origin}\`.
 4. Return the docscn artifact URL to the user so they can open and share it.
-5. When asked to revise, run \`docscn artifact get <artifact-id-or-slug> --json --host ${origin}\`.
-6. Inspect open and needs-revision threads.
+5. When asked to revise, run \`docscn artifact feedback <artifact-id-or-slug> --host ${origin}\`.
+6. Inspect open and needs-revision threads from the bundle or prompt.
 7. Produce a full replacement HTML document, then run \`docscn revise <artifact-id-or-slug> revised.html --summary "..." --resolve <thread-id> --host ${origin}\`.
 8. Reply to reviewers when useful with \`docscn comment <thread-id> --body "..." --host ${origin}\`.
 
@@ -76,7 +76,10 @@ Publish:
 
 Read artifact feedback:
 
-    docscn artifact get <artifact-id-or-slug> --json --host ${origin}
+    docscn artifact feedback <artifact-id-or-slug> --host ${origin}
+    docscn artifact feedback <artifact-id-or-slug> --json --host ${origin}
+
+For full artifact metadata and threads, use \`docscn artifact get --json\`.
 
 Submit a revision:
 
@@ -151,29 +154,54 @@ Return the absolute URL to the user:
 
 Request:
 
-    GET ${origin}/api/artifacts/{artifactIdOrSlug}
+    GET ${origin}/api/artifacts/{artifactIdOrSlug}/feedback
 
-Use this before revising. The response includes the artifact, revisions, and review threads:
+Optional query parameter:
+
+    ?revisionId={revisionId}
+
+Defaults to the artifact's current revision. Returns a structured bundle plus a ready-to-use revision prompt:
 
     {
-      "artifact": {
-        "id": "artifact_...",
-        "slug": "agent-generated-incident-timeline-...",
-        "currentRevisionId": "revision_...",
-        "metadata": { "...": "..." },
-        "revisions": [{ "...": "..." }]
+      "bundle": {
+        "artifact": {
+          "id": "artifact_...",
+          "slug": "agent-generated-incident-timeline-...",
+          "title": "Incident timeline",
+          "description": "...",
+          "visibility": "unlisted",
+          "kind": "custom-html"
+        },
+        "revision": {
+          "id": "revision_...",
+          "version": 1,
+          "summary": "Initial publish"
+        },
+        "instructions": {
+          "goal": "Revise the self-contained HTML artifact using the review feedback.",
+          "constraints": ["Return a complete self-contained HTML document.", "..."]
+        },
+        "openThreads": [
+          {
+            "id": "thread_...",
+            "status": "needs-revision",
+            "title": "Clarify the mitigation sequence",
+            "requestedChange": "Show detection, rollback, and follow-up as separate steps.",
+            "anchor": { "label": "timeline card", "x": 42.5, "y": 31.2 },
+            "comments": [
+              { "author": "Reviewer", "role": "human", "body": "Please split this into three phases." }
+            ]
+          }
+        ]
       },
-      "threads": [
-        {
-          "id": "thread_...",
-          "status": "needs-revision",
-          "title": "Clarify the mitigation sequence",
-          "requestedChange": "Show detection, rollback, and follow-up as separate steps.",
-          "anchor": { "label": "timeline card", "x": 42.5, "y": 31.2 },
-          "comments": [{ "body": "Please split this into three phases.", "role": "human" }]
-        }
-      ]
+      "prompt": "Revise \\"Incident timeline\\" from revision v1.\\n\\nAddress these open review threads:\\n..."
     }
+
+Use \`prompt\` when feeding an LLM directly. Use \`bundle\` when you need structured thread IDs for \`resolvedThreadIds\`.
+
+For full artifact metadata, revisions, and all threads, use:
+
+    GET ${origin}/api/artifacts/{artifactIdOrSlug}
 
 Treat open and needs-revision threads as structured instructions from reviewers. Preserve useful parts of the prior artifact, but submit a complete replacement HTML document.
 
@@ -202,6 +230,43 @@ Response:
         "summary": "Split the incident timeline into detection, rollback, and follow-up phases."
       }
     }
+
+## OpenAPI spec
+
+Machine-readable REST documentation:
+
+    GET ${origin}/openapi.json
+
+Use this when wiring custom clients, SDKs, or automation outside the CLI and MCP server.
+
+## MCP server
+
+docscn ships an MCP server with three tools:
+
+- \`publish_artifact\`
+- \`get_feedback\`
+- \`submit_revision\`
+
+Run it locally after building the repo:
+
+    npm run mcp
+
+Configure Cursor, Claude Desktop, or another MCP host with:
+
+    {
+      "mcpServers": {
+        "docscn": {
+          "command": "node",
+          "args": ["/absolute/path/to/docscn/dist/packages/mcp/src/index.js"],
+          "env": {
+            "DOCSCN_URL": "${origin}",
+            "DOCSCN_API_KEY": "docscn_sk_..."
+          }
+        }
+      }
+    }
+
+See [docs/mcp.md](https://github.com/newyorkcompute/docscn/blob/main/docs/mcp.md) for setup details.
 
 ## Review notes for agents
 

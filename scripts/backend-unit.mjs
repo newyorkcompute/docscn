@@ -141,6 +141,20 @@ const comment = await jsonFetch(
 );
 assert.equal(comment.payload.comment.role, 'agent');
 
+const feedback = await jsonFetch(
+  `/api/artifacts/${artifactSlug}/feedback`,
+  {
+    headers: { authorization: `Bearer ${apiKey}` },
+  },
+);
+assert.equal(feedback.payload.bundle.artifact.slug, artifactSlug);
+assert.match(feedback.payload.prompt, /Backend API artifact/);
+assert.equal(feedback.payload.bundle.openThreads.length, 1);
+assert.equal(
+  feedback.payload.bundle.openThreads[0].id,
+  thread.payload.thread.id,
+);
+
 const revision = await jsonFetch(`/api/artifacts/${artifactSlug}/revisions`, {
   method: 'POST',
   headers: authHeaders(apiKey),
@@ -163,5 +177,10 @@ const reopened = await jsonFetch(
   },
 );
 assert.equal(reopened.payload.thread.status, 'open');
+
+const openApi = await jsonFetch('/openapi.json');
+assert.equal(openApi.payload.openapi, '3.1.0');
+assert.ok(openApi.payload.paths['/api/artifacts/{artifactIdOrSlug}/feedback']);
+assert.equal(openApi.payload.servers[0].url, base);
 
 console.log('backend api ok');

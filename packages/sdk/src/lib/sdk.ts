@@ -231,6 +231,124 @@ export const visibilityOptions: ArtifactVisibility[] = [
   'private',
 ];
 
+export interface AgentFeedbackContext {
+  artifact: {
+    id: string;
+    slug: string;
+    title: string;
+    description: string;
+    visibility: ArtifactVisibility;
+    kind: ArtifactKind;
+  };
+  revision: {
+    id: string;
+    version: number;
+    summary: string;
+  };
+  instructions: {
+    goal: string;
+    constraints: string[];
+  };
+  openThreads: Array<{
+    id: string;
+    status: ReviewThreadStatus;
+    title: string;
+    anchor?: ReviewAnchor;
+    requestedChange?: string;
+    comments: Array<{
+      author: string;
+      role: ActorRole;
+      body: string;
+    }>;
+  }>;
+}
+
+const agentFeedbackInstructions = {
+  goal: 'Revise the self-contained HTML artifact using the review feedback.',
+  constraints: [
+    'Return a complete self-contained HTML document.',
+    'Preserve useful existing interactions unless feedback asks to change them.',
+    'Address each requested change explicitly.',
+  ],
+} as const;
+
+export function buildAgentFeedbackContext(
+  artifact: Artifact,
+  revisionId: string,
+  threads: ReviewThread[],
+): AgentFeedbackContext | undefined {
+  const revision = artifact.revisions.find(
+    (candidate) => candidate.id === revisionId,
+  );
+
+  if (!revision) {
+    return undefined;
+  }
+
+  const openThreads = threads.filter(
+    (thread) =>
+      thread.revisionId === revisionId && thread.status !== 'resolved',
+  );
+
+  return {
+    artifact: {
+      id: artifact.id,
+      slug: artifact.slug,
+      title: artifact.metadata.title,
+      description: artifact.metadata.description,
+      visibility: artifact.metadata.visibility,
+      kind: artifact.metadata.kind,
+    },
+    revision: {
+      id: revision.id,
+      version: revision.version,
+      summary: revision.summary,
+    },
+    instructions: {
+      goal: agentFeedbackInstructions.goal,
+      constraints: [...agentFeedbackInstructions.constraints],
+    },
+    openThreads: openThreads.map((thread) => ({
+      id: thread.id,
+      status: thread.status,
+      title: thread.title,
+      anchor: thread.anchor,
+      requestedChange: thread.requestedChange,
+      comments: thread.comments.map((comment) => ({
+        author: comment.author.name,
+        role: comment.role,
+        body: comment.body,
+      })),
+    })),
+  };
+}
+
+export function formatAgentFeedbackPrompt(context: AgentFeedbackContext) {
+  return [
+    `Revise "${context.artifact.title}" from revision v${context.revision.version}.`,
+    '',
+    context.openThreads.length
+      ? 'Address these open review threads:'
+      : 'There are no open review threads. Improve clarity without changing the intent.',
+    ...context.openThreads.flatMap((thread, index) => [
+      '',
+      `${index + 1}. ${thread.title} (${thread.status})`,
+      thread.requestedChange
+        ? `Requested change: ${thread.requestedChange}`
+        : 'Requested change: infer from comments.',
+      ...thread.comments.map(
+        (comment) => `- ${comment.author} (${comment.role}): ${comment.body}`,
+      ),
+    ]),
+    '',
+    'Return only a complete self-contained HTML document.',
+  ].join('\n');
+}
+
+export function formatAgentFeedbackJson(context: AgentFeedbackContext) {
+  return JSON.stringify(context, null, 2);
+}
+
 export function slugifyArtifactTitle(title: string) {
   return title
     .toLowerCase()

@@ -12,7 +12,7 @@
         "outputPath": "dist/packages/sdk",
         "main": "packages/sdk/src/index.ts",
         "tsConfig": "packages/sdk/tsconfig.lib.json",
-        "assets": ["packages/sdk/*.md"]
+        "assets": ["packages/sdk/*.md", "packages/sdk/openapi.yaml", "packages/sdk/openapi.json"]
       }
     }
   }

@@ -1,0 +1,1772 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "docscn API",
+    "version": "0.1.0",
+    "description": "REST API for publishing, reviewing, and revising self-contained HTML artifacts.\n\nAgent integrations should start with [skills.md](/skills.md). Machine-readable\nspec: `/openapi.json`.\n\nAuthentication uses `Authorization: Bearer <api_key>` for CLI, MCP, and automation.\nBrowser sessions use Better Auth cookies for the web UI.\n",
+    "license": {
+      "name": "MIT",
+      "url": "https://github.com/newyorkcompute/docscn/blob/main/LICENSE"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development"
+    },
+    {
+      "url": "https://docscn.ai",
+      "description": "Hosted docscn (when available)"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Artifacts",
+      "description": "Publish and fetch HTML artifacts"
+    },
+    {
+      "name": "Revisions",
+      "description": "Submit replacement HTML revisions"
+    },
+    {
+      "name": "Review",
+      "description": "Review threads and comments"
+    },
+    {
+      "name": "Auth",
+      "description": "API keys and CLI device login"
+    },
+    {
+      "name": "Account",
+      "description": "Caller identity"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "docscn API key created from Settings or `docscn login`."
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "ActorRole": {
+        "type": "string",
+        "enum": [
+          "human",
+          "agent",
+          "system"
+        ]
+      },
+      "ArtifactVisibility": {
+        "type": "string",
+        "enum": [
+          "public",
+          "unlisted",
+          "private"
+        ]
+      },
+      "ArtifactKind": {
+        "type": "string",
+        "enum": [
+          "incident-timeline",
+          "migration-plan",
+          "generated-dashboard",
+          "architecture-explainer",
+          "animated-report",
+          "ui-prototype",
+          "pr-review",
+          "custom-html"
+        ]
+      },
+      "IntegrationSource": {
+        "type": "string",
+        "enum": [
+          "web",
+          "cli",
+          "cursor",
+          "claude",
+          "opencode",
+          "mcp",
+          "scheduled-report",
+          "automation"
+        ]
+      },
+      "ReviewThreadStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "needs-revision",
+          "resolved"
+        ]
+      },
+      "Actor": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "role",
+          "avatarFallback"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ActorRole"
+          },
+          "handle": {
+            "type": "string"
+          },
+          "avatarFallback": {
+            "type": "string"
+          }
+        }
+      },
+      "ArtifactMetadata": {
+        "type": "object",
+        "required": [
+          "title",
+          "description",
+          "author",
+          "createdAt",
+          "visibility",
+          "kind",
+          "tags",
+          "source"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "author": {
+            "$ref": "#/components/schemas/Actor"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/ArtifactVisibility"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ArtifactKind"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "source": {
+            "$ref": "#/components/schemas/IntegrationSource"
+          }
+        }
+      },
+      "ArtifactRevision": {
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "summary",
+          "html",
+          "createdAt",
+          "author",
+          "changeRequestIds"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string"
+          },
+          "htmlObjectKey": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "author": {
+            "$ref": "#/components/schemas/Actor"
+          },
+          "changeRequestIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Artifact": {
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "metadata",
+          "currentRevisionId",
+          "revisions"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/ArtifactMetadata"
+          },
+          "currentRevisionId": {
+            "type": "string"
+          },
+          "revisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtifactRevision"
+            }
+          }
+        }
+      },
+      "ReviewAnchor": {
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "point",
+              "text",
+              "element"
+            ]
+          },
+          "selector": {
+            "type": "string"
+          },
+          "quote": {
+            "type": "string"
+          },
+          "elementLabel": {
+            "type": "string"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "rect": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "width": {
+                "type": "number"
+              },
+              "height": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      },
+      "ReviewComment": {
+        "type": "object",
+        "required": [
+          "id",
+          "body",
+          "author",
+          "createdAt",
+          "role"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "author": {
+            "$ref": "#/components/schemas/Actor"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ActorRole"
+          }
+        }
+      },
+      "ReviewThread": {
+        "type": "object",
+        "required": [
+          "id",
+          "artifactId",
+          "revisionId",
+          "status",
+          "title",
+          "comments"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "artifactId": {
+            "type": "string"
+          },
+          "revisionId": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReviewThreadStatus"
+          },
+          "title": {
+            "type": "string"
+          },
+          "anchor": {
+            "$ref": "#/components/schemas/ReviewAnchor"
+          },
+          "requestedChange": {
+            "type": "string"
+          },
+          "comments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewComment"
+            }
+          }
+        }
+      },
+      "PublishResult": {
+        "type": "object",
+        "required": [
+          "artifactId",
+          "slug",
+          "url",
+          "revisionId"
+        ],
+        "properties": {
+          "artifactId": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "revisionId": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateArtifactInput": {
+        "type": "object",
+        "required": [
+          "title",
+          "description",
+          "html",
+          "visibility",
+          "authorName",
+          "kind"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string",
+            "description": "Complete self-contained HTML including `<html>`."
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/ArtifactVisibility"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ArtifactKind"
+          },
+          "source": {
+            "$ref": "#/components/schemas/IntegrationSource"
+          }
+        }
+      },
+      "PublishArtifactResponse": {
+        "type": "object",
+        "required": [
+          "artifact",
+          "result"
+        ],
+        "properties": {
+          "artifact": {
+            "$ref": "#/components/schemas/Artifact"
+          },
+          "result": {
+            "$ref": "#/components/schemas/PublishResult"
+          }
+        }
+      },
+      "SubmitRevisionInput": {
+        "type": "object",
+        "required": [
+          "html",
+          "summary",
+          "authorName"
+        ],
+        "properties": {
+          "html": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/IntegrationSource"
+          },
+          "resolvedThreadIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SubmitRevisionResponse": {
+        "type": "object",
+        "required": [
+          "revision"
+        ],
+        "properties": {
+          "revision": {
+            "$ref": "#/components/schemas/ArtifactRevision"
+          }
+        }
+      },
+      "AgentFeedbackContext": {
+        "type": "object",
+        "required": [
+          "artifact",
+          "revision",
+          "instructions",
+          "openThreads"
+        ],
+        "properties": {
+          "artifact": {
+            "type": "object",
+            "required": [
+              "id",
+              "slug",
+              "title",
+              "description",
+              "visibility",
+              "kind"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "visibility": {
+                "$ref": "#/components/schemas/ArtifactVisibility"
+              },
+              "kind": {
+                "$ref": "#/components/schemas/ArtifactKind"
+              }
+            }
+          },
+          "revision": {
+            "type": "object",
+            "required": [
+              "id",
+              "version",
+              "summary"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "type": "integer"
+              },
+              "summary": {
+                "type": "string"
+              }
+            }
+          },
+          "instructions": {
+            "type": "object",
+            "required": [
+              "goal",
+              "constraints"
+            ],
+            "properties": {
+              "goal": {
+                "type": "string"
+              },
+              "constraints": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "openThreads": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "status",
+                "title",
+                "comments"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/ReviewThreadStatus"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "requestedChange": {
+                  "type": "string"
+                },
+                "anchor": {
+                  "$ref": "#/components/schemas/ReviewAnchor"
+                },
+                "comments": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "author",
+                      "role",
+                      "body"
+                    ],
+                    "properties": {
+                      "author": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "$ref": "#/components/schemas/ActorRole"
+                      },
+                      "body": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ArtifactFeedbackResponse": {
+        "type": "object",
+        "required": [
+          "bundle",
+          "prompt"
+        ],
+        "properties": {
+          "bundle": {
+            "$ref": "#/components/schemas/AgentFeedbackContext"
+          },
+          "prompt": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateReviewThreadInput": {
+        "type": "object",
+        "required": [
+          "title",
+          "body",
+          "authorName"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ActorRole"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReviewThreadStatus"
+          },
+          "requestedChange": {
+            "type": "string"
+          },
+          "revisionId": {
+            "type": "string"
+          },
+          "anchorLabel": {
+            "type": "string"
+          },
+          "anchorKind": {
+            "type": "string",
+            "enum": [
+              "point",
+              "text",
+              "element"
+            ]
+          },
+          "anchorX": {
+            "type": "number"
+          },
+          "anchorY": {
+            "type": "number"
+          },
+          "anchor": {
+            "$ref": "#/components/schemas/ReviewAnchor"
+          }
+        }
+      },
+      "CreateReviewCommentInput": {
+        "type": "object",
+        "required": [
+          "body",
+          "authorName"
+        ],
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ActorRole"
+          }
+        }
+      },
+      "UpdateReviewThreadStatusInput": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ReviewThreadStatus"
+          }
+        }
+      },
+      "ApiKey": {
+        "type": "object",
+        "required": [
+          "id",
+          "userId",
+          "name",
+          "keyPrefix",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "keyPrefix": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreatedApiKey": {
+        "type": "object",
+        "required": [
+          "apiKey",
+          "token"
+        ],
+        "properties": {
+          "apiKey": {
+            "$ref": "#/components/schemas/ApiKey"
+          },
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "Principal": {
+        "type": "object",
+        "required": [
+          "userId",
+          "kind"
+        ],
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "apiKeyId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "session",
+              "api-key"
+            ]
+          }
+        }
+      },
+      "CliLoginRequest": {
+        "type": "object",
+        "required": [
+          "deviceCode",
+          "userCode",
+          "expiresAt",
+          "intervalSeconds",
+          "verificationUrl"
+        ],
+        "properties": {
+          "deviceCode": {
+            "type": "string"
+          },
+          "userCode": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "intervalSeconds": {
+            "type": "integer"
+          },
+          "verificationUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "CliLoginPollResult": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "expired",
+              "not-found",
+              "already-consumed"
+            ]
+          },
+          "token": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/me": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Get caller identity",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated principal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "principal"
+                  ],
+                  "properties": {
+                    "principal": {
+                      "$ref": "#/components/schemas/Principal"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artifacts": {
+      "get": {
+        "tags": [
+          "Artifacts"
+        ],
+        "summary": "List artifacts visible to the caller",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "Artifact list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "artifacts"
+                  ],
+                  "properties": {
+                    "artifacts": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Artifact"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Artifacts"
+        ],
+        "summary": "Publish a new artifact",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateArtifactInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Published artifact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishArtifactResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artifacts/{artifactIdOrSlug}": {
+      "get": {
+        "tags": [
+          "Artifacts"
+        ],
+        "summary": "Get artifact metadata, revisions, and review threads",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "parameters": [
+          {
+            "name": "artifactIdOrSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artifact with threads",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "artifact",
+                    "threads"
+                  ],
+                  "properties": {
+                    "artifact": {
+                      "$ref": "#/components/schemas/Artifact"
+                    },
+                    "threads": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ReviewThread"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artifact not found or not visible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artifacts/{artifactIdOrSlug}/feedback": {
+      "get": {
+        "tags": [
+          "Artifacts"
+        ],
+        "summary": "Get agent feedback bundle and revision prompt",
+        "description": "Preferred endpoint for agents before submitting a revision.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "parameters": [
+          {
+            "name": "artifactIdOrSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revisionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Defaults to the artifact current revision."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Structured feedback bundle and prompt text",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactFeedbackResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artifact or revision not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artifacts/{artifactIdOrSlug}/revisions": {
+      "post": {
+        "tags": [
+          "Revisions"
+        ],
+        "summary": "Submit a replacement HTML revision",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "artifactIdOrSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitRevisionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created revision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitRevisionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Only the artifact owner can revise",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artifact not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artifacts/{artifactIdOrSlug}/threads": {
+      "post": {
+        "tags": [
+          "Review"
+        ],
+        "summary": "Create a review thread",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "artifactIdOrSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewThreadInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created thread",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "thread"
+                  ],
+                  "properties": {
+                    "thread": {
+                      "$ref": "#/components/schemas/ReviewThread"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artifact not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/review-threads/{threadId}": {
+      "patch": {
+        "tags": [
+          "Review"
+        ],
+        "summary": "Update review thread status",
+        "description": "Only the artifact owner can change thread status.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "threadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReviewThreadStatusInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated thread",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "thread"
+                  ],
+                  "properties": {
+                    "thread": {
+                      "$ref": "#/components/schemas/ReviewThread"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Only the artifact owner can update status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Thread or artifact not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/review-threads/{threadId}/comments": {
+      "post": {
+        "tags": [
+          "Review"
+        ],
+        "summary": "Add a comment to a review thread",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "threadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewCommentInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created comment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "comment"
+                  ],
+                  "properties": {
+                    "comment": {
+                      "$ref": "#/components/schemas/ReviewComment"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Thread or artifact not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/api-keys": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "List API keys for the signed-in user",
+        "description": "Session cookie required. Not available via bearer token.",
+        "responses": {
+          "200": {
+            "description": "API key list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "apiKeys"
+                  ],
+                  "properties": {
+                    "apiKeys": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ApiKey"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Create an API key",
+        "description": "Session cookie required. Raw token is returned once.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedApiKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/api-keys/{apiKeyId}": {
+      "delete": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Revoke an API key",
+        "description": "Session cookie required.",
+        "parameters": [
+          {
+            "name": "apiKeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked API key metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "apiKey"
+                  ],
+                  "properties": {
+                    "apiKey": {
+                      "$ref": "#/components/schemas/ApiKey"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "API key not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cli/auth/start": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Start CLI device login",
+        "responses": {
+          "200": {
+            "description": "Device login request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CliLoginRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cli/auth/poll": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Poll CLI device login status",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "deviceCode"
+                ],
+                "properties": {
+                  "deviceCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login poll result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CliLoginPollResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or consumed device code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cli/auth/approve": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Approve CLI device login from browser session",
+        "description": "Session cookie required.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "userCode"
+                ],
+                "properties": {
+                  "userCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Approval status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "approved",
+                        "expired",
+                        "not-found",
+                        "already-consumed"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

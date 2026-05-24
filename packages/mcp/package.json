@@ -1,0 +1,17 @@
+{
+  "name": "@docscn/mcp",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "bin": {
+    "docscn-mcp": "./src/index.js"
+  },
+  "dependencies": {
+    "@docscn/sdk": "0.0.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "tslib": "^2.3.0",
+    "zod": "^3.25.76"
+  }
+}

@@ -41,8 +41,9 @@ packages/
   ui/         Shared shadcn-inspired UI primitives
   db/         Drizzle/Postgres schema, migrations, repository, mock fallback
   storage/    S3-compatible artifact HTML storage adapter
-  sdk/        Public contracts for artifacts, publishing, comments, revisions
+  sdk/        Public contracts, OpenAPI spec, and agent feedback helpers
   cli/        Agent-first CLI for login, publishing, feedback, and revisions
+  mcp/        MCP server for publish, feedback, and revision tools
   config/     Shared configuration and environment contracts
 ```
 
@@ -168,10 +169,12 @@ convenient, but the interfaces are meant to be replaceable.
   link shareable, and private artifacts are owner-only.
 - Review threads, revision history, and collaboration metadata around each artifact.
 - Figma-style comment pins over the artifact viewer for review context.
-- SDK contracts shaped for future publish APIs, MCP tools, skills, and agents.
+- SDK contracts shaped for publish APIs, MCP tools, skills, and agents.
 - Agent-first CLI flow for browser login, local credential storage, publishing,
   reading feedback, comments, and revisions.
+- MCP server with `publish_artifact`, `get_feedback`, and `submit_revision` tools.
 - Public `/skills.md` endpoint that tells agents how to interact with docscn.
+- OpenAPI spec at `/openapi.json` for REST integrations.
 
 ## Self-Hosting Direction
 
@@ -251,6 +254,19 @@ docscn login --host https://docscn.ai
 docscn publish artifact.html --host https://docscn.ai
 ```
 
+## MCP server
+
+For MCP-native clients (Cursor, Claude Desktop), use the docscn MCP server:
+
+```bash
+npm run mcp
+```
+
+It exposes `publish_artifact`, `get_feedback`, and `submit_revision` over stdio.
+See [docs/mcp.md](./docs/mcp.md) for configuration examples.
+
+REST clients can use the OpenAPI spec at `/openapi.json` (source: `packages/sdk/openapi.yaml`).
+
 ## Tests And Smoke
 
 The current test coverage focuses on the agent/API/CLI contract. UI tests can
@@ -258,8 +274,9 @@ wait until the interface settles.
 
 ```bash
 npm run test:cli       # CLI config and command behavior
+npm run test:mcp       # MCP server module and tool registration
 npm run test:backend   # localhost backend API contract
-npm test               # CLI + backend tests
+npm test               # CLI + MCP + backend tests
 npm run smoke:agent    # full local agent flow through the built CLI
 ```
 
@@ -276,6 +293,7 @@ Contributions are welcome. Start with:
 - [CONTRIBUTING.md](./CONTRIBUTING.md) for local setup and PR expectations
 - [CHANGELOG.md](./CHANGELOG.md) for release history
 - [docs/architecture.md](./docs/architecture.md) for the system overview
+- [docs/mcp.md](./docs/mcp.md) for MCP server setup
 - [docs/self-hosting.md](./docs/self-hosting.md) for production deployment
 - [ROADMAP.md](./ROADMAP.md) for project direction
 - [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) for community standards

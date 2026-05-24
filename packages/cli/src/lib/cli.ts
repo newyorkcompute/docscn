@@ -54,6 +54,7 @@ const valueFlags = new Set([
   '--kind',
   '--requested-change',
   '--resolve',
+  '--revision',
   '--status',
   '--summary',
   '--title',
@@ -126,6 +127,25 @@ interface ArtifactResponse extends ApiErrorResponse {
     status: ReviewThreadStatus;
     title: string;
   }>;
+}
+
+interface ArtifactFeedbackResponse extends ApiErrorResponse {
+  bundle?: {
+    artifact: {
+      id: string;
+      title: string;
+    };
+    revision: {
+      id: string;
+      version: number;
+    };
+    openThreads: Array<{
+      id: string;
+      status: ReviewThreadStatus;
+      title: string;
+    }>;
+  };
+  prompt?: string;
 }
 
 interface RevisionResponse extends ApiErrorResponse {
@@ -359,6 +379,7 @@ Usage:
   docscn whoami [--host <url>]
   docscn publish artifact.html [options]
   docscn artifact get <artifact-id-or-slug> [--json]
+  docscn artifact feedback <artifact-id-or-slug> [--json] [--revision <revision-id>]
   docscn revise <artifact-id-or-slug> artifact.html --summary <text> [--resolve <thread-id>]
   docscn thread create <artifact-id-or-slug> --title <text> --body <text>
   docscn comment <thread-id> --body <text>
@@ -379,6 +400,7 @@ Examples:
   docscn login --host http://localhost:3000
   docscn publish report.html --visibility private
   docscn artifact get artifact-slug --json
+  docscn artifact feedback artifact-slug --json
   docscn revise artifact-slug report.html --summary "Addressed open feedback" --resolve thread-123`;
 }
 
@@ -532,6 +554,35 @@ export async function getArtifactFromCli(args: string[]) {
   );
 }
 
+export async function getArtifactFeedbackFromCli(args: string[]) {
+  const [artifactId] = getPositionals(args);
+
+  if (!artifactId) {
+    throw new Error('Missing artifact id or slug.');
+  }
+
+  const credentials = await resolveCredentials(args);
+  const revisionId = parseFlagValue(args, '--revision');
+  const query = revisionId
+    ? `?revisionId=${encodeURIComponent(revisionId)}`
+    : '';
+  const result = await apiFetch<ArtifactFeedbackResponse>(
+    credentials,
+    `/api/artifacts/${encodeURIComponent(artifactId)}/feedback${query}`,
+  );
+
+  if (hasFlag(args, '--json')) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  if (!result?.prompt) {
+    throw new Error('Feedback response did not include a prompt.');
+  }
+
+  console.log(result.prompt);
+}
+
 export async function reviseArtifactFromCli(args: string[]) {
   const [artifactId, filePath] = getPositionals(args);
   const summary = parseFlagValue(args, '--summary');
@@ -680,6 +731,11 @@ export async function runDocscnCli(args = process.argv.slice(2)) {
 
   if (command === 'artifact' && rest[0] === 'get') {
     await getArtifactFromCli(rest.slice(1));
+    return;
+  }
+
+  if (command === 'artifact' && rest[0] === 'feedback') {
+    await getArtifactFeedbackFromCli(rest.slice(1));
     return;
   }
 

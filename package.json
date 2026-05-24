@@ -11,13 +11,16 @@
     "dev": "nx dev web",
     "dev:persistent": "dotenv -e .env.local -- nx dev web",
     "cli": "nx build cli && node dist/packages/cli/src/index.js",
-    "build": "nx run-many -t build -p web,db,storage,sdk,cli,config",
+    "mcp": "nx build mcp && node dist/packages/mcp/src/index.js",
+    "build": "nx run-many -t build -p web,db,storage,sdk,cli,mcp,config",
     "start": "node apps/web/.next/standalone/apps/web/server.js",
     "build:cli:release": "node scripts/build-cli-release.mjs",
-    "lint": "nx run-many -t lint -p web,ui,db,storage,sdk,cli,config",
-    "test": "npm run test:cli && npm run test:backend",
+    "lint": "nx run-many -t lint -p web,ui,db,storage,sdk,cli,mcp,config",
+    "test": "npm run test:cli && npm run test:mcp && npm run test:backend",
     "test:backend": "node scripts/backend-unit.mjs",
     "test:cli": "nx build cli && node scripts/cli-unit.mjs",
+    "test:mcp": "nx build mcp && node scripts/mcp-unit.mjs",
+    "openapi:sync": "node scripts/sync-openapi.mjs",
     "typecheck": "tsc -p apps/web/tsconfig.json --noEmit",
     "smoke:agent": "nx build cli && node scripts/agent-smoke.mjs",
     "format": "nx format:write",
@@ -89,6 +92,7 @@
   "nx": {},
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@radix-ui/react-slot": "^1.2.4",
     "better-auth": "^1.6.11",
     "class-variance-authority": "^0.7.1",
@@ -99,6 +103,7 @@
     "postgres": "^3.4.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
   }
 }
