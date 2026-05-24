@@ -2,12 +2,17 @@ import Link from 'next/link';
 import {
   ArrowRight,
   ArrowUpRight,
+  BookOpenText,
   Bot,
+  Braces,
   Code2,
   Download,
   MessageSquare,
+  PackageCheck,
   PanelsTopLeft,
+  PlugZap,
   RefreshCcw,
+  Server,
 } from 'lucide-react';
 import { listArtifacts } from '@docscn/db';
 import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
@@ -35,33 +40,38 @@ export default async function Index() {
   const agentIntegrations = [
     {
       title: 'Agent skills',
-      body: 'Publish, read feedback, and submit revisions from Cursor, Claude, and OpenCode.',
+      body: 'Teach agents how to publish, read feedback, and revise.',
       href: `${origin}/skills.md`,
       label: '/skills.md',
+      Icon: BookOpenText,
     },
     {
       title: 'REST + OpenAPI',
-      body: 'Artifacts, threads, comments, and feedback bundles over HTTP with a machine-readable spec.',
+      body: 'Automate artifacts, threads, comments, and feedback bundles.',
       href: `${origin}/openapi.json`,
       label: 'openapi.json',
+      Icon: Braces,
     },
     {
       title: 'MCP server',
-      body: 'stdio tools for publish_artifact, get_feedback, and submit_revision in agent runtimes.',
+      body: 'Expose publish, feedback, and revision tools to MCP hosts.',
       href: `${githubRepo}/blob/main/docs/mcp.md`,
       label: 'docs/mcp.md',
+      Icon: PlugZap,
     },
     {
       title: 'CLI binary',
-      body: 'Standalone publish/login commands installed via curl or GitHub Releases.',
+      body: 'Install once, then publish from local agent workflows.',
       href: `${githubRepo}/releases`,
       label: 'GitHub Releases',
+      Icon: PackageCheck,
     },
     {
       title: 'Self-hosting',
-      body: 'Run on Postgres and S3-compatible storage with the same localhost-first workflow.',
+      body: 'Run docscn with Postgres and S3-compatible storage.',
       href: `${githubRepo}/blob/main/docs/self-hosting.md`,
       label: 'docs/self-hosting.md',
+      Icon: Server,
     },
   ];
 
@@ -74,38 +84,44 @@ export default async function Index() {
           <div className="pointer-events-none absolute -right-24 top-8 h-72 w-72 rounded-full bg-glow/20 blur-3xl animate-drift" />
           <div className="pointer-events-none absolute -left-16 bottom-0 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
 
-          <Shell className="relative grid gap-12 py-16 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-16 lg:py-24">
+          <Shell className="relative grid gap-10 py-10 sm:py-14 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-16 lg:py-20">
             <section>
               <Badge className="animate-fade-up" tone="outline">
                 open-source / localhost-first / agent-native
               </Badge>
-              <h1 className="animate-fade-up delay-1 mt-7 font-display text-[2.75rem] font-semibold leading-[1.02] tracking-[-0.03em] md:text-7xl">
+              <h1 className="animate-fade-up delay-1 mt-6 font-display text-[2.35rem] font-semibold leading-[1.03] tracking-[-0.03em] sm:text-[2.75rem] md:text-6xl xl:text-7xl">
                 Host, share, and collaborate on AI-generated HTML artifacts.
               </h1>
-              <p className="animate-fade-up delay-2 mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-                Publish artifacts from Cursor, Claude, OpenCode, scheduled agents,
-                and scripts. Review them visually with your team, keep stable
-                share links, and send structured feedback back into the next
+              <p className="animate-fade-up delay-2 mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
+                Publish AI-generated HTML to stable URLs. Review visually,
+                collect structured feedback, and send agents into the next
                 revision.
               </p>
-              <div className="animate-fade-up delay-3 mt-9 flex flex-col gap-3 sm:flex-row">
+              <div className="animate-fade-up delay-3 mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Button asChild size="lg">
                   <Link href="/dashboard">
                     Open workspace <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button asChild size="lg" variant="outline">
-                  <Link href="/examples">Browse example gallery</Link>
+                <Button
+                  asChild
+                  className="text-foreground/75 hover:text-foreground"
+                  size="lg"
+                  variant="ghost"
+                >
+                  <Link href="/examples">
+                    See examples <ArrowUpRight className="h-4 w-4" />
+                  </Link>
                 </Button>
               </div>
               <TerminalCommand
                 className="animate-fade-up delay-4 mt-10"
                 command={installCommand}
-                label="install locally"
+                label="Get started in 30 seconds"
               />
             </section>
 
-            <Card className="animate-fade-up delay-3 feature-card relative overflow-hidden p-1.5">
+            <Card className="animate-fade-up delay-3 feature-card relative hidden overflow-hidden p-1.5 lg:block">
               <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-primary/40 to-transparent" />
               <div className="rounded-[0.65rem] border border-border/80 bg-secondary/30 p-5">
                 <div className="flex items-start justify-between gap-4 border-b border-border/80 pb-5">
@@ -121,18 +137,24 @@ export default async function Index() {
                 </div>
                 <div className="grid gap-3 py-5">
                   {[
-                    'agent publishes a self-contained HTML artifact to a stable URL',
-                    'team comments on points, text selections, and elements',
-                    'agent reads structured feedback and submits the next revision',
+                    ['Publish', 'stable URL for a self-contained HTML artifact'],
+                    ['Review', 'point, text, and element feedback on the render'],
+                    ['Revise', 'structured threads returned to the next agent run'],
                   ].map((item, index) => (
                     <div
                       className="flex items-center gap-3 rounded-lg border border-border/80 bg-card/80 p-3.5"
-                      key={item}
+                      key={item[0]}
                     >
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-primary/25 bg-primary/10 font-mono text-xs font-medium text-primary">
                         {index + 1}
                       </span>
-                      <span className="text-sm leading-6">{item}</span>
+                      <span className="text-sm leading-6">
+                        <strong className="text-foreground">{item[0]}</strong>
+                        <span className="text-muted-foreground">
+                          {' '}
+                          {item[1]}
+                        </span>
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -153,32 +175,32 @@ export default async function Index() {
           </Shell>
         </section>
 
-        <Shell className="grid gap-4 py-16 md:grid-cols-3">
+        <Shell className="grid gap-5 py-14 md:grid-cols-3 md:gap-4 lg:py-16">
           {[
             [
               'Publishing, not notes',
               Code2,
-              'Host self-contained HTML from Cursor, Claude, OpenCode, MCP tools, scheduled agents, and scripts.',
+              'Turn agent output into shareable HTML pages.',
             ],
             [
               'Collaborate like PRs/Figma',
               MessageSquare,
-              'Point, text, and element annotations stay attached to the rendered artifact and its revisions.',
+              'Pin feedback to points, text, and elements.',
             ],
             [
               'Revision loop',
               RefreshCcw,
-              'Agents fetch open review threads as JSON and publish a complete revised HTML document.',
+              'Feed review threads back into the next revision.',
             ],
           ].map(([title, Icon, body]) => (
-            <Card className="feature-card p-6" key={title as string}>
+            <Card className="feature-card p-6 md:p-7" key={title as string}>
               <span className="inline-flex rounded-lg border border-primary/20 bg-primary/10 p-2">
                 <Icon className="h-5 w-5 text-primary" />
               </span>
-              <h2 className="mt-5 font-display text-xl font-semibold tracking-tight">
+              <h2 className="mt-5 font-display text-2xl font-semibold tracking-tight md:text-xl lg:text-2xl">
                 {title as string}
               </h2>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              <p className="mt-3 text-sm leading-6 text-muted-foreground md:min-h-12">
                 {body as string}
               </p>
             </Card>
@@ -195,7 +217,7 @@ export default async function Index() {
               <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
                 {hasLiveArtifacts
                   ? 'Recently published artifacts from this instance.'
-                  : 'Nothing published yet on this instance. Open starter demos in the artifact workspace, then publish your own with the CLI.'}
+                  : 'Starter demos open in the full artifact workspace. Your published artifacts replace them here.'}
               </p>
             </div>
             <Button asChild variant="outline">
@@ -252,8 +274,7 @@ export default async function Index() {
 
           {!hasLiveArtifacts ? (
             <p className="mt-6 text-sm text-muted-foreground">
-              After publishing, your artifacts replace these placeholders on the
-              homepage.{' '}
+              Ready to make one yours?{' '}
               <Link
                 className="font-medium text-primary underline-offset-4 hover:underline"
                 href="/dashboard"
@@ -296,10 +317,15 @@ export default async function Index() {
                       : undefined
                   }
                 >
-                  <p className="font-medium text-foreground transition group-hover:text-primary">
-                    {item.title}
-                  </p>
-                  <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex rounded-md border border-primary/15 bg-primary/10 p-1.5">
+                      <item.Icon className="h-4 w-4 text-primary" />
+                    </span>
+                    <p className="font-medium text-foreground transition group-hover:text-primary">
+                      {item.title}
+                    </p>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
                     {item.body}
                   </p>
                   <span className="mt-3 inline-flex items-center gap-1 font-mono text-xs text-primary">

@@ -29,7 +29,7 @@ export function TerminalCommand({
         </div>
         <CopyCommandButton command={command} label={copyLabel} />
       </div>
-      <pre className="overflow-x-auto pt-3 font-mono text-sm text-foreground">
+      <pre className="overflow-x-auto pt-3 font-mono text-xs leading-6 text-foreground sm:text-sm">
         <code>{command}</code>
       </pre>
     </div>
