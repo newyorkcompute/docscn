@@ -63,7 +63,7 @@ jobs:
         run: npm run build:cli:release
 
       - name: Upload release assets
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cli-assets-${{ matrix.name }}
           path: dist/releases/docscn-*
