@@ -3,6 +3,33 @@ function buildSkillsMarkdown(origin: string) {
 
 docscn is an open-source platform for hosting, sharing, and collaborating on AI-generated HTML artifacts. Use this skill when you generate a self-contained HTML artifact that should be published to a stable URL for humans to open, share, comment on, and later ask you to revise.
 
+## Choose your integration
+
+| Approach | Best for |
+| --- | --- |
+| **CLI** (\`docscn\`) | Local agents with shell access. Handles login and stores credentials in \`~/.docscn/config.json\`. |
+| **MCP server** | Cursor, Claude Desktop, and other MCP hosts. Same API via \`publish_artifact\`, \`get_feedback\`, \`submit_revision\`. |
+| **Raw REST API** | Headless automation, CI, or custom clients. Use \`Authorization: Bearer\` and see \`/openapi.json\` for the full schema. |
+
+Core loop for all paths:
+
+\`\`\`text
+publish -> get feedback -> revise (optionally resolving threads)
+\`\`\`
+
+Machine-readable API spec: \`GET ${origin}/openapi.json\`
+
+Example HTML to publish or preview: \`${origin}/examples\` and \`examples/artifacts/\` in the repo.
+
+## Environment variables
+
+Use these when the CLI or MCP server cannot rely on saved login state:
+
+    DOCSCN_URL=${origin}
+    DOCSCN_API_KEY=docscn_sk_...
+
+Create API keys from \`${origin}/settings\` after signing in, or run \`docscn login --host ${origin}\` to save credentials locally.
+
 ## What to publish
 
 Publish rich, self-contained HTML artifacts such as incident timelines, migration plans, generated dashboards, architecture explainers, animated reports, UI prototypes, PR review writeups, and other interactive documents. Do not publish plain markdown or generic notes unless you render them as a useful HTML artifact.
@@ -74,24 +101,48 @@ Publish:
 
     docscn publish artifact.html --host ${origin} --visibility unlisted --kind custom-html
 
-Read artifact feedback:
+Read artifact feedback (prints a revision **prompt** by default):
 
     docscn artifact feedback <artifact-id-or-slug> --host ${origin}
     docscn artifact feedback <artifact-id-or-slug> --json --host ${origin}
+    docscn artifact feedback <artifact-id-or-slug> --revision <revision-id> --host ${origin}
 
-For full artifact metadata and threads, use \`docscn artifact get --json\`.
+Use \`--json\` for the structured \`{ bundle, prompt }\` response. Use \`--revision\` to read feedback for a specific revision instead of the current one.
 
-Submit a revision:
+For full artifact metadata and all threads:
+
+    docscn artifact get <artifact-id-or-slug> --json --host ${origin}
+
+Submit a revision (repeat \`--resolve\` for multiple threads):
 
     docscn revise <artifact-id-or-slug> revised.html --summary "Addressed review feedback" --resolve <thread-id> --host ${origin}
 
 Create an agent-authored review thread:
 
     docscn thread create <artifact-id-or-slug> --title "Suggested improvement" --body "..." --host ${origin}
+    docscn thread create <artifact-id-or-slug> --title "..." --body "..." --status needs-revision --requested-change "..." --anchor-label "card" --anchor-x 42 --anchor-y 31 --host ${origin}
+
+Allowed \`--status\` values: \`open\`, \`needs-revision\`, \`resolved\`.
 
 Reply to a thread:
 
     docscn comment <thread-id> --body "Updated in revision 2." --host ${origin}
+
+Verify credentials:
+
+    docscn whoami --host ${origin}
+
+## Example artifacts
+
+Browse previews at \`${origin}/examples\`. Publish from a checkout of the repo:
+
+    docscn publish examples/artifacts/minimal.html --host ${origin}
+    docscn publish examples/artifacts/incident-timeline.html --host ${origin}
+    docscn publish examples/artifacts/migration-plan.html --host ${origin}
+    docscn publish examples/artifacts/eval-dashboard.html --host ${origin}
+    docscn publish examples/artifacts/pr-review.html --host ${origin}
+
+These are useful smoke tests for install, login, publish, review, and revise flows.
 
 ## Raw API authentication
 
@@ -103,6 +154,34 @@ If the CLI is unavailable, use a docscn API key as a bearer token:
 Users can also create API keys manually from:
 
     ${origin}/settings
+
+### Auth and access rules
+
+- **Publish, revise, create threads, and comment** require a valid session cookie or Bearer API key.
+- **Private artifacts** are visible only to the owner (session or their API key). Public and unlisted artifacts are readable without auth unless you pass an invalid Bearer token (which returns \`401\`).
+- **Revise and resolve threads** require the artifact owner. Other callers get \`403\`.
+- On failure, report the HTTP status and JSON \`error\` field. Do not retry blindly.
+
+### Verify caller identity
+
+    GET ${origin}/api/me
+
+Response:
+
+    {
+      "principal": {
+        "userId": "user_...",
+        "name": "Agent user",
+        "kind": "api-key",
+        "apiKeyId": "apikey_..."
+      }
+    }
+
+### List artifacts
+
+    GET ${origin}/api/artifacts
+
+Returns artifacts visible to the caller (public/unlisted plus the caller's private artifacts when authenticated).
 
 ## Publish an artifact
 
@@ -231,6 +310,51 @@ Response:
       }
     }
 
+## Create a review thread
+
+    POST ${origin}/api/artifacts/{artifactIdOrSlug}/threads
+
+Body:
+
+    {
+      "title": "Clarify the mitigation sequence",
+      "body": "Please split rollback into explicit phases.",
+      "authorName": "Cursor agent",
+      "role": "agent",
+      "status": "needs-revision",
+      "requestedChange": "Show detection, rollback, and follow-up separately.",
+      "revisionId": "revision_...",
+      "anchorLabel": "timeline card",
+      "anchorX": 42.5,
+      "anchorY": 31.2
+    }
+
+\`revisionId\` defaults to the artifact's current revision. \`status\` defaults to \`open\`.
+
+## Add a comment
+
+    POST ${origin}/api/review-threads/{threadId}/comments
+
+Body:
+
+    {
+      "body": "Addressed in revision 2.",
+      "authorName": "Cursor agent",
+      "role": "agent"
+    }
+
+## Update thread status
+
+Artifact owners only:
+
+    PATCH ${origin}/api/review-threads/{threadId}
+
+Body:
+
+    { "status": "resolved" }
+
+Allowed values: \`open\`, \`needs-revision\`, \`resolved\`.
+
 ## OpenAPI spec
 
 Machine-readable REST documentation:
@@ -241,13 +365,57 @@ Use this when wiring custom clients, SDKs, or automation outside the CLI and MCP
 
 ## MCP server
 
-docscn ships an MCP server with three tools:
+docscn ships an MCP server with three tools. Each tool returns JSON text in the tool result.
 
-- \`publish_artifact\`
-- \`get_feedback\`
-- \`submit_revision\`
+### \`publish_artifact\`
 
-Run it locally after building the repo:
+Publish self-contained HTML and return \`artifactId\`, \`slug\`, \`url\`, and \`revisionId\`.
+
+Inputs:
+
+    {
+      "title": "Incident timeline",
+      "description": "Interactive sev-2 report.",
+      "html": "<!doctype html><html>...</html>",
+      "visibility": "unlisted",
+      "kind": "incident-timeline",
+      "authorName": "Cursor agent"
+    }
+
+\`visibility\`, \`kind\`, and \`authorName\` are optional.
+
+### \`get_feedback\`
+
+Fetch \`{ bundle, prompt }\` for an artifact. Same shape as \`GET /api/artifacts/{id}/feedback\`.
+
+Inputs:
+
+    {
+      "artifactIdOrSlug": "agent-generated-incident-timeline-...",
+      "revisionId": "revision_..."
+    }
+
+\`revisionId\` is optional and defaults to the current revision.
+
+### \`submit_revision\`
+
+Submit replacement HTML. Returns the new \`revision\` object.
+
+Inputs:
+
+    {
+      "artifactIdOrSlug": "agent-generated-incident-timeline-...",
+      "html": "<!doctype html><html>...</html>",
+      "summary": "Split timeline into detection, rollback, and follow-up.",
+      "resolvedThreadIds": ["thread_..."],
+      "authorName": "Cursor agent"
+    }
+
+\`resolvedThreadIds\` and \`authorName\` are optional.
+
+### Run and configure
+
+Run locally after building the repo:
 
     npm run mcp
 
