@@ -7,16 +7,8 @@ const targets = ['lint', 'build', 'unit'];
 
 for (const target of targets) {
   const result = spawnSync(
-    'npx',
-    [
-      'nx',
-      'affected',
-      '-t',
-      target,
-      '--exclude=docscn',
-      `--parallel=${target === 'unit' ? '2' : '3'}`,
-      ...forwardedArgs,
-    ],
+    'npm',
+    ['run', `ci:affected:${target}`, '--', ...forwardedArgs],
     {
       stdio: 'inherit',
       shell: process.platform === 'win32',
