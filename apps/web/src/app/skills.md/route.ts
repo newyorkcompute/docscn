@@ -107,7 +107,7 @@ For two-way interaction, include an explicit export path such as "copy as JSON",
 
 ## Golden path: use the CLI
 
-Agents should use the docscn CLI whenever possible. The first publish can run without login and creates an unlisted, view-only artifact. The CLI saves a local recovery receipt, then login adds an API key to \`~/.docscn/config.json\` and automatically recovers anonymous artifacts for comments, revisions, private artifacts, analytics, and ownership.
+Agents should use the docscn CLI whenever possible. The first publish can run without login and creates an unlisted, view-only artifact. The CLI saves a local recovery receipt, then login adds an API key to \`~/.docscn/config.json\` and automatically recovers anonymous artifacts for comments, revisions, private artifacts, analytics, and ownership when login happens within 90 days.
 
 First, install the CLI if \`docscn\` is not already available:
 
@@ -117,7 +117,7 @@ Optional, but recommended before review/revision work:
 
     docscn login --host ${origin}
 
-This opens a browser window. The user signs in or creates an account, approves the CLI login, and the CLI saves a token locally. Do not ask for the user's password. Do not create accounts on behalf of users. If the user only wants a quick share link, skip login and publish unlisted. Anonymous artifacts published from the same CLI install are recovered automatically after login.
+This opens a browser window. The user signs in or creates an account, approves the CLI login, and the CLI saves a token locally. Do not ask for the user's password. Do not create accounts on behalf of users. If the user only wants a quick share link, skip login and publish unlisted. Anonymous artifacts published from the same CLI install are recovered automatically after login for 90 days.
 
 After login, verify the connection:
 
@@ -198,7 +198,7 @@ Users can also create API keys manually from:
 ### Auth and access rules
 
 - **Publish** can be anonymous for unlisted, view-only artifacts. Invalid Bearer tokens still return \`401\`; omit the header to publish anonymously.
-- **Anonymous recovery** is automatic when a browser or CLI has local claim receipts and the user signs in. Agents should not ask users to manually copy claim tokens.
+- **Anonymous recovery** is automatic for 90 days when a browser or CLI has local claim receipts and the user signs in. Agents should not ask users to manually copy claim tokens. Expired artifacts remain viewable at their unlisted URLs but cannot be claimed.
 - **Anonymous limits** are intentionally simple: oversized anonymous HTML returns \`413\`; too many anonymous publishes returns \`429\`. Signing in unlocks owned publishing.
 - **Revise, create threads, comment, private artifacts, analytics, and ownership features** require a valid session cookie or Bearer API key.
 - **Private artifacts** are visible only to the owner (session or their API key). Public and unlisted artifacts are readable without auth unless you pass an invalid Bearer token (which returns \`401\`).
@@ -248,7 +248,7 @@ Allowed \`visibility\` values:
 
     public, unlisted, private
 
-Anonymous publish requests are forced to \`unlisted\`. Use a session or Bearer API key for \`public\`, \`private\`, comments, revisions, ownership, and future analytics. Anonymous publish responses may include a one-time \`claimToken\`; store it locally, never print it in chat, and let docscn recover the artifact automatically after login.
+Anonymous publish requests are forced to \`unlisted\`. Use a session or Bearer API key for \`public\`, \`private\`, comments, revisions, ownership, and future analytics. Anonymous publish responses may include a one-time \`claimToken\`; store it locally, never print it in chat, and let docscn recover the artifact automatically after login within 90 days.
 
 Allowed \`source\` values:
 

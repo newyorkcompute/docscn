@@ -129,7 +129,7 @@ export interface ClaimArtifactsResult {
   }>;
   skipped: Array<{
     artifactId: string;
-    reason: 'already-owned' | 'invalid-token' | 'not-found';
+    reason: 'already-owned' | 'expired-token' | 'invalid-token' | 'not-found';
   }>;
 }
 

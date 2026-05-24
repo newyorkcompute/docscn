@@ -43,6 +43,13 @@
       "when": 1779642536611,
       "tag": "0005_perpetual_blacklash",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779651470842,
+      "tag": "0006_pink_ink",
+      "breakpoints": true
     }
   ]
 }

@@ -46,12 +46,32 @@ export function AnonymousClaimSync({
         ];
         removeAnonymousClaimReceipts(completedIds);
 
-        if (!cancelled && result.claimed.length) {
-          setMessage(
-            `Recovered ${result.claimed.length} anonymous artifact${
-              result.claimed.length === 1 ? '' : 's'
-            }.`,
-          );
+        if (!cancelled) {
+          const expiredCount = result.skipped.filter(
+            (artifact) => artifact.reason === 'expired-token',
+          ).length;
+
+          const messages: string[] = [];
+
+          if (result.claimed.length) {
+            messages.push(
+              `Recovered ${result.claimed.length} anonymous artifact${
+                result.claimed.length === 1 ? '' : 's'
+              }.`,
+            );
+          }
+
+          if (expiredCount) {
+            messages.push(
+              `${expiredCount} anonymous artifact recovery receipt${
+                expiredCount === 1 ? ' has' : 's have'
+              } expired. The unlisted link still works, but ownership can no longer be recovered.`,
+            );
+          }
+
+          if (messages.length) {
+            setMessage(messages.join(' '));
+          }
         }
       } catch {
         // Recovery is opportunistic; keep receipts for the next signed-in visit.

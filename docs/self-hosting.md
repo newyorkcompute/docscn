@@ -192,6 +192,22 @@ git push origin v0.0.2
 
 The `Release CLI` workflow builds platform binaries automatically.
 
+## Maintenance
+
+Anonymous publish recovery tokens expire 90 days after publish. Expired
+unclaimed tokens cannot recover ownership, but their unlisted artifacts remain
+viewable at the original URLs.
+
+Run the cleanup task periodically to delete expired unclaimed claim rows:
+
+```bash
+npm run claims:cleanup -- --dry-run
+npm run claims:cleanup
+```
+
+Schedule the non-dry-run command with your platform scheduler or cron using the
+same `DATABASE_URL` as the web app.
+
 ## Backups
 
 Back up both persistence layers:

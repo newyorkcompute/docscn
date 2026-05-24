@@ -52,6 +52,9 @@ const apiKeyTokenPrefix = 'docscn_sk_';
 const cliLoginTtlMs = 10 * 60 * 1000;
 const cliLoginIntervalSeconds = 2;
 const claimTokenPrefix = 'docscn_claim_';
+const anonymousArtifactClaimTtlDays = 90;
+const anonymousArtifactClaimTtlMs =
+  anonymousArtifactClaimTtlDays * 24 * 60 * 60 * 1000;
 
 interface ArtifactAccessOptions {
   includeUnlisted?: boolean;
@@ -164,8 +167,14 @@ function hashClaimToken(claimToken: string) {
   return createHash('sha256').update(claimToken).digest('hex');
 }
 
-function isExpired(expiresAt: string) {
-  return Date.parse(expiresAt) <= Date.now();
+function isExpired(expiresAt: string, nowMs = Date.now()) {
+  return Date.parse(expiresAt) <= nowMs;
+}
+
+function getAnonymousClaimExpiresAt(createdAt: string) {
+  return new Date(
+    Date.parse(createdAt) + anonymousArtifactClaimTtlMs,
+  ).toISOString();
 }
 
 function mapApiKeyRow(row: typeof apiKeys.$inferSelect): ApiKey {
@@ -661,6 +670,7 @@ export async function publishArtifact(input: CreateArtifactInput): Promise<{
         artifactId: artifact.id,
         claimTokenHash: hashClaimToken(claimToken),
         createdAt: artifact.metadata.createdAt,
+        expiresAt: getAnonymousClaimExpiresAt(artifact.metadata.createdAt),
         claimedAt: null,
       });
     }
@@ -715,6 +725,7 @@ export async function publishArtifact(input: CreateArtifactInput): Promise<{
       artifactId: artifact.id,
       claimTokenHash: hashClaimToken(claimToken),
       createdAt: artifact.metadata.createdAt,
+      expiresAt: getAnonymousClaimExpiresAt(artifact.metadata.createdAt),
       claimedAt: null,
     });
   }
@@ -738,7 +749,9 @@ export async function claimAnonymousArtifacts(
     claimed: [],
     skipped: [],
   };
-  const now = new Date().toISOString();
+  const nowDate = new Date();
+  const now = nowDate.toISOString();
+  const nowMs = nowDate.getTime();
 
   if (!isDatabaseConfigured()) {
     for (const receipt of input.receipts) {
@@ -749,7 +762,7 @@ export async function claimAnonymousArtifacts(
         (candidate) => candidate.artifactId === receipt.artifactId,
       );
 
-      if (!artifact || !claim) {
+      if (!artifact) {
         result.skipped.push({
           artifactId: receipt.artifactId,
           reason: 'not-found',
@@ -765,6 +778,14 @@ export async function claimAnonymousArtifacts(
         continue;
       }
 
+      if (!claim) {
+        result.skipped.push({
+          artifactId: receipt.artifactId,
+          reason: 'expired-token',
+        });
+        continue;
+      }
+
       if (
         claim.claimedAt ||
         claim.claimTokenHash !== hashClaimToken(receipt.claimToken)
@@ -772,6 +793,14 @@ export async function claimAnonymousArtifacts(
         result.skipped.push({
           artifactId: receipt.artifactId,
           reason: 'invalid-token',
+        });
+        continue;
+      }
+
+      if (isExpired(claim.expiresAt, nowMs)) {
+        result.skipped.push({
+          artifactId: receipt.artifactId,
+          reason: 'expired-token',
         });
         continue;
       }
@@ -801,7 +830,7 @@ export async function claimAnonymousArtifacts(
       .where(eq(artifactClaims.artifactId, receipt.artifactId))
       .limit(1);
 
-    if (!artifact || !claim) {
+    if (!artifact) {
       result.skipped.push({
         artifactId: receipt.artifactId,
         reason: 'not-found',
@@ -817,6 +846,14 @@ export async function claimAnonymousArtifacts(
       continue;
     }
 
+    if (!claim) {
+      result.skipped.push({
+        artifactId: receipt.artifactId,
+        reason: 'expired-token',
+      });
+      continue;
+    }
+
     if (
       claim.claimedAt ||
       claim.claimTokenHash !== hashClaimToken(receipt.claimToken)
@@ -824,6 +861,14 @@ export async function claimAnonymousArtifacts(
       result.skipped.push({
         artifactId: receipt.artifactId,
         reason: 'invalid-token',
+      });
+      continue;
+    }
+
+    if (isExpired(claim.expiresAt, nowMs)) {
+      result.skipped.push({
+        artifactId: receipt.artifactId,
+        reason: 'expired-token',
       });
       continue;
     }

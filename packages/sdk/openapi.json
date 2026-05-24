@@ -52,9 +52,7 @@
     "schemas": {
       "ErrorResponse": {
         "type": "object",
-        "required": [
-          "error"
-        ],
+        "required": ["error"],
         "properties": {
           "error": {
             "type": "string"
@@ -63,19 +61,11 @@
       },
       "ActorRole": {
         "type": "string",
-        "enum": [
-          "human",
-          "agent",
-          "system"
-        ]
+        "enum": ["human", "agent", "system"]
       },
       "ArtifactVisibility": {
         "type": "string",
-        "enum": [
-          "public",
-          "unlisted",
-          "private"
-        ]
+        "enum": ["public", "unlisted", "private"]
       },
       "ArtifactKind": {
         "type": "string",
@@ -105,20 +95,11 @@
       },
       "ReviewThreadStatus": {
         "type": "string",
-        "enum": [
-          "open",
-          "needs-revision",
-          "resolved"
-        ]
+        "enum": ["open", "needs-revision", "resolved"]
       },
       "Actor": {
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "role",
-          "avatarFallback"
-        ],
+        "required": ["id", "name", "role", "avatarFallback"],
         "properties": {
           "id": {
             "type": "string"
@@ -258,20 +239,14 @@
       },
       "ReviewAnchor": {
         "type": "object",
-        "required": [
-          "label"
-        ],
+        "required": ["label"],
         "properties": {
           "label": {
             "type": "string"
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "point",
-              "text",
-              "element"
-            ]
+            "enum": ["point", "text", "element"]
           },
           "selector": {
             "type": "string"
@@ -309,13 +284,7 @@
       },
       "ReviewComment": {
         "type": "object",
-        "required": [
-          "id",
-          "body",
-          "author",
-          "createdAt",
-          "role"
-        ],
+        "required": ["id", "body", "author", "createdAt", "role"],
         "properties": {
           "id": {
             "type": "string"
@@ -357,19 +326,13 @@
           },
           "claimToken": {
             "type": "string",
-            "description": "Returned once for anonymous publishes so the artifact can be recovered after sign-in."
+            "description": "Returned once for anonymous publishes so the artifact can be recovered within 90 days after sign-in."
           }
         }
       },
       "AnonymousClaimReceipt": {
         "type": "object",
-        "required": [
-          "artifactId",
-          "slug",
-          "title",
-          "claimToken",
-          "createdAt"
-        ],
+        "required": ["artifactId", "slug", "title", "claimToken", "createdAt"],
         "properties": {
           "artifactId": {
             "type": "string"
@@ -391,19 +354,13 @@
       },
       "ClaimArtifactsResponse": {
         "type": "object",
-        "required": [
-          "claimed",
-          "skipped"
-        ],
+        "required": ["claimed", "skipped"],
         "properties": {
           "claimed": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": [
-                "artifactId",
-                "slug"
-              ],
+              "required": ["artifactId", "slug"],
               "properties": {
                 "artifactId": {
                   "type": "string"
@@ -418,10 +375,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "required": [
-                "artifactId",
-                "reason"
-              ],
+              "required": ["artifactId", "reason"],
               "properties": {
                 "artifactId": {
                   "type": "string"
@@ -430,6 +384,7 @@
                   "type": "string",
                   "enum": [
                     "already-owned",
+                    "expired-token",
                     "invalid-token",
                     "not-found"
                   ]
@@ -459,12 +414,7 @@
       },
       "PublishResult": {
         "type": "object",
-        "required": [
-          "artifactId",
-          "slug",
-          "url",
-          "revisionId"
-        ],
+        "required": ["artifactId", "slug", "url", "revisionId"],
         "properties": {
           "artifactId": {
             "type": "string"
@@ -517,10 +467,7 @@
       },
       "PublishArtifactResponse": {
         "type": "object",
-        "required": [
-          "artifact",
-          "result"
-        ],
+        "required": ["artifact", "result"],
         "properties": {
           "artifact": {
             "$ref": "#/components/schemas/Artifact"
@@ -532,11 +479,7 @@
       },
       "SubmitRevisionInput": {
         "type": "object",
-        "required": [
-          "html",
-          "summary",
-          "authorName"
-        ],
+        "required": ["html", "summary", "authorName"],
         "properties": {
           "html": {
             "type": "string"
@@ -560,9 +503,7 @@
       },
       "SubmitRevisionResponse": {
         "type": "object",
-        "required": [
-          "revision"
-        ],
+        "required": ["revision"],
         "properties": {
           "revision": {
             "$ref": "#/components/schemas/ArtifactRevision"
@@ -571,12 +512,7 @@
       },
       "AgentFeedbackContext": {
         "type": "object",
-        "required": [
-          "artifact",
-          "revision",
-          "instructions",
-          "openThreads"
-        ],
+        "required": ["artifact", "revision", "instructions", "openThreads"],
         "properties": {
           "artifact": {
             "type": "object",
@@ -611,11 +547,7 @@
           },
           "revision": {
             "type": "object",
-            "required": [
-              "id",
-              "version",
-              "summary"
-            ],
+            "required": ["id", "version", "summary"],
             "properties": {
               "id": {
                 "type": "string"
@@ -630,10 +562,7 @@
           },
           "instructions": {
             "type": "object",
-            "required": [
-              "goal",
-              "constraints"
-            ],
+            "required": ["goal", "constraints"],
             "properties": {
               "goal": {
                 "type": "string"
@@ -650,12 +579,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "required": [
-                "id",
-                "status",
-                "title",
-                "comments"
-              ],
+              "required": ["id", "status", "title", "comments"],
               "properties": {
                 "id": {
                   "type": "string"
@@ -676,11 +600,7 @@
                   "type": "array",
                   "items": {
                     "type": "object",
-                    "required": [
-                      "author",
-                      "role",
-                      "body"
-                    ],
+                    "required": ["author", "role", "body"],
                     "properties": {
                       "author": {
                         "type": "string"
@@ -701,10 +621,7 @@
       },
       "ArtifactFeedbackResponse": {
         "type": "object",
-        "required": [
-          "bundle",
-          "prompt"
-        ],
+        "required": ["bundle", "prompt"],
         "properties": {
           "bundle": {
             "$ref": "#/components/schemas/AgentFeedbackContext"
@@ -716,11 +633,7 @@
       },
       "CreateReviewThreadInput": {
         "type": "object",
-        "required": [
-          "title",
-          "body",
-          "authorName"
-        ],
+        "required": ["title", "body", "authorName"],
         "properties": {
           "title": {
             "type": "string"
@@ -748,11 +661,7 @@
           },
           "anchorKind": {
             "type": "string",
-            "enum": [
-              "point",
-              "text",
-              "element"
-            ]
+            "enum": ["point", "text", "element"]
           },
           "anchorX": {
             "type": "number"
@@ -767,10 +676,7 @@
       },
       "CreateReviewCommentInput": {
         "type": "object",
-        "required": [
-          "body",
-          "authorName"
-        ],
+        "required": ["body", "authorName"],
         "properties": {
           "body": {
             "type": "string"
@@ -785,9 +691,7 @@
       },
       "UpdateReviewThreadStatusInput": {
         "type": "object",
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "properties": {
           "status": {
             "$ref": "#/components/schemas/ReviewThreadStatus"
@@ -796,13 +700,7 @@
       },
       "ApiKey": {
         "type": "object",
-        "required": [
-          "id",
-          "userId",
-          "name",
-          "keyPrefix",
-          "createdAt"
-        ],
+        "required": ["id", "userId", "name", "keyPrefix", "createdAt"],
         "properties": {
           "id": {
             "type": "string"
@@ -832,10 +730,7 @@
       },
       "CreatedApiKey": {
         "type": "object",
-        "required": [
-          "apiKey",
-          "token"
-        ],
+        "required": ["apiKey", "token"],
         "properties": {
           "apiKey": {
             "$ref": "#/components/schemas/ApiKey"
@@ -847,10 +742,7 @@
       },
       "Principal": {
         "type": "object",
-        "required": [
-          "userId",
-          "kind"
-        ],
+        "required": ["userId", "kind"],
         "properties": {
           "userId": {
             "type": "string"
@@ -863,10 +755,7 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "session",
-              "api-key"
-            ]
+            "enum": ["session", "api-key"]
           }
         }
       },
@@ -901,9 +790,7 @@
       },
       "CliLoginPollResult": {
         "type": "object",
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "properties": {
           "status": {
             "type": "string",
@@ -928,9 +815,7 @@
   "paths": {
     "/api/me": {
       "get": {
-        "tags": [
-          "Account"
-        ],
+        "tags": ["Account"],
         "summary": "Get caller identity",
         "security": [
           {
@@ -944,9 +829,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "principal"
-                  ],
+                  "required": ["principal"],
                   "properties": {
                     "principal": {
                       "$ref": "#/components/schemas/Principal"
@@ -971,9 +854,7 @@
     },
     "/api/artifacts": {
       "get": {
-        "tags": [
-          "Artifacts"
-        ],
+        "tags": ["Artifacts"],
         "summary": "List artifacts visible to the caller",
         "security": [
           {
@@ -988,9 +869,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "artifacts"
-                  ],
+                  "required": ["artifacts"],
                   "properties": {
                     "artifacts": {
                       "type": "array",
@@ -1016,9 +895,7 @@
         }
       },
       "post": {
-        "tags": [
-          "Artifacts"
-        ],
+        "tags": ["Artifacts"],
         "summary": "Publish a new artifact",
         "description": "Bearer auth is optional for unlisted, view-only anonymous publishing. Authenticated callers can publish public/private owned artifacts. Invalid bearer tokens return 401.",
         "security": [
@@ -1093,11 +970,9 @@
     },
     "/api/artifacts/claims": {
       "post": {
-        "tags": [
-          "Artifacts"
-        ],
+        "tags": ["Artifacts"],
         "summary": "Recover anonymous artifacts for the authenticated caller",
-        "description": "Claims unowned anonymous artifacts when the caller provides local claim receipts from browser or CLI storage.",
+        "description": "Claims unowned anonymous artifacts when the caller provides local claim receipts from browser or CLI storage. Claim tokens expire 90 days after anonymous publish; expired artifacts remain viewable at their unlisted URL but cannot be recovered.",
         "security": [
           {
             "bearerAuth": []
@@ -1109,9 +984,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "receipts"
-                ],
+                "required": ["receipts"],
                 "properties": {
                   "receipts": {
                     "type": "array",
@@ -1160,9 +1033,7 @@
     },
     "/api/artifacts/{artifactIdOrSlug}": {
       "get": {
-        "tags": [
-          "Artifacts"
-        ],
+        "tags": ["Artifacts"],
         "summary": "Get artifact metadata, revisions, and review threads",
         "security": [
           {
@@ -1187,10 +1058,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "artifact",
-                    "threads"
-                  ],
+                  "required": ["artifact", "threads"],
                   "properties": {
                     "artifact": {
                       "$ref": "#/components/schemas/Artifact"
@@ -1231,9 +1099,7 @@
     },
     "/api/artifacts/{artifactIdOrSlug}/feedback": {
       "get": {
-        "tags": [
-          "Artifacts"
-        ],
+        "tags": ["Artifacts"],
         "summary": "Get agent feedback bundle and revision prompt",
         "description": "Preferred endpoint for agents before submitting a revision.",
         "security": [
@@ -1297,9 +1163,7 @@
     },
     "/api/artifacts/{artifactIdOrSlug}/revisions": {
       "post": {
-        "tags": [
-          "Revisions"
-        ],
+        "tags": ["Revisions"],
         "summary": "Submit a replacement HTML revision",
         "security": [
           {
@@ -1382,9 +1246,7 @@
     },
     "/api/artifacts/{artifactIdOrSlug}/threads": {
       "post": {
-        "tags": [
-          "Review"
-        ],
+        "tags": ["Review"],
         "summary": "Create a review thread",
         "security": [
           {
@@ -1418,9 +1280,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "thread"
-                  ],
+                  "required": ["thread"],
                   "properties": {
                     "thread": {
                       "$ref": "#/components/schemas/ReviewThread"
@@ -1465,9 +1325,7 @@
     },
     "/api/review-threads/{threadId}": {
       "patch": {
-        "tags": [
-          "Review"
-        ],
+        "tags": ["Review"],
         "summary": "Update review thread status",
         "description": "Only the artifact owner can change thread status.",
         "security": [
@@ -1502,9 +1360,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "thread"
-                  ],
+                  "required": ["thread"],
                   "properties": {
                     "thread": {
                       "$ref": "#/components/schemas/ReviewThread"
@@ -1559,9 +1415,7 @@
     },
     "/api/review-threads/{threadId}/comments": {
       "post": {
-        "tags": [
-          "Review"
-        ],
+        "tags": ["Review"],
         "summary": "Add a comment to a review thread",
         "security": [
           {
@@ -1595,9 +1449,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "comment"
-                  ],
+                  "required": ["comment"],
                   "properties": {
                     "comment": {
                       "$ref": "#/components/schemas/ReviewComment"
@@ -1642,9 +1494,7 @@
     },
     "/api/api-keys": {
       "get": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "List API keys for the signed-in user",
         "description": "Session cookie required. Not available via bearer token.",
         "responses": {
@@ -1654,9 +1504,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "apiKeys"
-                  ],
+                  "required": ["apiKeys"],
                   "properties": {
                     "apiKeys": {
                       "type": "array",
@@ -1682,9 +1530,7 @@
         }
       },
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "Create an API key",
         "description": "Session cookie required. Raw token is returned once.",
         "requestBody": {
@@ -1693,9 +1539,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "name"
-                ],
+                "required": ["name"],
                 "properties": {
                   "name": {
                     "type": "string",
@@ -1742,9 +1586,7 @@
     },
     "/api/api-keys/{apiKeyId}": {
       "delete": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "Revoke an API key",
         "description": "Session cookie required.",
         "parameters": [
@@ -1764,9 +1606,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "apiKey"
-                  ],
+                  "required": ["apiKey"],
                   "properties": {
                     "apiKey": {
                       "$ref": "#/components/schemas/ApiKey"
@@ -1801,9 +1641,7 @@
     },
     "/api/cli/auth/start": {
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "Start CLI device login",
         "responses": {
           "200": {
@@ -1831,9 +1669,7 @@
     },
     "/api/cli/auth/poll": {
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "Poll CLI device login status",
         "requestBody": {
           "required": true,
@@ -1841,9 +1677,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "deviceCode"
-                ],
+                "required": ["deviceCode"],
                 "properties": {
                   "deviceCode": {
                     "type": "string"
@@ -1879,9 +1713,7 @@
     },
     "/api/cli/auth/approve": {
       "post": {
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "Approve CLI device login from browser session",
         "description": "Session cookie required.",
         "requestBody": {
@@ -1890,9 +1722,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "userCode"
-                ],
+                "required": ["userCode"],
                 "properties": {
                   "userCode": {
                     "type": "string"
@@ -1909,9 +1739,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "status"
-                  ],
+                  "required": ["status"],
                   "properties": {
                     "status": {
                       "type": "string",

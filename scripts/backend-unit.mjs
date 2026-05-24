@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import postgres from 'postgres';
 
 const base = process.env.DOCSCN_TEST_URL ?? 'http://localhost:3000';
 const email = `backend-api-${Date.now()}@docscn.local`;
@@ -32,6 +34,70 @@ async function createSignedInCookie() {
     [signUp.response.headers.get('set-cookie')].filter(Boolean);
 
   return setCookie.map((value) => value.split(';')[0]).join('; ');
+}
+
+async function getDatabaseUrl() {
+  if (process.env.DATABASE_URL) {
+    return process.env.DATABASE_URL;
+  }
+
+  const envLocal = await readFile('.env.local', 'utf8').catch(() => '');
+  const match = envLocal.match(/^\s*DATABASE_URL\s*=\s*(.+)\s*$/m);
+
+  return match?.[1]?.replace(/^['"]|['"]$/g, '');
+}
+
+async function expireArtifactClaim(artifactId) {
+  const databaseUrl = await getDatabaseUrl();
+
+  assert.ok(
+    databaseUrl,
+    'DATABASE_URL or .env.local DATABASE_URL is required for claim expiry tests.',
+  );
+
+  const sql = postgres(databaseUrl, { max: 1 });
+  const expiredAt = new Date(Date.now() - 60 * 1000).toISOString();
+  const createdAt = new Date(
+    Date.now() - 91 * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  try {
+    const updatedRows = await sql`
+      UPDATE artifact_claims
+      SET created_at = ${createdAt}, expires_at = ${expiredAt}
+      WHERE artifact_id = ${artifactId}
+      RETURNING artifact_id
+    `;
+
+    assert.equal(updatedRows.length, 1);
+  } finally {
+    await sql.end({ timeout: 5 });
+  }
+}
+
+async function cleanupExpiredArtifactClaim(artifactId) {
+  const databaseUrl = await getDatabaseUrl();
+
+  assert.ok(
+    databaseUrl,
+    'DATABASE_URL or .env.local DATABASE_URL is required for claim cleanup tests.',
+  );
+
+  const sql = postgres(databaseUrl, { max: 1 });
+
+  try {
+    const deletedRows = await sql`
+      DELETE FROM artifact_claims
+      WHERE artifact_id = ${artifactId}
+        AND claimed_at IS NULL
+        AND expires_at <= now()
+      RETURNING artifact_id
+    `;
+
+    assert.equal(deletedRows.length, 1);
+  } finally {
+    await sql.end({ timeout: 5 });
+  }
 }
 
 async function createApiKeyViaCliAuth(cookie) {
@@ -127,6 +193,29 @@ const claimResult = await jsonFetch('/api/artifacts/claims', {
 });
 assert.equal(claimResult.payload.claimed.length, 1);
 
+const duplicateClaimResult = await jsonFetch('/api/artifacts/claims', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', cookie, origin: base },
+  body: JSON.stringify({
+    receipts: [
+      {
+        artifactId: anonymousPublished.payload.result.artifactId,
+        slug: anonymousPublished.payload.result.slug,
+        title: 'Anonymous claim artifact',
+        claimToken: anonymousPublished.payload.result.claimToken,
+        createdAt: new Date().toISOString(),
+      },
+    ],
+  }),
+});
+assert.deepEqual(duplicateClaimResult.payload.claimed, []);
+assert.deepEqual(duplicateClaimResult.payload.skipped, [
+  {
+    artifactId: anonymousPublished.payload.result.artifactId,
+    reason: 'already-owned',
+  },
+]);
+
 const claimedThread = await jsonFetch(
   `/api/artifacts/${anonymousPublished.payload.result.slug}/threads`,
   {
@@ -141,6 +230,82 @@ const claimedThread = await jsonFetch(
   },
 );
 assert.equal(claimedThread.payload.thread.status, 'open');
+
+const expiredAnonymousPublished = await jsonFetch('/api/artifacts', {
+  method: 'POST',
+  headers: {
+    'content-type': 'application/json',
+    'x-forwarded-for': `expired-claim-test-${Date.now()}`,
+  },
+  body: JSON.stringify({
+    title: 'Expired anonymous claim artifact',
+    description: 'Anonymous artifact with an expired claim receipt.',
+    html: '<!doctype html><html><body><main><h1>Expired anonymous claim</h1></main></body></html>',
+    visibility: 'private',
+    authorName: 'Anonymous Backend API agent',
+    source: 'automation',
+    kind: 'custom-html',
+  }),
+});
+await expireArtifactClaim(expiredAnonymousPublished.payload.result.artifactId);
+
+const expiredClaimResult = await jsonFetch('/api/artifacts/claims', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', cookie, origin: base },
+  body: JSON.stringify({
+    receipts: [
+      {
+        artifactId: expiredAnonymousPublished.payload.result.artifactId,
+        slug: expiredAnonymousPublished.payload.result.slug,
+        title: 'Expired anonymous claim artifact',
+        claimToken: expiredAnonymousPublished.payload.result.claimToken,
+        createdAt: new Date().toISOString(),
+      },
+    ],
+  }),
+});
+assert.deepEqual(expiredClaimResult.payload.claimed, []);
+assert.deepEqual(expiredClaimResult.payload.skipped, [
+  {
+    artifactId: expiredAnonymousPublished.payload.result.artifactId,
+    reason: 'expired-token',
+  },
+]);
+
+await cleanupExpiredArtifactClaim(
+  expiredAnonymousPublished.payload.result.artifactId,
+);
+
+const cleanedUpExpiredClaimResult = await jsonFetch('/api/artifacts/claims', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', cookie, origin: base },
+  body: JSON.stringify({
+    receipts: [
+      {
+        artifactId: expiredAnonymousPublished.payload.result.artifactId,
+        slug: expiredAnonymousPublished.payload.result.slug,
+        title: 'Expired anonymous claim artifact',
+        claimToken: expiredAnonymousPublished.payload.result.claimToken,
+        createdAt: new Date().toISOString(),
+      },
+    ],
+  }),
+});
+assert.deepEqual(cleanedUpExpiredClaimResult.payload.claimed, []);
+assert.deepEqual(cleanedUpExpiredClaimResult.payload.skipped, [
+  {
+    artifactId: expiredAnonymousPublished.payload.result.artifactId,
+    reason: 'expired-token',
+  },
+]);
+
+const expiredArtifact = await jsonFetch(
+  `/api/artifacts/${expiredAnonymousPublished.payload.result.slug}`,
+);
+assert.equal(
+  expiredArtifact.payload.artifact.slug,
+  expiredAnonymousPublished.payload.result.slug,
+);
 
 const oversized = await fetch(`${base}/api/artifacts`, {
   method: 'POST',
@@ -251,12 +416,9 @@ const comment = await jsonFetch(
 );
 assert.equal(comment.payload.comment.role, 'agent');
 
-const feedback = await jsonFetch(
-  `/api/artifacts/${artifactSlug}/feedback`,
-  {
-    headers: { authorization: `Bearer ${apiKey}` },
-  },
-);
+const feedback = await jsonFetch(`/api/artifacts/${artifactSlug}/feedback`, {
+  headers: { authorization: `Bearer ${apiKey}` },
+});
 assert.equal(feedback.payload.bundle.artifact.slug, artifactSlug);
 assert.match(feedback.payload.prompt, /Backend API artifact/);
 assert.equal(feedback.payload.bundle.openThreads.length, 1);
