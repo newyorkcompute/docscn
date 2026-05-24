@@ -299,6 +299,7 @@ Contributions are welcome. Start with:
 - [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) for community standards
 - [SECURITY.md](./SECURITY.md) for vulnerability reporting
 - [examples/artifacts/](./examples/artifacts/) for sample HTML to publish locally
+- `/examples` in the web app for previewing the starter gallery before publishing
 
 Useful contributor commands:
 

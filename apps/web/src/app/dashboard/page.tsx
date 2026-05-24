@@ -1,4 +1,5 @@
 import { listArtifacts } from '@docscn/db';
+import { exampleArtifacts } from '../../lib/example-artifacts';
 import { getServerSession } from '../../lib/session';
 import { getRequestOrigin } from '../../lib/request-origin';
 import { DashboardClient } from '../../components/dashboard-client';
@@ -16,6 +17,7 @@ export default async function DashboardPage() {
       <main>
         <DashboardClient
           artifacts={await listArtifacts({ viewerUserId: session?.user.id })}
+          examples={exampleArtifacts}
           origin={origin}
         />
       </main>

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PR review summary</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #f8fafc;
+        color: #0f172a;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #0b1220;
+          color: #e2e8f0;
+        }
+
+        .card {
+          background: #111827;
+          border-color: #1f2937;
+        }
+
+        .add {
+          background: rgba(16, 185, 129, 0.12);
+        }
+
+        .del {
+          background: rgba(239, 68, 68, 0.12);
+        }
+      }
+
+      main {
+        padding: 2rem 1.5rem 3rem;
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: clamp(1.75rem, 4vw, 2.5rem);
+      }
+
+      .meta {
+        color: #64748b;
+        font-size: 0.95rem;
+      }
+
+      .card {
+        margin-top: 1.25rem;
+        padding: 1.25rem;
+        border-radius: 1rem;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+      }
+
+      .checks {
+        display: grid;
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+
+      .check {
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-start;
+      }
+
+      pre {
+        margin: 0.75rem 0 0;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        overflow-x: auto;
+        font-size: 0.85rem;
+        line-height: 1.6;
+      }
+
+      .add {
+        background: #ecfdf5;
+      }
+
+      .del {
+        background: #fef2f2;
+      }
+
+      .severity-high {
+        color: #dc2626;
+        font-weight: 600;
+      }
+
+      .severity-med {
+        color: #d97706;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>PR #482 — artifact feedback API</h1>
+      <p class="meta">Generated review for newyorkcompute/docscn · 6 files changed</p>
+
+      <section class="card">
+        <h2>Summary</h2>
+        <p>
+          Adds a structured feedback endpoint and CLI command so agents can read
+          review threads before submitting revisions. Overall direction looks
+          solid; a few edge cases need clearer auth behavior.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>Review checklist</h2>
+        <div class="checks">
+          <div class="check">
+            <span class="severity-high">High</span>
+            <span>Confirm private artifacts reject invalid bearer tokens with 401.</span>
+          </div>
+          <div class="check">
+            <span class="severity-med">Med</span>
+            <span>Document revision-scoped thread filtering in skills.md.</span>
+          </div>
+          <div class="check">
+            <span>Low</span>
+            <span>Add backend test for missing revisionId query param.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Suggested diff highlight</h2>
+        <pre class="add">+ GET /api/artifacts/{id}/feedback</pre>
+        <pre class="del">- docscn artifact get --json  # old agent workflow</pre>
+      </section>
+    </main>
+  </body>
+</html>

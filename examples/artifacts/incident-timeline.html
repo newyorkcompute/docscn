@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Checkout latency incident timeline</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: #e5f8ff;
+        background: #071016;
+      }
+
+      main {
+        padding: 2rem 1.5rem 3rem;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      .sev {
+        display: inline-flex;
+        border: 1px solid #fb7185;
+        color: #fecdd3;
+        border-radius: 999px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 1rem 0 0;
+        font-size: clamp(2rem, 4vw, 3rem);
+        line-height: 1.05;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .card {
+        border: 1px solid #254453;
+        border-radius: 1.25rem;
+        padding: 1.25rem;
+        background: linear-gradient(135deg, #0d1c25, #101820);
+      }
+
+      .event {
+        display: grid;
+        grid-template-columns: 5rem 1fr;
+        gap: 1rem;
+        padding: 0.875rem 0;
+        border-bottom: 1px solid #203642;
+      }
+
+      .time {
+        color: #5eead4;
+        font-family: ui-monospace, monospace;
+      }
+
+      .metric {
+        font-size: 2.75rem;
+        letter-spacing: -0.05em;
+        margin: 0.5rem 0;
+      }
+
+      button {
+        margin-top: 1rem;
+        background: #5eead4;
+        border: 0;
+        border-radius: 0.625rem;
+        padding: 0.625rem 0.875rem;
+        color: #021014;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      @media (max-width: 800px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="sev">sev-2 incident timeline</p>
+      <h1>Checkout latency regression: 47 minute timeline</h1>
+      <div class="grid">
+        <section class="card">
+          <div class="event">
+            <strong class="time">09:04</strong>
+            <span
+              >Agent detected p95 checkout latency crossing 2.8s after deploy
+              8f31c2.</span
+            >
+          </div>
+          <div class="event">
+            <strong class="time">09:12</strong>
+            <span>Redis cache hit rate fell from 92% to 41% in us-east-1.</span>
+          </div>
+          <div class="event">
+            <strong class="time">09:27</strong>
+            <span
+              >Rollback started after synthetic checkout failed three consecutive
+              probes.</span
+            >
+          </div>
+          <div class="event">
+            <strong class="time">09:51</strong>
+            <span
+              >Latency recovered. Action item: add circuit breaker around enrichment
+              job.</span
+            >
+          </div>
+        </section>
+        <aside class="card">
+          <p>Impact window</p>
+          <div class="metric">47m</div>
+          <p>Estimated failed checkouts: <strong>183</strong></p>
+          <button
+            onclick="document.querySelector('#details').classList.toggle('hidden')"
+          >
+            Toggle agent evidence
+          </button>
+          <pre id="details" class="hidden">redis.get(product:v2) timeout
+queue depth: 18,402
+region: us-east-1</pre>
+        </aside>
+      </div>
+    </main>
+  </body>
+</html>

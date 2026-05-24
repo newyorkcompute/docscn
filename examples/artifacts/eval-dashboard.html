@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent evaluation dashboard</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: #ecfeff;
+        background: linear-gradient(135deg, #082f49, #111827);
+      }
+
+      main {
+        padding: 2rem 1.5rem 3rem;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: clamp(2rem, 4vw, 2.75rem);
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.875rem;
+        margin-top: 1.5rem;
+      }
+
+      .card {
+        padding: 1.125rem;
+        border-radius: 1.125rem;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+      }
+
+      .big {
+        font-size: 2.75rem;
+        letter-spacing: -0.06em;
+        margin: 0.5rem 0;
+      }
+
+      table {
+        width: 100%;
+        margin-top: 1.5rem;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .pass {
+        color: #5eead4;
+      }
+
+      .warn {
+        color: #fbbf24;
+      }
+
+      @media (max-width: 800px) {
+        .cards {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Agent evaluation dashboard</h1>
+      <p>Generated from 1,284 eval traces and support-ticket feedback.</p>
+      <section class="cards">
+        <div class="card">
+          <p>Pass rate</p>
+          <div class="big">91.2%</div>
+          <p class="pass">+3.4% vs last week</p>
+        </div>
+        <div class="card">
+          <p>Median latency</p>
+          <div class="big">1.8s</div>
+          <p>Revision loop under 6 minutes</p>
+        </div>
+        <div class="card">
+          <p>Human edits requested</p>
+          <div class="big">12%</div>
+          <p class="warn">Mostly layout density</p>
+        </div>
+      </section>
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Score</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Incident timeline</td>
+            <td class="pass">94</td>
+            <td>Strong structure, clear phases</td>
+          </tr>
+          <tr>
+            <td>Migration plan</td>
+            <td class="pass">89</td>
+            <td>Good lane layout, needs risk callouts</td>
+          </tr>
+          <tr>
+            <td>PR review summary</td>
+            <td class="warn">82</td>
+            <td>Diff colors need more contrast</td>
+          </tr>
+        </tbody>
+      </table>
+    </main>
+  </body>
+</html>
