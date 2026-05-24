@@ -1,5 +1,8 @@
 # docscn
 
+[![CI](https://github.com/newyorkcompute/docscn/actions/workflows/ci.yml/badge.svg)](https://github.com/newyorkcompute/docscn/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/newyorkcompute/docscn)](https://github.com/newyorkcompute/docscn/blob/main/LICENSE)
+
 docscn is an open-source platform for hosting, sharing, and collaborating on
 AI-generated HTML artifacts. Publish interactive plans, reports, diagrams,
 prototypes, and docs from agents, share them at stable URLs, review them with
@@ -261,6 +264,7 @@ creates a thread, submits a revision, and comments as an agent.
 Contributions are welcome. Start with:
 
 - [CONTRIBUTING.md](./CONTRIBUTING.md) for local setup and PR expectations
+- [CHANGELOG.md](./CHANGELOG.md) for release history
 - [docs/architecture.md](./docs/architecture.md) for the system overview
 - [SECURITY.md](./SECURITY.md) for vulnerability reporting
 - [examples/artifacts/](./examples/artifacts/) for sample HTML to publish locally
