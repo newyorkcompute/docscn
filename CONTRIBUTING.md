@@ -102,15 +102,15 @@ We follow a human-first imperative style by default. If you prefer
 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), map our
 verbs to types like this:
 
-| Imperative subject | Conventional type |
-| --- | --- |
-| `Add …`, `Expand …` | `feat:` |
-| `Fix …` | `fix:` |
-| `Bump …` | `chore:` or `build:` |
-| `Improve …`, `Polish …`, `Refactor …` | `refactor:` |
-| Docs-only changes | `docs:` |
-| Test-only changes | `test:` |
-| CI/workflow-only changes | `ci:` |
+| Imperative subject                    | Conventional type    |
+| ------------------------------------- | -------------------- |
+| `Add …`, `Expand …`                   | `feat:`              |
+| `Fix …`                               | `fix:`               |
+| `Bump …`                              | `chore:` or `build:` |
+| `Improve …`, `Polish …`, `Refactor …` | `refactor:`          |
+| Docs-only changes                     | `docs:`              |
+| Test-only changes                     | `test:`              |
+| CI/workflow-only changes              | `ci:`                |
 
 Examples:
 
