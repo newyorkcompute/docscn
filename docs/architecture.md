@@ -114,8 +114,11 @@ CLI login uses a device-code flow:
 | `private`  | no                | owner/API key only | yes          |
 
 Anonymous publishes are always `unlisted` and view-only at first. Browser and
-CLI publishes save local claim receipts, so signing in later can automatically
-attach recoverable anonymous artifacts to the user.
+CLI publishes save local claim receipts, so signing in within 90 days can
+automatically attach recoverable anonymous artifacts to the user. After the
+claim token expires, the artifact remains viewable at its unlisted URL but the
+receipt can no longer recover ownership; the cleanup job deletes only the
+expired claim row, not the artifact.
 
 ## Key files
 

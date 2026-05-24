@@ -5,18 +5,18 @@ The docscn MCP server exposes the publish → review → revise loop to MCP clie
 
 ## Tools
 
-| Tool | Purpose | Auth required |
-| --- | --- | --- |
-| `publish_artifact` | Publish self-contained HTML to a stable docscn URL | Optional (anonymous unlisted supported) |
-| `list_artifacts` | List artifacts visible to the caller | Optional |
-| `get_artifact` | Fetch artifact metadata, revisions, and review threads | Optional |
-| `get_feedback` | Fetch structured review threads plus a revision prompt | Optional |
-| `submit_revision` | Submit replacement HTML and optionally resolve threads | Yes |
-| `create_thread` | Create a review thread with optional canvas anchor metadata | Yes |
-| `add_comment` | Add a comment to an existing review thread | Yes |
-| `update_thread_status` | Change thread status (artifact owner only) | Yes |
-| `claim_artifacts` | Recover anonymous artifacts using saved local claim receipts | Yes |
-| `get_me` | Return the authenticated caller identity | Yes |
+| Tool                   | Purpose                                                      | Auth required                           |
+| ---------------------- | ------------------------------------------------------------ | --------------------------------------- |
+| `publish_artifact`     | Publish self-contained HTML to a stable docscn URL           | Optional (anonymous unlisted supported) |
+| `list_artifacts`       | List artifacts visible to the caller                         | Optional                                |
+| `get_artifact`         | Fetch artifact metadata, revisions, and review threads       | Optional                                |
+| `get_feedback`         | Fetch structured review threads plus a revision prompt       | Optional                                |
+| `submit_revision`      | Submit replacement HTML and optionally resolve threads       | Yes                                     |
+| `create_thread`        | Create a review thread with optional canvas anchor metadata  | Yes                                     |
+| `add_comment`          | Add a comment to an existing review thread                   | Yes                                     |
+| `update_thread_status` | Change thread status (artifact owner only)                   | Yes                                     |
+| `claim_artifacts`      | Recover anonymous artifacts using saved local claim receipts | Yes                                     |
+| `get_me`               | Return the authenticated caller identity                     | Yes                                     |
 
 These tools call the same REST API documented in `/skills.md` and
 `/openapi.json`.
@@ -27,9 +27,11 @@ These tools call the same REST API documented in `/skills.md` and
 2. Optional: a docscn API key for private/public ownership, comments, and revisions
 
 `publish_artifact` works without an API key for anonymous unlisted, view-only
-artifacts. Anonymous publishes save a local claim receipt in `~/.docscn/config.json`
-(the same file used by `docscn login`). When an API key is configured, the MCP
-server attempts to recover saved anonymous artifacts on startup.
+artifacts. Anonymous publishes save a local claim receipt in
+`~/.docscn/config.json` (the same file used by `docscn login`). When an API key
+is configured, the MCP server attempts to recover saved anonymous artifacts on
+startup. Claim receipts expire after 90 days; expired artifacts remain viewable
+at their unlisted URLs but cannot be claimed.
 
 Create an API key from **Settings** in the web UI, or run this before using
 collaboration features:

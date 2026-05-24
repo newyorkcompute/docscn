@@ -430,6 +430,17 @@ async function claimSavedAnonymousArtifacts(credentials: Credentials) {
       }.`,
     );
   }
+
+  const expiredCount =
+    result?.skipped.filter((artifact) => artifact.reason === 'expired-token')
+      .length ?? 0;
+  if (expiredCount) {
+    console.warn(
+      `${expiredCount} anonymous artifact recovery receipt${
+        expiredCount === 1 ? ' has' : 's have'
+      } expired. The unlisted link still works, but ownership can no longer be recovered.`,
+    );
+  }
 }
 
 export function getCliHelp() {
@@ -518,7 +529,7 @@ export async function publishArtifactFromCli(args: string[]) {
       });
     }
     console.warn(
-      'Published as an anonymous unlisted artifact and saved a local recovery receipt. Sign in with "docscn login" to recover ownership and unlock comments, revisions, private sharing, and future analytics.',
+      'Published as an anonymous unlisted artifact and saved a local recovery receipt. Sign in with "docscn login" within 90 days to recover ownership and unlock comments, revisions, private sharing, and future analytics.',
     );
   }
 

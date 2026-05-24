@@ -145,6 +145,10 @@ export const artifactClaims = pgTable('artifact_claims', {
     mode: 'string',
     withTimezone: true,
   }).notNull(),
+  expiresAt: timestamp('expires_at', {
+    mode: 'string',
+    withTimezone: true,
+  }).notNull(),
   claimedAt: timestamp('claimed_at', {
     mode: 'string',
     withTimezone: true,

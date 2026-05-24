@@ -236,7 +236,7 @@ components:
           type: string
         claimToken:
           type: string
-          description: Returned once for anonymous publishes so the artifact can be recovered after sign-in.
+          description: Returned once for anonymous publishes so the artifact can be recovered within 90 days after sign-in.
     AnonymousClaimReceipt:
       type: object
       required: [artifactId, slug, title, claimToken, createdAt]
@@ -276,7 +276,7 @@ components:
                 type: string
               reason:
                 type: string
-                enum: [already-owned, invalid-token, not-found]
+                enum: [already-owned, expired-token, invalid-token, not-found]
         status:
           $ref: '#/components/schemas/ReviewThreadStatus'
         title:
@@ -648,7 +648,7 @@ paths:
     post:
       tags: [Artifacts]
       summary: Recover anonymous artifacts for the authenticated caller
-      description: Claims unowned anonymous artifacts when the caller provides local claim receipts from browser or CLI storage.
+      description: Claims unowned anonymous artifacts when the caller provides local claim receipts from browser or CLI storage. Claim tokens expire 90 days after anonymous publish; expired artifacts remain viewable at their unlisted URL but cannot be recovered.
       security:
         - bearerAuth: []
       requestBody:

@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { and, eq, or } from 'drizzle-orm';
+import { and, eq, isNull, lte, or } from 'drizzle-orm';
 import type {
   Actor,
   AgentFeedbackBundle,
@@ -52,6 +52,9 @@ const apiKeyTokenPrefix = 'docscn_sk_';
 const cliLoginTtlMs = 10 * 60 * 1000;
 const cliLoginIntervalSeconds = 2;
 const claimTokenPrefix = 'docscn_claim_';
+export const anonymousArtifactClaimTtlDays = 90;
+const anonymousArtifactClaimTtlMs =
+  anonymousArtifactClaimTtlDays * 24 * 60 * 60 * 1000;
 
 interface ArtifactAccessOptions {
   includeUnlisted?: boolean;
@@ -164,8 +167,14 @@ function hashClaimToken(claimToken: string) {
   return createHash('sha256').update(claimToken).digest('hex');
 }
 
-function isExpired(expiresAt: string) {
-  return Date.parse(expiresAt) <= Date.now();
+function isExpired(expiresAt: string, nowMs = Date.now()) {
+  return Date.parse(expiresAt) <= nowMs;
+}
+
+function getAnonymousClaimExpiresAt(createdAt: string) {
+  return new Date(
+    Date.parse(createdAt) + anonymousArtifactClaimTtlMs,
+  ).toISOString();
 }
 
 function mapApiKeyRow(row: typeof apiKeys.$inferSelect): ApiKey {
@@ -661,6 +670,7 @@ export async function publishArtifact(input: CreateArtifactInput): Promise<{
         artifactId: artifact.id,
         claimTokenHash: hashClaimToken(claimToken),
         createdAt: artifact.metadata.createdAt,
+        expiresAt: getAnonymousClaimExpiresAt(artifact.metadata.createdAt),
         claimedAt: null,
       });
     }
@@ -715,6 +725,7 @@ export async function publishArtifact(input: CreateArtifactInput): Promise<{
       artifactId: artifact.id,
       claimTokenHash: hashClaimToken(claimToken),
       createdAt: artifact.metadata.createdAt,
+      expiresAt: getAnonymousClaimExpiresAt(artifact.metadata.createdAt),
       claimedAt: null,
     });
   }
@@ -738,7 +749,9 @@ export async function claimAnonymousArtifacts(
     claimed: [],
     skipped: [],
   };
-  const now = new Date().toISOString();
+  const nowDate = new Date();
+  const now = nowDate.toISOString();
+  const nowMs = nowDate.getTime();
 
   if (!isDatabaseConfigured()) {
     for (const receipt of input.receipts) {
@@ -772,6 +785,14 @@ export async function claimAnonymousArtifacts(
         result.skipped.push({
           artifactId: receipt.artifactId,
           reason: 'invalid-token',
+        });
+        continue;
+      }
+
+      if (isExpired(claim.expiresAt, nowMs)) {
+        result.skipped.push({
+          artifactId: receipt.artifactId,
+          reason: 'expired-token',
         });
         continue;
       }
@@ -828,6 +849,14 @@ export async function claimAnonymousArtifacts(
       continue;
     }
 
+    if (isExpired(claim.expiresAt, nowMs)) {
+      result.skipped.push({
+        artifactId: receipt.artifactId,
+        reason: 'expired-token',
+      });
+      continue;
+    }
+
     await db
       .update(artifacts)
       .set({ ownerUserId: input.userId })
@@ -844,6 +873,43 @@ export async function claimAnonymousArtifacts(
   }
 
   return result;
+}
+
+export async function cleanupExpiredAnonymousArtifactClaims(
+  now: Date = new Date(),
+): Promise<{ deletedClaims: number }> {
+  const nowIso = now.toISOString();
+
+  if (!isDatabaseConfigured()) {
+    let deletedClaims = 0;
+
+    for (let index = runtimeArtifactClaims.length - 1; index >= 0; index -= 1) {
+      const claim = runtimeArtifactClaims[index];
+
+      if (
+        claim &&
+        !claim.claimedAt &&
+        isExpired(claim.expiresAt, now.getTime())
+      ) {
+        runtimeArtifactClaims.splice(index, 1);
+        deletedClaims += 1;
+      }
+    }
+
+    return { deletedClaims };
+  }
+
+  const deletedRows = await getDb()
+    .delete(artifactClaims)
+    .where(
+      and(
+        isNull(artifactClaims.claimedAt),
+        lte(artifactClaims.expiresAt, nowIso),
+      ),
+    )
+    .returning({ artifactId: artifactClaims.artifactId });
+
+  return { deletedClaims: deletedRows.length };
 }
 
 export async function createReviewThread(
