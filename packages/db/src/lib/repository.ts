@@ -52,7 +52,7 @@ const apiKeyTokenPrefix = 'docscn_sk_';
 const cliLoginTtlMs = 10 * 60 * 1000;
 const cliLoginIntervalSeconds = 2;
 const claimTokenPrefix = 'docscn_claim_';
-export const anonymousArtifactClaimTtlDays = 90;
+const anonymousArtifactClaimTtlDays = 90;
 const anonymousArtifactClaimTtlMs =
   anonymousArtifactClaimTtlDays * 24 * 60 * 60 * 1000;
 
@@ -891,7 +891,7 @@ export async function claimAnonymousArtifacts(
   return result;
 }
 
-export async function cleanupExpiredAnonymousArtifactClaims(
+async function cleanupExpiredAnonymousArtifactClaims(
   now: Date = new Date(),
 ): Promise<{ deletedClaims: number }> {
   const nowIso = now.toISOString();

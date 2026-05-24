@@ -51,18 +51,26 @@ export function AnonymousClaimSync({
             (artifact) => artifact.reason === 'expired-token',
           ).length;
 
+          const messages: string[] = [];
+
           if (result.claimed.length) {
-            setMessage(
+            messages.push(
               `Recovered ${result.claimed.length} anonymous artifact${
                 result.claimed.length === 1 ? '' : 's'
               }.`,
             );
-          } else if (expiredCount) {
-            setMessage(
+          }
+
+          if (expiredCount) {
+            messages.push(
               `${expiredCount} anonymous artifact recovery receipt${
                 expiredCount === 1 ? ' has' : 's have'
               } expired. The unlisted link still works, but ownership can no longer be recovered.`,
             );
+          }
+
+          if (messages.length) {
+            setMessage(messages.join(' '));
           }
         }
       } catch {
