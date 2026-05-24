@@ -1,5 +1,5 @@
 import { findArtifact, listReviewThreads } from '@docscn/db';
-import { findGalleryArtifact } from '../../../lib/gallery-artifacts';
+import { findGalleryArtifact } from '../../../lib/gallery-artifacts.server';
 import { getServerSession } from '../../../lib/session';
 import { ArtifactWorkspace } from '../../../components/artifact-workspace';
 
