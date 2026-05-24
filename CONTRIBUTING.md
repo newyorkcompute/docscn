@@ -169,8 +169,9 @@ Open a PR against `main` and fill out
 - **Screenshots / recordings** — required for UI changes when possible
 - **Notes** — migrations, env vars, breaking changes, deferrals, follow-ups
 
-CI runs lint, typecheck, formatting, OpenAPI sync, CLI and MCP unit tests, and
-a backend integration job on pull requests.
+CI runs three jobs on pull requests: static checks (lint, typecheck, formatting,
+OpenAPI sync) and unit tests (CLI, MCP) in parallel, then a backend integration
+job with Postgres and MinIO.
 
 ## Reporting security issues
 
