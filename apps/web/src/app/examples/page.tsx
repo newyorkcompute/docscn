@@ -18,7 +18,7 @@ export default async function ExamplesPage() {
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
               <Eyebrow>starter gallery</Eyebrow>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
+              <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight md:text-5xl">
                 Example artifacts for publish and review demos.
               </h1>
               <p className="mt-4 max-w-2xl text-muted-foreground">

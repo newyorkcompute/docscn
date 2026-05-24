@@ -1,15 +1,25 @@
 import './global.css';
 import Script from 'next/script';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
 
-const geistSans = Geist({
+const display = Fraunces({
   subsets: ['latin'],
-  variable: '--font-geist-sans',
+  variable: '--font-family-display',
+  display: 'swap',
 });
 
-const geistMono = Geist_Mono({
+const sans = IBM_Plex_Sans({
   subsets: ['latin'],
-  variable: '--font-geist-mono',
+  weight: ['400', '500', '600'],
+  variable: '--font-family-sans',
+  display: 'swap',
+});
+
+const mono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-family-mono',
+  display: 'swap',
 });
 
 export const metadata = {
@@ -41,7 +51,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${display.variable} ${sans.variable} ${mono.variable}`}
       suppressHydrationWarning
     >
       <body className="font-sans antialiased">

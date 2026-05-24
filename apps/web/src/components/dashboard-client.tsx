@@ -14,6 +14,7 @@ import type { Artifact } from '@docscn/sdk';
 import type { ExampleArtifactDefinition } from '../lib/example-artifacts';
 import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
 import { ExampleGallery } from './example-gallery';
+import { CommandSnippet, TerminalCommand } from './terminal-command';
 
 export function DashboardClient({
   artifacts,
@@ -38,7 +39,7 @@ export function DashboardClient({
       <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
         <div>
           <Eyebrow>artifact workspace</Eyebrow>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
+          <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight md:text-5xl">
             Host, share, and collaborate on AI-generated HTML.
           </h1>
           <p className="mt-4 max-w-2xl text-muted-foreground">
@@ -66,9 +67,9 @@ export function DashboardClient({
 
       {isEmpty ? (
         <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card className="p-6">
+          <Card className="feature-card p-6">
             <Badge tone="outline">first run</Badge>
-            <h2 className="mt-4 text-2xl font-semibold">
+            <h2 className="mt-4 font-display text-2xl font-semibold tracking-tight">
               Publish your first artifact
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
@@ -101,9 +102,7 @@ export function DashboardClient({
                     <span className="font-medium">{title as string}</span>
                   </div>
                   <p className="pl-10 text-muted-foreground">{body as string}</p>
-                  <div className="ml-10 rounded-lg border border-border bg-secondary/40 p-3 font-mono text-xs text-foreground">
-                    {command as string}
-                  </div>
+                  <CommandSnippet className="ml-10" command={command as string} />
                 </li>
               ))}
             </ol>
@@ -117,9 +116,11 @@ export function DashboardClient({
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="feature-card p-6">
             <Terminal className="h-5 w-5 text-primary" />
-            <h2 className="mt-4 font-semibold">What happens next</h2>
+            <h2 className="mt-4 font-display text-lg font-semibold tracking-tight">
+              What happens next
+            </h2>
             <div className="mt-5 grid gap-3 text-sm text-muted-foreground">
               <div className="flex items-start gap-3">
                 <Download className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -138,26 +139,31 @@ export function DashboardClient({
         </section>
       ) : (
         <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card className="p-6">
+          <Card className="feature-card p-6">
             <div className="flex items-center gap-2">
               <Terminal className="h-5 w-5 text-primary" />
-              <h2 className="font-semibold">CLI quickstart</h2>
+              <h2 className="font-display text-lg font-semibold tracking-tight">
+                CLI quickstart
+              </h2>
             </div>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
               Use the same curl installer locally that hosted users will use on
               docscn.ai. It downloads the latest standalone CLI binary from GitHub
               Releases.
             </p>
-            <div className="mt-5 space-y-2 rounded-lg border border-border bg-secondary/40 p-4 font-mono text-xs text-foreground">
-              <p>{installCommand}</p>
-              <p>{loginCommand}</p>
-              <p>{publishCommand}</p>
-            </div>
+            <TerminalCommand
+              className="mt-5"
+              command={[installCommand, loginCommand, publishCommand].join('\n')}
+              copyLabel="Copy all"
+              label="commands"
+            />
           </Card>
 
-          <Card className="p-6">
+          <Card className="feature-card p-6">
             <Sparkles className="h-5 w-5 text-primary" />
-            <p className="mt-4 text-3xl font-semibold">{artifacts.length}</p>
+            <p className="mt-4 font-display text-4xl font-semibold tracking-tight">
+              {artifacts.length}
+            </p>
             <p className="text-sm text-muted-foreground">visible artifacts</p>
             <div className="mt-5 grid gap-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
@@ -195,9 +201,13 @@ export function DashboardClient({
             'Agents read structured review threads and submit a new revision.',
           ],
         ].map(([title, Icon, body]) => (
-          <Card className="p-5" key={title as string}>
-            <Icon className="h-5 w-5 text-primary" />
-            <h2 className="mt-4 font-semibold">{title as string}</h2>
+          <Card className="feature-card p-5" key={title as string}>
+            <span className="inline-flex rounded-lg border border-primary/20 bg-primary/10 p-2">
+              <Icon className="h-5 w-5 text-primary" />
+            </span>
+            <h2 className="mt-4 font-display text-lg font-semibold tracking-tight">
+              {title as string}
+            </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {body as string}
             </p>
@@ -220,11 +230,11 @@ export function DashboardClient({
         <section className="grid gap-4 lg:grid-cols-2">
           {artifacts.map((artifact) => (
             <Link key={artifact.id} href={`/artifacts/${artifact.slug}`}>
-              <Card className="group h-full p-6 transition hover:border-primary/50 hover:bg-card">
+              <Card className="feature-card group h-full p-6 transition hover:border-primary/40">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <Badge tone="muted">{artifact.metadata.kind}</Badge>
-                    <h2 className="mt-4 text-2xl font-semibold tracking-tight">
+                    <h2 className="mt-4 font-display text-2xl font-semibold tracking-tight">
                       {artifact.metadata.title}
                     </h2>
                   </div>

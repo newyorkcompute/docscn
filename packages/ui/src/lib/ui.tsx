@@ -9,11 +9,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,background-color,box-shadow,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        default:
+          'bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:bg-primary/90 hover:shadow-md hover:shadow-primary/25',
         secondary:
           'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
@@ -62,7 +63,7 @@ export function Card({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-card text-card-foreground shadow-sm shadow-black/[0.03]',
+        'rounded-xl border border-border bg-card text-card-foreground shadow-sm shadow-black/[0.04] backdrop-blur-sm',
         className,
       )}
       {...props}
@@ -103,7 +104,7 @@ export function Eyebrow({
   return (
     <p
       className={cn(
-        'font-mono text-xs uppercase tracking-[0.28em] text-primary',
+        'font-mono text-[0.68rem] uppercase tracking-[0.32em] text-primary',
         className,
       )}
       {...props}
