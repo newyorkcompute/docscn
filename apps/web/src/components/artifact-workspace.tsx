@@ -640,6 +640,10 @@ export function ArtifactWorkspace({
         return;
       }
 
+      if (isShareOpen) {
+        return;
+      }
+
       if (activeThreadMenuId) {
         event.preventDefault();
         setActiveThreadMenuId(undefined);
@@ -684,6 +688,7 @@ export function ArtifactWorkspace({
     activeThreadPopoverId,
     annotationMode,
     isReviewOpen,
+    isShareOpen,
     pendingAnchor,
   ]);
 
