@@ -27,6 +27,7 @@ export interface ExampleArtifactDefinition {
   kind: ArtifactKind;
   filename: string;
   category: ExampleArtifactCategoryId;
+  thumbnail?: string;
   source?: {
     label: string;
     href: string;

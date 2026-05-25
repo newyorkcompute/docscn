@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80"><style>.st{stroke:#87867F;fill:none;stroke-width:2.5}.fl{fill:#D1CFC5}.cl{fill:#D97757}.ol{fill:#788C5D}.oa{fill:#E3DACC;stroke:#87867F;stroke-width:2.5}.sl{fill:#141413}.wh{fill:#FFF;stroke:#87867F;stroke-width:2.5}.ln{stroke:#87867F;stroke-width:2.5;fill:none;stroke-linecap:round}.lc{stroke:#D97757;stroke-width:2.5;fill:none;stroke-linecap:round}.da{stroke-dasharray:4 4}</style>
+          <rect class="oa" x="8" y="18" width="70" height="44" rx="5"></rect>
+          <rect class="wh" x="22" y="12" width="76" height="50" rx="5"></rect>
+          <rect class="cl" x="32" y="24" width="36" height="7" rx="3"></rect>
+          <rect class="fl" x="32" y="36" width="52" height="4" rx="2"></rect><rect class="fl" x="32" y="44" width="44" height="4" rx="2"></rect>
+          <circle class="fl" cx="50" cy="70" r="3"></circle><circle class="cl" cx="60" cy="70" r="3"></circle><circle class="fl" cx="70" cy="70" r="3"></circle>
+        </svg>

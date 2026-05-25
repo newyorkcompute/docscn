@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80"><style>.st{stroke:#87867F;fill:none;stroke-width:2.5}.fl{fill:#D1CFC5}.cl{fill:#D97757}.ol{fill:#788C5D}.oa{fill:#E3DACC;stroke:#87867F;stroke-width:2.5}.sl{fill:#141413}.wh{fill:#FFF;stroke:#87867F;stroke-width:2.5}.ln{stroke:#87867F;stroke-width:2.5;fill:none;stroke-linecap:round}.lc{stroke:#D97757;stroke-width:2.5;fill:none;stroke-linecap:round}.da{stroke-dasharray:4 4}</style>
+          <rect class="oa" x="6" y="8" width="48" height="28" rx="4"></rect>
+          <rect class="wh" x="6" y="44" width="48" height="28" rx="4"></rect>
+          <line class="ln" x1="14" y1="20" x2="46" y2="20"></line><line class="ln" x1="14" y1="28" x2="38" y2="28"></line>
+          <line class="lc" x1="14" y1="56" x2="46" y2="56"></line><line class="ln" x1="14" y1="64" x2="38" y2="64"></line>
+          <rect class="wh" x="64" y="8" width="50" height="64" rx="5"></rect>
+          <circle class="cl" cx="74" cy="22" r="5"></circle><rect class="fl" x="84" y="19" width="24" height="5" rx="2"></rect>
+          <circle class="ol" cx="74" cy="42" r="5"></circle><rect class="fl" x="84" y="39" width="22" height="5" rx="2"></rect>
+          <circle class="fl" cx="74" cy="62" r="5"></circle><rect class="fl" x="84" y="59" width="26" height="5" rx="2"></rect>
+        </svg>

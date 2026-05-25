@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80"><style>.st{stroke:#87867F;fill:none;stroke-width:2.5}.fl{fill:#D1CFC5}.cl{fill:#D97757}.ol{fill:#788C5D}.oa{fill:#E3DACC;stroke:#87867F;stroke-width:2.5}.sl{fill:#141413}.wh{fill:#FFF;stroke:#87867F;stroke-width:2.5}.ln{stroke:#87867F;stroke-width:2.5;fill:none;stroke-linecap:round}.lc{stroke:#D97757;stroke-width:2.5;fill:none;stroke-linecap:round}.da{stroke-dasharray:4 4}</style>
+          <rect class="wh" x="6" y="10" width="24" height="60" rx="4"></rect>
+          <rect class="wh" x="34" y="10" width="24" height="60" rx="4"></rect>
+          <rect class="wh" x="62" y="10" width="24" height="60" rx="4"></rect>
+          <rect class="wh" x="90" y="10" width="24" height="60" rx="4"></rect>
+          <rect class="cl" x="10" y="18" width="16" height="9" rx="2"></rect>
+          <rect class="fl" x="10" y="31" width="16" height="9" rx="2"></rect>
+          <rect class="fl" x="10" y="44" width="16" height="9" rx="2"></rect>
+          <rect class="fl" x="38" y="18" width="16" height="9" rx="2"></rect>
+          <rect class="ol" x="38" y="31" width="16" height="9" rx="2"></rect>
+          <rect class="fl" x="66" y="18" width="16" height="9" rx="2"></rect>
+          <rect class="oa" x="48" y="50" width="20" height="11" rx="2"></rect>
+        </svg>

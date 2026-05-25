@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80"><style>.st{stroke:#87867F;fill:none;stroke-width:2.5}.fl{fill:#D1CFC5}.cl{fill:#D97757}.ol{fill:#788C5D}.oa{fill:#E3DACC;stroke:#87867F;stroke-width:2.5}.sl{fill:#141413}.wh{fill:#FFF;stroke:#87867F;stroke-width:2.5}.ln{stroke:#87867F;stroke-width:2.5;fill:none;stroke-linecap:round}.lc{stroke:#D97757;stroke-width:2.5;fill:none;stroke-linecap:round}.da{stroke-dasharray:4 4}</style>
+          <rect class="wh" x="10" y="10" width="30" height="16" rx="4"></rect>
+          <path class="oa" d="M60 34 L80 46 L60 58 L40 46 Z"></path>
+          <rect class="wh" x="82" y="10" width="30" height="16" rx="4"></rect>
+          <rect class="cl" x="82" y="56" width="30" height="16" rx="4"></rect>
+          <line class="ln" x1="25" y1="26" x2="25" y2="46"></line><line class="ln" x1="25" y1="46" x2="40" y2="46"></line>
+          <line class="lc" x1="80" y1="46" x2="97" y2="46"></line><line class="lc" x1="97" y1="46" x2="97" y2="56"></line>
+          <line class="ln" x1="60" y1="34" x2="60" y2="22"></line><line class="ln" x1="60" y1="22" x2="82" y2="22"></line>
+        </svg>
