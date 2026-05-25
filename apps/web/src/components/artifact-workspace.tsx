@@ -347,6 +347,12 @@ export function ArtifactWorkspace({
   );
 
   function selectThreadInDrawer(threadId: string) {
+    const thread = threads.find((t) => t.id === threadId);
+    if (thread) {
+      setReviewThreadFilter(
+        thread.status === 'resolved' ? 'resolved' : 'remaining',
+      );
+    }
     setActiveDrawerView('review');
     setActiveThreadId(threadId);
     setActiveThreadMenuId(undefined);
