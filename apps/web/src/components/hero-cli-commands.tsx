@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { TerminalCommandShell } from './terminal-command-shell';
+import { TerminalCommand } from './terminal-command';
 
 function usePageOrigin() {
   const [origin, setOrigin] = useState<string | null>(null);
@@ -20,7 +20,7 @@ export function HeroInstallTerminal({ className }: { className?: string }) {
     : 'curl <host>/install -fsS | bash';
 
   return (
-    <TerminalCommandShell
+    <TerminalCommand
       className={className}
       command={installCommand}
       label="Get started in 30 seconds"
