@@ -21,16 +21,20 @@ function createSql(databaseUrl: string) {
   });
 }
 
+export function getDatabaseUrl() {
+  return process.env['DATABASE_URL'] ?? process.env['POSTGRES_URL'];
+}
+
 export function isDatabaseConfigured() {
-  return Boolean(process.env['DATABASE_URL']);
+  return Boolean(getDatabaseUrl());
 }
 
 export function getDb() {
   if (!globalForDb.docscnDb) {
-    const databaseUrl = process.env['DATABASE_URL'];
+    const databaseUrl = getDatabaseUrl();
 
     if (!databaseUrl) {
-      throw new Error('DATABASE_URL is not set.');
+      throw new Error('DATABASE_URL or POSTGRES_URL is not set.');
     }
 
     const sql = createSql(databaseUrl);
