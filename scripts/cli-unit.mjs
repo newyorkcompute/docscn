@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -16,9 +17,13 @@ const {
   saveAnonymousClaimReceipt,
   saveDefaultProfile,
 } = await import('../dist/packages/cli/src/lib/config.js');
-const { getCliHelp, publishArtifactFromCli, runDocscnCli } = await import(
-  '../dist/packages/cli/src/lib/cli.js'
-);
+const {
+  getCliHelp,
+  getTemplateFromCli,
+  listTemplatesFromCli,
+  publishArtifactFromCli,
+  runDocscnCli,
+} = await import('../dist/packages/cli/src/lib/cli.js');
 
 function captureLogs(callback) {
   const originalLog = console.log;
@@ -94,6 +99,71 @@ assert.match(help, /docscn login/);
 assert.match(help, /docscn artifact get/);
 assert.match(help, /docscn artifact feedback/);
 assert.match(help, /docscn revise/);
+assert.match(help, /docscn template list/);
+assert.match(help, /docscn template get/);
+
+const templateServer = createServer((request, response) => {
+  if (request.url === '/examples/artifacts/templates.json') {
+    response.setHeader('content-type', 'application/json');
+    response.end(
+      JSON.stringify({
+        schemaVersion: 1,
+        repository: 'https://github.com/newyorkcompute/docscn',
+        templatesRoot: 'examples/artifacts',
+        categories: [
+          {
+            id: 'docscn-starters',
+            title: 'docscn starters',
+            description: 'Starter templates',
+          },
+        ],
+        templates: [
+          {
+            id: 'minimal',
+            title: 'Minimal publish test',
+            description: 'Smallest useful artifact.',
+            kind: 'custom-html',
+            filename: 'minimal.html',
+            category: 'docscn-starters',
+          },
+        ],
+      }),
+    );
+    return;
+  }
+
+  if (request.url === '/examples/artifacts/minimal.html') {
+    response.setHeader('content-type', 'text/html');
+    response.end('<html><body>minimal template</body></html>');
+    return;
+  }
+
+  response.statusCode = 404;
+  response.end('not found');
+});
+await new Promise((resolve) => templateServer.listen(0, '127.0.0.1', resolve));
+
+const previousTemplateRawBase = process.env.DOCSCN_TEMPLATE_RAW_BASE;
+const templateServerAddress = templateServer.address();
+process.env.DOCSCN_TEMPLATE_RAW_BASE = `http://127.0.0.1:${templateServerAddress.port}`;
+
+try {
+  const templateLogs = await captureLogs(() => listTemplatesFromCli([]));
+  assert.ok(templateLogs.join('\n').includes('minimal'));
+
+  const templatePath = join(configDir, 'minimal-template.html');
+  await captureLogs(() =>
+    getTemplateFromCli(['minimal', '--output', templatePath]),
+  );
+  assert.match(await readFile(templatePath, 'utf8'), /minimal template/);
+} finally {
+  if (previousTemplateRawBase) {
+    process.env.DOCSCN_TEMPLATE_RAW_BASE = previousTemplateRawBase;
+  } else {
+    delete process.env.DOCSCN_TEMPLATE_RAW_BASE;
+  }
+  await new Promise((resolve) => templateServer.close(resolve));
+}
 
 await assertRejectsWith(
   () => publishArtifactFromCli(['--host', 'http://example.test']),

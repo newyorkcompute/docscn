@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Arrow-key slide deck</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7efe8;
+        --ink: #181928;
+        --muted: #746d78;
+        --card: #fffaf6;
+        --line: #decfc2;
+        --accent: #b94719;
+      }
+
+      html.dark,
+      html[data-docscn-theme='dark'] {
+        color-scheme: dark;
+        --bg: #121520;
+        --ink: #f8efe8;
+        --muted: #b9b0b7;
+        --card: #1d202b;
+        --line: #34313d;
+        --accent: #ef8e55;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        overflow: hidden;
+        background:
+          radial-gradient(
+            circle at 80% 20%,
+            color-mix(in oklab, var(--accent) 14%, transparent),
+            transparent 24rem
+          ),
+          var(--bg);
+        color: var(--ink);
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+      }
+
+      .deck {
+        display: grid;
+        min-height: 100vh;
+        place-items: center;
+        padding: 28px;
+      }
+
+      section {
+        display: none;
+        width: min(1040px, 100%);
+        min-height: min(620px, calc(100vh - 96px));
+        border: 1px solid var(--line);
+        border-radius: 34px;
+        background:
+          linear-gradient(
+            118deg,
+            transparent 48%,
+            color-mix(in oklab, var(--accent) 8%, transparent) 48% 60%,
+            transparent 60%
+          ),
+          color-mix(in oklab, var(--card) 92%, transparent);
+        box-shadow: 0 26px 80px color-mix(in oklab, var(--ink) 10%, transparent);
+        padding: clamp(28px, 6vw, 64px);
+      }
+
+      section.active {
+        display: grid;
+        align-content: center;
+        animation: reveal 260ms ease-out both;
+      }
+
+      @keyframes reveal {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+      }
+
+      .kicker {
+        color: var(--accent);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2 {
+        max-width: 780px;
+        margin: 14px 0 16px;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: clamp(46px, 8vw, 98px);
+        line-height: 0.9;
+        letter-spacing: -0.07em;
+      }
+
+      h2 {
+        font-size: clamp(40px, 7vw, 82px);
+      }
+
+      p,
+      li {
+        max-width: 760px;
+        color: var(--muted);
+        font-size: clamp(18px, 2.2vw, 24px);
+        line-height: 1.5;
+      }
+
+      ul {
+        display: grid;
+        gap: 16px;
+        margin: 18px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      li::before {
+        content: '0' counter(item);
+        counter-increment: item;
+        margin-right: 14px;
+        color: var(--accent);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 14px;
+      }
+
+      ul {
+        counter-reset: item;
+      }
+
+      .nav {
+        position: fixed;
+        right: 28px;
+        bottom: 24px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      button {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--card);
+        color: var(--ink);
+        cursor: pointer;
+        padding: 10px 14px;
+      }
+    </style>
+    <style data-docscn-template-theme>
+      :root {
+        --docscn-template-bg: #f8efe7;
+        --docscn-template-surface: #fffaf6;
+        --docscn-template-surface-strong: #ffffff;
+        --docscn-template-ink: #181927;
+        --docscn-template-muted: #706977;
+        --docscn-template-border: #decfc2;
+        --docscn-template-grid: rgba(185, 71, 25, 0.08);
+        --docscn-template-accent: #b94719;
+        --docscn-template-accent-soft: rgba(185, 71, 25, 0.12);
+        --docscn-template-accent-strong: #8f3415;
+        --docscn-template-accent-fg: #fff7ef;
+        --docscn-template-shadow: 0 24px 70px rgba(84, 45, 24, 0.12);
+        --docscn-template-radius: 28px;
+        --docscn-template-radius-sm: 14px;
+
+        --bg: var(--docscn-template-bg);
+        --fg: var(--docscn-template-ink);
+        --ink: var(--docscn-template-ink);
+        --slate: var(--docscn-template-ink);
+        --ivory: var(--docscn-template-bg);
+        --paper: var(--docscn-template-surface);
+        --white: var(--docscn-template-surface-strong);
+        --card: var(--docscn-template-surface);
+        --card-bg: linear-gradient(
+          135deg,
+          var(--docscn-template-surface-strong),
+          var(--docscn-template-surface)
+        );
+        --card-border: var(--docscn-template-border);
+        --event-border: var(--docscn-template-border);
+        --line: var(--docscn-template-border);
+        --border: var(--docscn-template-border);
+        --oat: var(--docscn-template-border);
+        --muted: var(--docscn-template-muted);
+        --gray-150: #f3e9df;
+        --gray-200: #eadccd;
+        --gray-300: var(--docscn-template-border);
+        --gray-500: var(--docscn-template-muted);
+        --gray-700: #4f4750;
+        --g100: #f3e9df;
+        --g200: #eadccd;
+        --g300: var(--docscn-template-border);
+        --g500: var(--docscn-template-muted);
+        --g700: #4f4750;
+        --accent: var(--docscn-template-accent);
+        --accent-fg: var(--docscn-template-accent-fg);
+        --clay: var(--docscn-template-accent);
+        --clay-d: var(--docscn-template-accent-strong);
+        --rust: var(--docscn-template-accent-strong);
+        --olive: #8a6f3d;
+        --good: #1f7a62;
+        --warn: #bd7a1f;
+        --sev-border: #d95f37;
+        --sev-fg: var(--docscn-template-accent-strong);
+        --pre-bg: #f4e9df;
+        --code: #f4e9df;
+        --code-bg: #f4e9df;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not(.light):not(.dark) {
+          --docscn-template-bg: #151722;
+          --docscn-template-surface: #1d202d;
+          --docscn-template-surface-strong: #232636;
+          --docscn-template-ink: #f7efe8;
+          --docscn-template-muted: #b9afb7;
+          --docscn-template-border: #38313a;
+          --docscn-template-grid: rgba(240, 142, 85, 0.1);
+          --docscn-template-accent: #f08e55;
+          --docscn-template-accent-soft: rgba(240, 142, 85, 0.16);
+          --docscn-template-accent-strong: #ffb083;
+          --docscn-template-accent-fg: #20140f;
+          --docscn-template-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+          --gray-150: #202330;
+          --gray-200: #282a38;
+          --gray-700: #d9d0d3;
+          --g100: #202330;
+          --g200: #282a38;
+          --g700: #d9d0d3;
+          --pre-bg: #171a24;
+          --code: #171a24;
+          --code-bg: #171a24;
+        }
+      }
+
+      html.dark,
+      html[data-docscn-theme='dark'] {
+        --docscn-template-bg: #151722;
+        --docscn-template-surface: #1d202d;
+        --docscn-template-surface-strong: #232636;
+        --docscn-template-ink: #f7efe8;
+        --docscn-template-muted: #b9afb7;
+        --docscn-template-border: #38313a;
+        --docscn-template-grid: rgba(240, 142, 85, 0.1);
+        --docscn-template-accent: #f08e55;
+        --docscn-template-accent-soft: rgba(240, 142, 85, 0.16);
+        --docscn-template-accent-strong: #ffb083;
+        --docscn-template-accent-fg: #20140f;
+        --docscn-template-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+        --gray-150: #202330;
+        --gray-200: #282a38;
+        --gray-700: #d9d0d3;
+        --g100: #202330;
+        --g200: #282a38;
+        --g700: #d9d0d3;
+        --pre-bg: #171a24;
+        --code: #171a24;
+        --code-bg: #171a24;
+      }
+
+      html.light,
+      html[data-docscn-theme='light'] {
+        --docscn-template-bg: #f8efe7;
+        --docscn-template-surface: #fffaf6;
+        --docscn-template-surface-strong: #ffffff;
+        --docscn-template-ink: #181927;
+        --docscn-template-muted: #706977;
+        --docscn-template-border: #decfc2;
+        --docscn-template-grid: rgba(185, 71, 25, 0.08);
+        --docscn-template-accent: #b94719;
+        --docscn-template-accent-soft: rgba(185, 71, 25, 0.12);
+        --docscn-template-accent-strong: #8f3415;
+        --docscn-template-accent-fg: #fff7ef;
+        --docscn-template-shadow: 0 24px 70px rgba(84, 45, 24, 0.12);
+        --gray-150: #f3e9df;
+        --gray-200: #eadccd;
+        --gray-700: #4f4750;
+        --g100: #f3e9df;
+        --g200: #eadccd;
+        --g700: #4f4750;
+        --pre-bg: #f4e9df;
+        --code: #f4e9df;
+        --code-bg: #f4e9df;
+      }
+
+      html {
+        background: var(--docscn-template-bg) !important;
+        color: var(--docscn-template-ink) !important;
+      }
+
+      body {
+        background:
+          radial-gradient(
+            circle at 86% 12%,
+            var(--docscn-template-accent-soft),
+            transparent 28rem
+          ),
+          linear-gradient(var(--docscn-template-grid) 1px, transparent 1px),
+          linear-gradient(
+            90deg,
+            var(--docscn-template-grid) 1px,
+            transparent 1px
+          ),
+          var(--docscn-template-bg) !important;
+        background-size:
+          auto,
+          36px 36px,
+          36px 36px,
+          auto !important;
+        color: var(--docscn-template-ink) !important;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      .title,
+      .headline {
+        color: var(--docscn-template-ink) !important;
+      }
+
+      .eyebrow,
+      .kicker,
+      .label,
+      .tag,
+      .pill,
+      .badge,
+      .chip,
+      .meta,
+      .number,
+      .index {
+        border-color: color-mix(
+          in oklab,
+          var(--docscn-template-accent) 30%,
+          var(--docscn-template-border)
+        ) !important;
+        color: var(--docscn-template-accent) !important;
+      }
+
+      a {
+        color: var(--docscn-template-accent) !important;
+      }
+
+      article,
+      section,
+      .card,
+      .panel,
+      .tile,
+      .lane,
+      .column,
+      .module,
+      .node,
+      .box,
+      .callout,
+      .prompt-box,
+      .summary,
+      .preview,
+      .surface,
+      .token,
+      .variant,
+      .report,
+      .slide,
+      .board,
+      .toolbar,
+      .component,
+      .swatch,
+      .flow-node,
+      .step {
+        border-color: var(--docscn-template-border) !important;
+        box-shadow: var(--docscn-template-shadow);
+      }
+
+      .card,
+      .panel,
+      .tile,
+      .node,
+      .box,
+      .callout,
+      .prompt-box,
+      .summary,
+      .preview,
+      .surface,
+      .lane,
+      .slide {
+        background: color-mix(
+          in oklab,
+          var(--docscn-template-surface) 92%,
+          transparent
+        ) !important;
+      }
+
+      pre,
+      .code-block,
+      .terminal,
+      .snippet {
+        border-color: color-mix(
+          in oklab,
+          var(--docscn-template-accent) 18%,
+          #101119
+        ) !important;
+        background: #151620 !important;
+        color: #fff7ef !important;
+      }
+
+      pre code,
+      .code-block code,
+      .terminal code,
+      .snippet code {
+        background: transparent !important;
+        color: inherit !important;
+      }
+
+      code:not(pre code),
+      textarea,
+      input,
+      select {
+        border-color: var(--docscn-template-border) !important;
+        background: var(--pre-bg) !important;
+        color: var(--docscn-template-ink) !important;
+      }
+
+      button,
+      .button,
+      [role='button'] {
+        border-color: color-mix(
+          in oklab,
+          var(--docscn-template-accent) 42%,
+          var(--docscn-template-border)
+        ) !important;
+        border-radius: var(--docscn-template-radius-sm);
+      }
+
+      button:not(.ghost),
+      .button:not(.ghost) {
+        background: var(--docscn-template-accent) !important;
+        color: var(--docscn-template-accent-fg) !important;
+      }
+
+      ::selection {
+        background: color-mix(
+          in oklab,
+          var(--docscn-template-accent) 28%,
+          transparent
+        );
+      }
+    </style>
+  </head>
+  <body>
+    <main class="deck">
+      <section class="active">
+        <div class="kicker">meeting artifact · deck</div>
+        <h1>A slide deck can be one HTML file.</h1>
+        <p>
+          Arrow through a generated artifact in a meeting, then hand the same
+          file back to the agent for edits.
+        </p>
+      </section>
+
+      <section>
+        <div class="kicker">why it works</div>
+        <h2>It keeps context alive.</h2>
+        <ul>
+          <li>The deck has layout, hierarchy, and pacing.</li>
+          <li>The source is still plain text an agent can modify.</li>
+          <li>No export step, no design tool round trip.</li>
+        </ul>
+      </section>
+
+      <section>
+        <div class="kicker">docscn workflow</div>
+        <h2>Publish, review, revise.</h2>
+        <p>
+          Share the artifact URL, collect visual comments, then ask the next
+          agent run to revise this exact deck.
+        </p>
+      </section>
+    </main>
+
+    <div class="nav">
+      <button id="prev" type="button">←</button>
+      <span><span id="index">1</span> / <span id="total">3</span></span>
+      <button id="next" type="button">→</button>
+    </div>
+
+    <script>
+      const slides = [...document.querySelectorAll('section')];
+      const index = document.querySelector('#index');
+      const total = document.querySelector('#total');
+      let current = 0;
+      total.textContent = slides.length;
+
+      function show(next) {
+        slides[current].classList.remove('active');
+        current = (next + slides.length) % slides.length;
+        slides[current].classList.add('active');
+        index.textContent = current + 1;
+      }
+
+      document
+        .querySelector('#prev')
+        .addEventListener('click', () => show(current - 1));
+      document
+        .querySelector('#next')
+        .addEventListener('click', () => show(current + 1));
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft') show(current - 1);
+        if (event.key === 'ArrowRight') show(current + 1);
+      });
+    </script>
+  </body>
+</html>

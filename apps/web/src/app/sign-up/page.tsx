@@ -11,7 +11,7 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
   return (
     <>
       <SiteHeader />
-      <main>
+      <main className="app-page">
         <AuthForm callbackURL={callbackURL} mode="sign-up" />
       </main>
     </>

@@ -39,6 +39,7 @@
 :root {
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --app-field: color-mix(in oklch, var(--background) 90%, var(--card));
 }
 
 :root,
@@ -265,6 +266,137 @@ iframe {
 
 .dark .terminal-block {
   box-shadow: inset 0 1px 0 color-mix(in oklch, white 6%, transparent);
+}
+
+.app-page {
+  position: relative;
+  min-height: calc(100svh - 4.5rem);
+  overflow: clip;
+  background: var(--app-field);
+}
+
+.app-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      118deg,
+      transparent 46%,
+      color-mix(in oklch, var(--primary) 5%, transparent) 46%,
+      color-mix(in oklch, var(--primary) 3%, transparent) 58%,
+      transparent 58%
+    ),
+    linear-gradient(
+      color-mix(in oklch, var(--border) 28%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in oklch, var(--border) 28%, transparent) 1px,
+      transparent 1px
+    );
+  background-size:
+    auto,
+    32px 32px,
+    32px 32px;
+  mask-image: radial-gradient(ellipse 85% 72% at 38% 18%, black, transparent);
+  opacity: 0.7;
+}
+
+.app-page > * {
+  position: relative;
+  z-index: 1;
+}
+
+.app-header {
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
+  background: color-mix(in oklch, var(--app-field) 96%, transparent);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 1px 0 color-mix(in oklch, var(--foreground) 5%, transparent);
+}
+
+.app-surface {
+  border: 1px solid color-mix(in oklch, var(--border) 86%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklch, var(--card) 88%, transparent),
+    color-mix(in oklch, var(--background) 74%, transparent)
+  );
+  box-shadow:
+    0 1px 0 color-mix(in oklch, white 35%, transparent) inset,
+    0 16px 42px color-mix(in oklch, var(--foreground) 5%, transparent);
+}
+
+.dark .app-surface {
+  box-shadow:
+    0 1px 0 color-mix(in oklch, white 7%, transparent) inset,
+    0 16px 42px color-mix(in oklch, black 24%, transparent);
+}
+
+.app-popover {
+  border: 1px solid color-mix(in oklch, var(--border) 86%, transparent);
+  background: color-mix(in oklch, var(--popover) 96%, var(--background));
+  box-shadow:
+    0 1px 0 color-mix(in oklch, white 35%, transparent) inset,
+    0 18px 48px color-mix(in oklch, var(--foreground) 9%, transparent);
+}
+
+.dark .app-popover {
+  box-shadow:
+    0 1px 0 color-mix(in oklch, white 7%, transparent) inset,
+    0 18px 48px color-mix(in oklch, black 32%, transparent);
+}
+
+.app-field {
+  border: 1px solid var(--color-input);
+  background-color: color-mix(
+    in oklch,
+    var(--card) 86%,
+    var(--background)
+  ) !important;
+  color: var(--color-foreground);
+  -webkit-text-fill-color: var(--color-foreground);
+  color-scheme: inherit;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.app-field::placeholder {
+  color: var(--color-muted-foreground);
+}
+
+.app-field:focus {
+  background-color: color-mix(
+    in oklch,
+    var(--card) 94%,
+    var(--background)
+  ) !important;
+  border-color: color-mix(in oklch, var(--primary) 58%, var(--input));
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 18%, transparent);
+}
+
+.app-field:-webkit-autofill,
+.app-field:-webkit-autofill:hover,
+.app-field:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-foreground);
+  box-shadow: 0 0 0 1000px
+    color-mix(in oklch, var(--card) 92%, var(--background)) inset;
+}
+
+.app-field:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.app-code-panel {
+  border: 1px solid color-mix(in oklch, var(--border) 86%, transparent);
+  background: color-mix(in oklch, var(--secondary) 45%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in oklch, white 22%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

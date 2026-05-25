@@ -19,7 +19,7 @@ export function UserMenu({ email, name }: UserMenuProps) {
 
   return (
     <details className="group relative">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-border bg-background/60 px-2 py-1.5 text-sm transition-colors hover:bg-accent [&::-webkit-details-marker]:hidden">
+      <summary className="app-field flex cursor-pointer list-none items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent [&::-webkit-details-marker]:hidden">
         <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/10 font-mono text-xs text-primary">
           {getInitial(name, email)}
         </span>
@@ -27,7 +27,7 @@ export function UserMenu({ email, name }: UserMenuProps) {
           {name ?? email}
         </span>
       </summary>
-      <div className="absolute right-0 top-10 z-50 w-56 overflow-hidden rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg shadow-black/5">
+      <div className="app-popover absolute right-0 top-10 z-50 w-56 overflow-hidden rounded-xl p-1 text-popover-foreground">
         <div className="px-3 py-2">
           <p className="truncate text-sm font-medium">{name ?? 'Signed in'}</p>
           {email ? (

@@ -1,21 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  ArrowUpRight,
-  Code2,
-  Download,
-  MessageSquare,
-  MousePointer2,
-  Sparkles,
-  Terminal,
-} from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import type { Artifact } from '@docscn/sdk';
 import type { ExampleArtifactDefinition } from '../lib/example-artifacts';
-import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
+import { Badge, Button, Card, Shell } from '@docscn/ui';
 import { AnonymousClaimSync } from './anonymous-claim-sync';
+import { AppPageHeader } from './app-page-header';
+import { CopyCommandButton } from './copy-command-button';
 import { ExampleGallery } from './example-gallery';
-import { CommandSnippet, TerminalCommand } from './terminal-command';
 
 export function DashboardClient({
   artifacts,
@@ -28,209 +21,59 @@ export function DashboardClient({
   isAuthenticated: boolean;
   origin: string;
 }) {
-  const installCommand = `curl ${origin}/install -fsS | bash`;
-  const loginCommand = `docscn login --host ${origin}`;
-  const publishCommand = `docscn publish examples/artifacts/minimal.html --host ${origin}`;
-  const sampleArtifact =
-    artifacts.find(
-      (artifact) => artifact.slug === 'docscn-annotation-theme-test',
-    ) ?? artifacts[0];
+  const publishCommand = `docscn publish artifact.html --host ${origin}`;
   const isEmpty = artifacts.length === 0;
+  const starterExamples = examples.filter(
+    (example) => example.id !== 'minimal',
+  );
+  const description = isEmpty
+    ? 'Publish your first HTML artifact to get a stable URL and review surface.'
+    : `${artifacts.length} visible artifact${
+        artifacts.length === 1 ? '' : 's'
+      } in this workspace.`;
 
   return (
-    <Shell className="space-y-8 py-10">
+    <Shell className="space-y-6 py-10">
       <AnonymousClaimSync isAuthenticated={isAuthenticated} />
-      <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-        <div>
-          <Eyebrow>artifact workspace</Eyebrow>
-          <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight md:text-5xl">
-            Host, share, and collaborate on AI-generated HTML.
-          </h1>
-          <p className="mt-4 max-w-2xl text-muted-foreground">
-            {isEmpty
-              ? 'Persistent mode starts empty. Install the CLI, publish your first artifact, and this dashboard becomes your review queue.'
-              : 'Publish artifacts to stable URLs, collaborate with point/text/element feedback, then let an agent submit the next revision.'}
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button asChild variant="outline">
-            <Link href="/examples">Browse examples</Link>
-          </Button>
-          {sampleArtifact ? (
+      <AppPageHeader
+        actions={
+          <>
             <Button asChild variant="outline">
-              <Link href={`/artifacts/${sampleArtifact.slug}`}>
-                Try sample artifact
-              </Link>
+              <Link href="/templates">Browse templates</Link>
             </Button>
-          ) : null}
-          <Button asChild>
-            <Link href="/publish">Publish artifact</Link>
-          </Button>
-        </div>
-      </div>
-
-      {isEmpty ? (
-        <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card className="feature-card p-6">
-            <Badge tone="outline">first run</Badge>
-            <h2 className="mt-4 font-display text-2xl font-semibold tracking-tight">
-              Publish your first artifact
-            </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Follow these steps on localhost or any self-hosted docscn instance.
-              Commands below use the current site origin.
-            </p>
-            <ol className="mt-6 space-y-4 text-sm">
-              {[
-                [
-                  'Install the CLI',
-                  installCommand,
-                  'Downloads the latest standalone binary from GitHub Releases.',
-                ],
-                [
-                  'Optional: log in for ownership',
-                  loginCommand,
-                  'Unlock comments, revisions, private artifacts, and analytics.',
-                ],
-                [
-                  'Publish an example artifact',
-                  publishCommand,
-                  'Start with minimal.html or pick a richer demo from the gallery.',
-                ],
-              ].map(([title, command, body], index) => (
-                <li className="space-y-2" key={title as string}>
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-7 w-7 place-items-center rounded-full border border-border bg-secondary text-xs font-semibold">
-                      {index + 1}
-                    </span>
-                    <span className="font-medium">{title as string}</span>
-                  </div>
-                  <p className="pl-10 text-muted-foreground">{body as string}</p>
-                  <CommandSnippet className="ml-10" command={command as string} />
-                </li>
-              ))}
-            </ol>
-            <div className="mt-6 flex flex-wrap gap-2">
-              <Button asChild>
-                <Link href="/publish">Publish from the browser</Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/examples">Preview example gallery</Link>
-              </Button>
-            </div>
-          </Card>
-
-          <Card className="feature-card p-6">
-            <Terminal className="h-5 w-5 text-primary" />
-            <h2 className="mt-4 font-display text-lg font-semibold tracking-tight">
-              What happens next
-            </h2>
-            <div className="mt-5 grid gap-3 text-sm text-muted-foreground">
-              <div className="flex items-start gap-3">
-                <Download className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <span>Your published artifact gets a stable URL you can share.</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <MousePointer2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <span>Reviewers leave point, text, and element feedback on the render.</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <span>Agents read structured threads and submit the next revision.</span>
-              </div>
-            </div>
-          </Card>
-        </section>
-      ) : (
-        <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card className="feature-card p-6">
-            <div className="flex items-center gap-2">
-              <Terminal className="h-5 w-5 text-primary" />
-              <h2 className="font-display text-lg font-semibold tracking-tight">
-                CLI quickstart
-              </h2>
-            </div>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Use the same curl installer locally that hosted users will use on
-              docscn.ai. It downloads the latest standalone CLI binary from GitHub
-              Releases.
-            </p>
-            <TerminalCommand
-              className="mt-5"
-              command={[installCommand, loginCommand, publishCommand].join('\n')}
-              copyLabel="Copy all"
-              label="commands"
-            />
-          </Card>
-
-          <Card className="feature-card p-6">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <p className="mt-4 font-display text-4xl font-semibold tracking-tight">
-              {artifacts.length}
-            </p>
-            <p className="text-sm text-muted-foreground">visible artifacts</p>
-            <div className="mt-5 grid gap-2 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Download className="h-4 w-4 text-primary" />
-                Install CLI
-              </div>
-              <div className="flex items-center gap-2">
-                <MousePointer2 className="h-4 w-4 text-primary" />
-                Annotate artifact
-              </div>
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-primary" />
-                Revise from threads
-              </div>
-            </div>
-          </Card>
-        </section>
-      )}
-
-      <section className="grid gap-4 md:grid-cols-3">
-        {[
-          [
-            '1. Host',
-            Code2,
-            'Agents publish complete HTML documents to stable local or hosted URLs.',
-          ],
-          [
-            '2. Collaborate',
-            MousePointer2,
-            'Humans leave point, text, and element feedback on the rendered artifact.',
-          ],
-          [
-            '3. Revise',
-            MessageSquare,
-            'Agents read structured review threads and submit a new revision.',
-          ],
-        ].map(([title, Icon, body]) => (
-          <Card className="feature-card p-5" key={title as string}>
-            <span className="inline-flex rounded-lg border border-primary/20 bg-primary/10 p-2">
-              <Icon className="h-5 w-5 text-primary" />
-            </span>
-            <h2 className="mt-4 font-display text-lg font-semibold tracking-tight">
-              {title as string}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {body as string}
-            </p>
-          </Card>
-        ))}
-      </section>
-
-      <ExampleGallery
-        description={
-          isEmpty
-            ? 'Persistent mode does not ship seeded demo artifacts. Preview these files locally, then publish one to populate your dashboard.'
-            : 'Need a richer demo than your current artifacts? Preview and publish any of these starter files.'
+            <Button asChild>
+              <Link href="/publish">Publish artifact</Link>
+            </Button>
+          </>
         }
-        examples={examples}
-        heading={isEmpty ? 'Start with an example artifact' : 'Example gallery'}
-        origin={origin}
+        description={description}
+        eyebrow="artifact workspace"
+        title="Your artifacts"
       />
 
-      {!isEmpty ? (
+      {isEmpty ? (
+        <Card className="feature-card p-6 md:p-8">
+          <Badge tone="outline">empty workspace</Badge>
+          <h2 className="mt-4 font-display text-2xl font-semibold tracking-tight">
+            No artifacts yet
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Publish from the browser, or copy the CLI command and run it from an
+            agent workflow.
+          </p>
+          <div className="mt-6 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
+            <code className="app-code-panel overflow-x-auto rounded-xl p-3 font-mono text-xs text-foreground">
+              {publishCommand}
+            </code>
+            <CopyCommandButton command={publishCommand} label="Copy CLI" />
+          </div>
+          <div className="mt-6">
+            <Button asChild>
+              <Link href="/publish">Publish from browser</Link>
+            </Button>
+          </div>
+        </Card>
+      ) : (
         <section className="grid gap-4 lg:grid-cols-2">
           {artifacts.map((artifact) => (
             <Link key={artifact.id} href={`/artifacts/${artifact.slug}`}>
@@ -262,7 +105,32 @@ export function DashboardClient({
             </Link>
           ))}
         </section>
-      ) : null}
+      )}
+
+      {isEmpty ? (
+        <ExampleGallery
+          description="Open a starter template in the workspace, then publish your own version from an agent."
+          examples={starterExamples}
+          heading="Starter templates"
+        />
+      ) : (
+        <Card className="feature-card p-6">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <h2 className="font-display text-2xl font-semibold tracking-tight">
+                Need a starting point?
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Browse templates for plans, PR reviews, reports, design systems,
+                diagrams, decks, and custom editors.
+              </p>
+            </div>
+            <Button asChild variant="outline">
+              <Link href="/templates">Open template library</Link>
+            </Button>
+          </div>
+        </Card>
+      )}
     </Shell>
   );
 }

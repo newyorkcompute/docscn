@@ -8,7 +8,7 @@ export default async function PublishPage() {
   return (
     <>
       <SiteHeader />
-      <main>
+      <main className="app-page">
         <PublishArtifactForm isAuthenticated={Boolean(session)} />
       </main>
     </>

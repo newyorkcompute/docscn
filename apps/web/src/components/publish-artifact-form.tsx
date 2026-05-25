@@ -11,8 +11,9 @@ import {
   type PublishResult,
   visibilityOptions,
 } from '@docscn/sdk';
-import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
+import { Badge, Button, Card, Shell } from '@docscn/ui';
 import { saveAnonymousClaimReceipt } from '../lib/anonymous-claim-receipts';
+import { AppPageHeader } from './app-page-header';
 
 const starterHtml = `<!doctype html>
 <html>
@@ -133,21 +134,21 @@ export function PublishArtifactForm({
   return (
     <Shell className="grid gap-8 py-10 lg:grid-cols-[0.9fr_1.1fr]">
       <div className="space-y-6">
-        <div>
-          <Eyebrow>
-            {isAuthenticated ? 'manual publish fallback' : 'instant publish'}
-          </Eyebrow>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
-            {isAuthenticated
-              ? 'Agents should publish artifacts. This form is for testing.'
-              : 'Publish an artifact now. No account required.'}
-          </h1>
-          <p className="mt-4 text-muted-foreground">
-            {isAuthenticated
+        <AppPageHeader
+          description={
+            isAuthenticated
               ? 'The primary docscn path is API-key publishing from Cursor, Claude, scheduled reports, CLIs, and MCP workflows. Keep this page around for local smoke tests and one-off manual uploads.'
-              : 'Anonymous publishes are unlisted, view-only links. Sign in when you want comments, revisions, analytics, private sharing, and artifact ownership.'}
-          </p>
-        </div>
+              : 'Anonymous publishes are unlisted, view-only links. Sign in when you want comments, revisions, analytics, private sharing, and artifact ownership.'
+          }
+          eyebrow={
+            isAuthenticated ? 'manual publish fallback' : 'instant publish'
+          }
+          title={
+            isAuthenticated
+              ? 'Agents should publish artifacts. This form is for testing.'
+              : 'Publish an artifact now. No account required.'
+          }
+        />
         <Card className="p-5">
           <div className="flex items-center gap-3">
             <FileCode2 className="h-5 w-5 text-primary" />
@@ -161,7 +162,10 @@ export function PublishArtifactForm({
                 {isAuthenticated ? (
                   <>
                     Point agents to{' '}
-                    <a className="text-primary hover:underline" href="/skills.md">
+                    <a
+                      className="text-primary hover:underline"
+                      href="/skills.md"
+                    >
                       /skills.md
                     </a>{' '}
                     so they can run the CLI login flow and publish end to end.
@@ -169,7 +173,10 @@ export function PublishArtifactForm({
                 ) : (
                   <>
                     Publish instantly, then{' '}
-                    <Link className="text-primary hover:underline" href="/sign-in">
+                    <Link
+                      className="text-primary hover:underline"
+                      href="/sign-in"
+                    >
                       sign in
                     </Link>{' '}
                     for comments, revisions, private artifacts, and future
@@ -187,7 +194,7 @@ export function PublishArtifactForm({
           <label className="space-y-2 text-sm">
             <span className="text-muted-foreground">Title</span>
             <input
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+              className="app-field w-full rounded-md px-3 py-2 text-sm"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
             />
@@ -195,7 +202,7 @@ export function PublishArtifactForm({
           <label className="space-y-2 text-sm">
             <span className="text-muted-foreground">Author / agent</span>
             <input
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+              className="app-field w-full rounded-md px-3 py-2 text-sm"
               value={authorName}
               onChange={(event) => setAuthorName(event.target.value)}
             />
@@ -205,7 +212,7 @@ export function PublishArtifactForm({
         <label className="space-y-2 text-sm">
           <span className="text-muted-foreground">Description</span>
           <textarea
-            className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+            className="app-field min-h-24 w-full rounded-md px-3 py-2 text-sm"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
           />
@@ -215,7 +222,7 @@ export function PublishArtifactForm({
           <label className="space-y-2 text-sm">
             <span className="text-muted-foreground">Visibility</span>
             <select
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+              className="app-field w-full rounded-md px-3 py-2 text-sm"
               value={visibility}
               onChange={(event) =>
                 setVisibility(event.target.value as ArtifactVisibility)
@@ -235,7 +242,7 @@ export function PublishArtifactForm({
           <label className="space-y-2 text-sm">
             <span className="text-muted-foreground">Artifact type</span>
             <select
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+              className="app-field w-full rounded-md px-3 py-2 text-sm"
               value={kind}
               onChange={(event) => setKind(event.target.value as ArtifactKind)}
             >
@@ -246,7 +253,7 @@ export function PublishArtifactForm({
           </label>
         </div>
 
-        <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-dashed border-border bg-secondary/40 p-4 text-sm">
+        <label className="app-code-panel flex cursor-pointer items-center justify-between gap-4 rounded-xl border-dashed p-4 text-sm">
           <span className="flex items-center gap-3 text-muted-foreground">
             <UploadCloud className="h-5 w-5 text-primary" />
             Upload a self-contained HTML file
@@ -263,14 +270,14 @@ export function PublishArtifactForm({
         <label className="space-y-2 text-sm">
           <span className="text-muted-foreground">Self-contained HTML</span>
           <textarea
-            className="min-h-80 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs outline-none ring-ring focus:ring-2"
+            className="app-field min-h-80 w-full rounded-md px-3 py-2 font-mono text-xs"
             value={html}
             onChange={(event) => setHtml(event.target.value)}
           />
         </label>
 
         {error ? (
-          <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
           </p>
         ) : null}

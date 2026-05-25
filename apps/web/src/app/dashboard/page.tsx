@@ -14,7 +14,7 @@ export default async function DashboardPage() {
   return (
     <>
       <SiteHeader />
-      <main>
+      <main className="app-page">
         <DashboardClient
           artifacts={await listArtifacts({ viewerUserId: session?.user.id })}
           examples={exampleArtifacts}

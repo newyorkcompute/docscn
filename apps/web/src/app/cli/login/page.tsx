@@ -23,11 +23,13 @@ export default async function CliLoginPage({
   return (
     <>
       <SiteHeader />
-      <main>
+      <main className="app-page">
         <Shell className="py-16">
           {!userCode ? (
             <Card className="mx-auto max-w-xl p-8 text-center">
-              <h1 className="text-2xl font-semibold">Missing CLI login code</h1>
+              <h1 className="font-display text-2xl font-semibold tracking-tight">
+                Missing CLI login code
+              </h1>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 Start from your terminal with{' '}
                 <code className="rounded bg-secondary px-1.5 py-0.5">
@@ -43,7 +45,7 @@ export default async function CliLoginPage({
               <p className="text-sm font-medium text-primary">
                 docscn CLI login
               </p>
-              <h1 className="mt-3 text-2xl font-semibold">
+              <h1 className="mt-3 font-display text-2xl font-semibold tracking-tight">
                 Sign in to approve this agent
               </h1>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">

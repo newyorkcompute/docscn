@@ -1,0 +1,379 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/newyorkcompute/docscn",
+  "templatesRoot": "examples/artifacts",
+  "categories": [
+    {
+      "id": "docscn-starters",
+      "title": "docscn starters",
+      "description": "Templates created for testing docscn publish, review, and revision flows."
+    },
+    {
+      "id": "exploration-planning",
+      "title": "Exploration & Planning",
+      "description": "Compare approaches, explore directions, and turn a decision into a plan."
+    },
+    {
+      "id": "code-review-understanding",
+      "title": "Code Review & Understanding",
+      "description": "Render diffs, module maps, and reviewer writeups as spatial artifacts."
+    },
+    {
+      "id": "design",
+      "title": "Design",
+      "description": "Review design systems, tokens, and component states in the medium they ship in."
+    },
+    {
+      "id": "prototyping",
+      "title": "Prototyping",
+      "description": "Feel motion and interaction before committing them to product code."
+    },
+    {
+      "id": "illustrations-diagrams",
+      "title": "Illustrations & Diagrams",
+      "description": "Use inline SVG and flow diagrams when markdown would flatten the shape."
+    },
+    {
+      "id": "decks",
+      "title": "Decks",
+      "description": "Turn meeting narratives into keyboard-navigable standalone HTML decks."
+    },
+    {
+      "id": "research-learning",
+      "title": "Research & Learning",
+      "description": "Make dense explanations navigable with tabs, diagrams, and glossaries."
+    },
+    {
+      "id": "reports",
+      "title": "Reports",
+      "description": "Format recurring status, incident, and analysis documents for quick review."
+    },
+    {
+      "id": "custom-editors",
+      "title": "Custom Editing Interfaces",
+      "description": "Build small purpose-made editors that export structured output back to agents."
+    }
+  ],
+  "templates": [
+    {
+      "id": "minimal",
+      "title": "Minimal publish test",
+      "description": "The smallest useful artifact for verifying CLI install, login, and publish.",
+      "kind": "custom-html",
+      "filename": "minimal.html",
+      "category": "docscn-starters"
+    },
+    {
+      "id": "incident-timeline",
+      "title": "Checkout latency incident timeline",
+      "description": "Dark incident report with timeline events, impact metrics, and toggleable evidence.",
+      "kind": "incident-timeline",
+      "filename": "incident-timeline.html",
+      "category": "docscn-starters"
+    },
+    {
+      "id": "migration-plan",
+      "title": "Next.js cache migration plan",
+      "description": "Four-lane migration board for converting cache boundaries with rollout safety.",
+      "kind": "migration-plan",
+      "filename": "migration-plan.html",
+      "category": "docscn-starters"
+    },
+    {
+      "id": "eval-dashboard",
+      "title": "Agent evaluation dashboard",
+      "description": "Generated dashboard with pass rate, latency, and scenario score table.",
+      "kind": "generated-dashboard",
+      "filename": "eval-dashboard.html",
+      "category": "docscn-starters"
+    },
+    {
+      "id": "pr-review",
+      "title": "PR review summary",
+      "description": "Review checklist, severity labels, and diff highlights for a sample pull request.",
+      "kind": "pr-review",
+      "filename": "pr-review.html",
+      "category": "docscn-starters"
+    },
+    {
+      "id": "design-directions",
+      "title": "Visual design directions",
+      "description": "Three rendered product directions side by side for fast design review.",
+      "kind": "ui-prototype",
+      "filename": "design-directions.html",
+      "category": "docscn-starters"
+    },
+    {
+      "id": "module-map",
+      "title": "Module map",
+      "description": "Architecture explainer with entry points, hot paths, and data flow.",
+      "kind": "architecture-explainer",
+      "filename": "module-map.html",
+      "category": "docscn-starters"
+    },
+    {
+      "id": "animation-sandbox",
+      "title": "Animation sandbox",
+      "description": "Interactive motion tuning artifact with duration, easing, and copyable CSS.",
+      "kind": "animated-report",
+      "filename": "animation-sandbox.html",
+      "category": "docscn-starters"
+    },
+    {
+      "id": "slide-deck",
+      "title": "Arrow-key slide deck",
+      "description": "Meeting-ready HTML presentation with keyboard navigation and no build step.",
+      "kind": "custom-html",
+      "filename": "slide-deck.html",
+      "category": "docscn-starters"
+    },
+    {
+      "id": "prompt-tuner",
+      "title": "Prompt tuner",
+      "description": "Custom editor for tuning a prompt template and copying the rendered result.",
+      "kind": "ui-prototype",
+      "filename": "prompt-tuner.html",
+      "category": "docscn-starters"
+    },
+    {
+      "id": "html-effectiveness-code-approaches",
+      "title": "Three code approaches",
+      "description": "Side-by-side comparison of three ways to solve the same problem.",
+      "kind": "architecture-explainer",
+      "filename": "html-effectiveness/01-exploration-code-approaches.html",
+      "category": "exploration-planning",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-visual-designs",
+      "title": "Visual design directions",
+      "description": "Several layout and palette options rendered live for direct review.",
+      "kind": "ui-prototype",
+      "filename": "html-effectiveness/02-exploration-visual-designs.html",
+      "category": "exploration-planning",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-implementation-plan",
+      "title": "Implementation plan",
+      "description": "Milestones, data flow, mockups, risky code, and rollout risks in one plan.",
+      "kind": "migration-plan",
+      "filename": "html-effectiveness/16-implementation-plan.html",
+      "category": "exploration-planning",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-code-review-pr",
+      "title": "Annotated pull request",
+      "description": "Diff rendered with margin notes, severity tags, and jump links.",
+      "kind": "pr-review",
+      "filename": "html-effectiveness/03-code-review-pr.html",
+      "category": "code-review-understanding",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-pr-writeup",
+      "title": "PR writeup for reviewers",
+      "description": "Motivation, before/after, file tour, and review focus areas.",
+      "kind": "pr-review",
+      "filename": "html-effectiveness/17-pr-writeup.html",
+      "category": "code-review-understanding",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-code-understanding",
+      "title": "Module map",
+      "description": "An unfamiliar package drawn as boxes and arrows with entry points.",
+      "kind": "architecture-explainer",
+      "filename": "html-effectiveness/04-code-understanding.html",
+      "category": "code-review-understanding",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-design-system",
+      "title": "Living design system",
+      "description": "Colors, type scale, and spacing tokens rendered as copyable swatches.",
+      "kind": "ui-prototype",
+      "filename": "html-effectiveness/05-design-system.html",
+      "category": "design",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-component-variants",
+      "title": "Component variants",
+      "description": "Every size, state, and intent of one component laid out for review.",
+      "kind": "ui-prototype",
+      "filename": "html-effectiveness/06-component-variants.html",
+      "category": "design",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-prototype-animation",
+      "title": "Animation sandbox",
+      "description": "Transition sandbox with controls for duration and easing.",
+      "kind": "animated-report",
+      "filename": "html-effectiveness/07-prototype-animation.html",
+      "category": "prototyping",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-prototype-interaction",
+      "title": "Clickable flow",
+      "description": "Four linked screens with enough fidelity to feel the interaction.",
+      "kind": "ui-prototype",
+      "filename": "html-effectiveness/08-prototype-interaction.html",
+      "category": "prototyping",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-svg-illustrations",
+      "title": "SVG figure sheet",
+      "description": "Inline SVG diagrams for a post, ready to tweak or copy out.",
+      "kind": "architecture-explainer",
+      "filename": "html-effectiveness/10-svg-illustrations.html",
+      "category": "illustrations-diagrams",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-flowchart-diagram",
+      "title": "Annotated flowchart",
+      "description": "Deploy pipeline flowchart with timings, failure paths, and step details.",
+      "kind": "architecture-explainer",
+      "filename": "html-effectiveness/13-flowchart-diagram.html",
+      "category": "illustrations-diagrams",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-slide-deck",
+      "title": "Arrow-key slide deck",
+      "description": "A short presentation as one standalone HTML file.",
+      "kind": "custom-html",
+      "filename": "html-effectiveness/09-slide-deck.html",
+      "category": "decks",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-feature-explainer",
+      "title": "How a feature works",
+      "description": "Feature explainer with TL;DR, collapsible path steps, snippets, and FAQ.",
+      "kind": "architecture-explainer",
+      "filename": "html-effectiveness/14-research-feature-explainer.html",
+      "category": "research-learning",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-concept-explainer",
+      "title": "Concept explainer",
+      "description": "Consistent hashing taught with a live ring, comparison table, and glossary.",
+      "kind": "architecture-explainer",
+      "filename": "html-effectiveness/15-research-concept-explainer.html",
+      "category": "research-learning",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-status-report",
+      "title": "Weekly status",
+      "description": "What shipped, what slipped, and a small chart for quick review.",
+      "kind": "generated-dashboard",
+      "filename": "html-effectiveness/11-status-report.html",
+      "category": "reports",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-incident-report",
+      "title": "Incident timeline",
+      "description": "Post-mortem with timeline, log excerpts, and follow-up checklist.",
+      "kind": "incident-timeline",
+      "filename": "html-effectiveness/12-incident-report.html",
+      "category": "reports",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-triage-board",
+      "title": "Ticket triage board",
+      "description": "Drag tickets across planning lanes, then copy the final ordering.",
+      "kind": "ui-prototype",
+      "filename": "html-effectiveness/18-editor-triage-board.html",
+      "category": "custom-editors",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-feature-flags",
+      "title": "Feature flag editor",
+      "description": "Toggle editor with dependency warnings and a copyable diff.",
+      "kind": "ui-prototype",
+      "filename": "html-effectiveness/19-editor-feature-flags.html",
+      "category": "custom-editors",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    },
+    {
+      "id": "html-effectiveness-prompt-tuner",
+      "title": "Prompt tuner",
+      "description": "Editable prompt template with variables and live sample rendering.",
+      "kind": "ui-prototype",
+      "filename": "html-effectiveness/20-editor-prompt-tuner.html",
+      "category": "custom-editors",
+      "source": {
+        "label": "HTML effectiveness",
+        "href": "https://github.com/ThariqS/html-effectiveness"
+      }
+    }
+  ]
+}

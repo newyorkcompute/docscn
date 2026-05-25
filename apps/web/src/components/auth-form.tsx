@@ -66,7 +66,7 @@ export function AuthForm({ callbackURL = '/dashboard', mode }: AuthFormProps) {
   return (
     <Shell className="py-16">
       <Card className="mx-auto max-w-md p-8">
-        <h1 className="text-2xl font-semibold">
+        <h1 className="font-display text-2xl font-semibold tracking-tight">
           {isSignUp ? 'Create your docscn account' : 'Sign in to docscn'}
         </h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
@@ -79,7 +79,7 @@ export function AuthForm({ callbackURL = '/dashboard', mode }: AuthFormProps) {
             <label className="grid gap-2 text-sm">
               Name
               <input
-                className="rounded-lg border border-border bg-background px-3 py-2 text-foreground outline-none ring-primary/30 focus:ring-2"
+                className="app-field rounded-md px-3 py-2 text-foreground"
                 minLength={2}
                 onChange={(event) => setName(event.target.value)}
                 required
@@ -90,7 +90,7 @@ export function AuthForm({ callbackURL = '/dashboard', mode }: AuthFormProps) {
           <label className="grid gap-2 text-sm">
             Email
             <input
-              className="rounded-lg border border-border bg-background px-3 py-2 text-foreground outline-none ring-primary/30 focus:ring-2"
+              className="app-field rounded-md px-3 py-2 text-foreground"
               onChange={(event) => setEmail(event.target.value)}
               required
               type="email"
@@ -100,7 +100,7 @@ export function AuthForm({ callbackURL = '/dashboard', mode }: AuthFormProps) {
           <label className="grid gap-2 text-sm">
             Password
             <input
-              className="rounded-lg border border-border bg-background px-3 py-2 text-foreground outline-none ring-primary/30 focus:ring-2"
+              className="app-field rounded-md px-3 py-2 text-foreground"
               minLength={8}
               onChange={(event) => setPassword(event.target.value)}
               required

@@ -132,11 +132,311 @@
         font-weight: 600;
       }
     </style>
+    <style data-docscn-template-theme>
+      :root {
+        --docscn-template-bg: #f8efe7;
+        --docscn-template-surface: #fffaf6;
+        --docscn-template-surface-strong: #ffffff;
+        --docscn-template-ink: #181927;
+        --docscn-template-muted: #706977;
+        --docscn-template-border: #decfc2;
+        --docscn-template-grid: rgba(185, 71, 25, 0.08);
+        --docscn-template-accent: #b94719;
+        --docscn-template-accent-soft: rgba(185, 71, 25, 0.12);
+        --docscn-template-accent-strong: #8f3415;
+        --docscn-template-accent-fg: #fff7ef;
+        --docscn-template-shadow: 0 24px 70px rgba(84, 45, 24, 0.12);
+        --docscn-template-radius: 28px;
+        --docscn-template-radius-sm: 14px;
+
+        --bg: var(--docscn-template-bg);
+        --fg: var(--docscn-template-ink);
+        --ink: var(--docscn-template-ink);
+        --slate: var(--docscn-template-ink);
+        --ivory: var(--docscn-template-bg);
+        --paper: var(--docscn-template-surface);
+        --white: var(--docscn-template-surface-strong);
+        --card: var(--docscn-template-surface);
+        --card-bg: linear-gradient(
+          135deg,
+          var(--docscn-template-surface-strong),
+          var(--docscn-template-surface)
+        );
+        --card-border: var(--docscn-template-border);
+        --event-border: var(--docscn-template-border);
+        --line: var(--docscn-template-border);
+        --border: var(--docscn-template-border);
+        --oat: var(--docscn-template-border);
+        --muted: var(--docscn-template-muted);
+        --gray-150: #f3e9df;
+        --gray-200: #eadccd;
+        --gray-300: var(--docscn-template-border);
+        --gray-500: var(--docscn-template-muted);
+        --gray-700: #4f4750;
+        --g100: #f3e9df;
+        --g200: #eadccd;
+        --g300: var(--docscn-template-border);
+        --g500: var(--docscn-template-muted);
+        --g700: #4f4750;
+        --accent: var(--docscn-template-accent);
+        --accent-fg: var(--docscn-template-accent-fg);
+        --clay: var(--docscn-template-accent);
+        --clay-d: var(--docscn-template-accent-strong);
+        --rust: var(--docscn-template-accent-strong);
+        --olive: #8a6f3d;
+        --good: #1f7a62;
+        --warn: #bd7a1f;
+        --sev-border: #d95f37;
+        --sev-fg: var(--docscn-template-accent-strong);
+        --pre-bg: #f4e9df;
+        --code: #f4e9df;
+        --code-bg: #f4e9df;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not(.light):not(.dark) {
+          --docscn-template-bg: #151722;
+          --docscn-template-surface: #1d202d;
+          --docscn-template-surface-strong: #232636;
+          --docscn-template-ink: #f7efe8;
+          --docscn-template-muted: #b9afb7;
+          --docscn-template-border: #38313a;
+          --docscn-template-grid: rgba(240, 142, 85, 0.1);
+          --docscn-template-accent: #f08e55;
+          --docscn-template-accent-soft: rgba(240, 142, 85, 0.16);
+          --docscn-template-accent-strong: #ffb083;
+          --docscn-template-accent-fg: #20140f;
+          --docscn-template-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+          --gray-150: #202330;
+          --gray-200: #282a38;
+          --gray-700: #d9d0d3;
+          --g100: #202330;
+          --g200: #282a38;
+          --g700: #d9d0d3;
+          --pre-bg: #171a24;
+          --code: #171a24;
+          --code-bg: #171a24;
+        }
+      }
+
+      html.dark,
+      html[data-docscn-theme='dark'] {
+        --docscn-template-bg: #151722;
+        --docscn-template-surface: #1d202d;
+        --docscn-template-surface-strong: #232636;
+        --docscn-template-ink: #f7efe8;
+        --docscn-template-muted: #b9afb7;
+        --docscn-template-border: #38313a;
+        --docscn-template-grid: rgba(240, 142, 85, 0.1);
+        --docscn-template-accent: #f08e55;
+        --docscn-template-accent-soft: rgba(240, 142, 85, 0.16);
+        --docscn-template-accent-strong: #ffb083;
+        --docscn-template-accent-fg: #20140f;
+        --docscn-template-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+        --gray-150: #202330;
+        --gray-200: #282a38;
+        --gray-700: #d9d0d3;
+        --g100: #202330;
+        --g200: #282a38;
+        --g700: #d9d0d3;
+        --pre-bg: #171a24;
+        --code: #171a24;
+        --code-bg: #171a24;
+      }
+
+      html.light,
+      html[data-docscn-theme='light'] {
+        --docscn-template-bg: #f8efe7;
+        --docscn-template-surface: #fffaf6;
+        --docscn-template-surface-strong: #ffffff;
+        --docscn-template-ink: #181927;
+        --docscn-template-muted: #706977;
+        --docscn-template-border: #decfc2;
+        --docscn-template-grid: rgba(185, 71, 25, 0.08);
+        --docscn-template-accent: #b94719;
+        --docscn-template-accent-soft: rgba(185, 71, 25, 0.12);
+        --docscn-template-accent-strong: #8f3415;
+        --docscn-template-accent-fg: #fff7ef;
+        --docscn-template-shadow: 0 24px 70px rgba(84, 45, 24, 0.12);
+        --gray-150: #f3e9df;
+        --gray-200: #eadccd;
+        --gray-700: #4f4750;
+        --g100: #f3e9df;
+        --g200: #eadccd;
+        --g700: #4f4750;
+        --pre-bg: #f4e9df;
+        --code: #f4e9df;
+        --code-bg: #f4e9df;
+      }
+
+      html {
+        background: var(--docscn-template-bg) !important;
+        color: var(--docscn-template-ink) !important;
+      }
+
+      body {
+        background:
+          radial-gradient(
+            circle at 86% 12%,
+            var(--docscn-template-accent-soft),
+            transparent 28rem
+          ),
+          linear-gradient(var(--docscn-template-grid) 1px, transparent 1px),
+          linear-gradient(
+            90deg,
+            var(--docscn-template-grid) 1px,
+            transparent 1px
+          ),
+          var(--docscn-template-bg) !important;
+        background-size:
+          auto,
+          36px 36px,
+          36px 36px,
+          auto !important;
+        color: var(--docscn-template-ink) !important;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      .title,
+      .headline {
+        color: var(--docscn-template-ink) !important;
+      }
+
+      .eyebrow,
+      .kicker,
+      .label,
+      .tag,
+      .pill,
+      .badge,
+      .chip,
+      .meta,
+      .number,
+      .index {
+        border-color: color-mix(
+          in oklab,
+          var(--docscn-template-accent) 30%,
+          var(--docscn-template-border)
+        ) !important;
+        color: var(--docscn-template-accent) !important;
+      }
+
+      a {
+        color: var(--docscn-template-accent) !important;
+      }
+
+      article,
+      section,
+      .card,
+      .panel,
+      .tile,
+      .lane,
+      .column,
+      .module,
+      .node,
+      .box,
+      .callout,
+      .prompt-box,
+      .summary,
+      .preview,
+      .surface,
+      .token,
+      .variant,
+      .report,
+      .slide,
+      .board,
+      .toolbar,
+      .component,
+      .swatch,
+      .flow-node,
+      .step {
+        border-color: var(--docscn-template-border) !important;
+        box-shadow: var(--docscn-template-shadow);
+      }
+
+      .card,
+      .panel,
+      .tile,
+      .node,
+      .box,
+      .callout,
+      .prompt-box,
+      .summary,
+      .preview,
+      .surface,
+      .lane,
+      .slide {
+        background: color-mix(
+          in oklab,
+          var(--docscn-template-surface) 92%,
+          transparent
+        ) !important;
+      }
+
+      pre,
+      .code-block,
+      .terminal,
+      .snippet {
+        border-color: color-mix(
+          in oklab,
+          var(--docscn-template-accent) 18%,
+          #101119
+        ) !important;
+        background: #151620 !important;
+        color: #fff7ef !important;
+      }
+
+      pre code,
+      .code-block code,
+      .terminal code,
+      .snippet code {
+        background: transparent !important;
+        color: inherit !important;
+      }
+
+      code:not(pre code),
+      textarea,
+      input,
+      select {
+        border-color: var(--docscn-template-border) !important;
+        background: var(--pre-bg) !important;
+        color: var(--docscn-template-ink) !important;
+      }
+
+      button,
+      .button,
+      [role='button'] {
+        border-color: color-mix(
+          in oklab,
+          var(--docscn-template-accent) 42%,
+          var(--docscn-template-border)
+        ) !important;
+        border-radius: var(--docscn-template-radius-sm);
+      }
+
+      button:not(.ghost),
+      .button:not(.ghost) {
+        background: var(--docscn-template-accent) !important;
+        color: var(--docscn-template-accent-fg) !important;
+      }
+
+      ::selection {
+        background: color-mix(
+          in oklab,
+          var(--docscn-template-accent) 28%,
+          transparent
+        );
+      }
+    </style>
   </head>
   <body>
     <main>
       <h1>PR #482 — artifact feedback API</h1>
-      <p class="meta">Generated review for newyorkcompute/docscn · 6 files changed</p>
+      <p class="meta">
+        Generated review for newyorkcompute/docscn · 6 files changed
+      </p>
 
       <section class="card">
         <h2>Summary</h2>
@@ -152,7 +452,10 @@
         <div class="checks">
           <div class="check">
             <span class="severity-high">High</span>
-            <span>Confirm private artifacts reject invalid bearer tokens with 401.</span>
+            <span
+              >Confirm private artifacts reject invalid bearer tokens with
+              401.</span
+            >
           </div>
           <div class="check">
             <span class="severity-med">Med</span>
@@ -168,7 +471,9 @@
       <section class="card">
         <h2>Suggested diff highlight</h2>
         <pre class="add">+ GET /api/artifacts/{id}/feedback</pre>
-        <pre class="del">- docscn artifact get --json  # old agent workflow</pre>
+        <pre class="del">
+- docscn artifact get --json  # old agent workflow</pre
+        >
       </section>
     </main>
   </body>

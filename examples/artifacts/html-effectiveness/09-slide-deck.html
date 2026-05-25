@@ -1,0 +1,978 @@
+<!-- Copyright 2026 Anthropic PBC · SPDX-License-Identifier: Apache-2.0 -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Platform Eng — Week of Mar 10</title>
+    <style>
+      /* ------------------------------------------------------------------
+     Design tokens
+     ------------------------------------------------------------------ */
+      :root {
+        --ivory: #faf9f5;
+        --slate: #141413;
+        --clay: #d97757;
+        --oat: #e3dacc;
+        --olive: #788c5d;
+        --gray-150: #f0eee6;
+        --gray-300: #d1cfc5;
+        --gray-500: #87867f;
+        --gray-700: #3d3d3a;
+
+        --serif: ui-serif, Georgia, 'Times New Roman', serif;
+        --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: var(--sans);
+        background: var(--ivory);
+        color: var(--slate);
+        -webkit-font-smoothing: antialiased;
+        scroll-snap-type: y mandatory;
+        overflow-x: hidden;
+      }
+
+      /* ------------------------------------------------------------------
+     Slide shell
+     ------------------------------------------------------------------ */
+      .slide {
+        width: 100vw;
+        height: 100vh;
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8vh 6vw;
+      }
+
+      .slide-inner {
+        width: 100%;
+        max-width: 780px;
+      }
+
+      .slide.invert {
+        background: var(--slate);
+        color: var(--ivory);
+      }
+
+      /* ------------------------------------------------------------------
+     Typography
+     ------------------------------------------------------------------ */
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--gray-500);
+        margin-bottom: 28px;
+      }
+      .invert .eyebrow {
+        color: var(--gray-300);
+      }
+
+      h1 {
+        font-family: var(--serif);
+        font-weight: 500;
+        font-size: clamp(40px, 6vw, 64px);
+        line-height: 1.08;
+        letter-spacing: -0.01em;
+        margin-bottom: 20px;
+      }
+
+      h2 {
+        font-family: var(--serif);
+        font-weight: 500;
+        font-size: clamp(30px, 4vw, 42px);
+        line-height: 1.15;
+        letter-spacing: -0.005em;
+        margin-bottom: 44px;
+      }
+
+      .subtitle {
+        font-size: 17px;
+        line-height: 1.6;
+        color: var(--gray-700);
+        max-width: 520px;
+      }
+
+      .mono {
+        font-family: var(--mono);
+      }
+
+      /* ------------------------------------------------------------------
+     Slide 1 — title
+     ------------------------------------------------------------------ */
+      .title-slide .slide-inner {
+        text-align: left;
+      }
+
+      .ornament {
+        display: block;
+        margin: 0 0 40px 0;
+      }
+
+      .byline {
+        margin-top: 56px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--gray-500);
+        display: flex;
+        gap: 24px;
+      }
+
+      /* ------------------------------------------------------------------
+     Slide 2 — shipped list
+     ------------------------------------------------------------------ */
+      .ship-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+
+      .ship-item {
+        display: grid;
+        grid-template-columns: 14px 1fr auto;
+        column-gap: 20px;
+        align-items: baseline;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--gray-150);
+      }
+      .ship-item:last-child {
+        border-bottom: none;
+      }
+
+      .ship-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--olive);
+        margin-top: 8px;
+        align-self: start;
+      }
+
+      .ship-title {
+        font-family: var(--serif);
+        font-size: 20px;
+        font-weight: 500;
+        margin-bottom: 6px;
+      }
+
+      .ship-desc {
+        font-size: 14px;
+        line-height: 1.55;
+        color: var(--gray-700);
+      }
+
+      .ship-ref {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--gray-500);
+        white-space: nowrap;
+        padding-top: 4px;
+      }
+
+      /* ------------------------------------------------------------------
+     Slide 3 — in progress
+     ------------------------------------------------------------------ */
+      .prog-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+      }
+
+      .prog-item .prog-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 10px;
+      }
+
+      .prog-title {
+        font-family: var(--serif);
+        font-size: 20px;
+        font-weight: 500;
+      }
+
+      .prog-pct {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--gray-500);
+      }
+
+      .prog-track {
+        width: 100%;
+        height: 5px;
+        background: var(--gray-150);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 10px;
+      }
+
+      .prog-fill {
+        height: 100%;
+        background: var(--clay);
+        border-radius: 3px;
+      }
+
+      .prog-note {
+        font-size: 13px;
+        line-height: 1.55;
+        color: var(--gray-700);
+      }
+
+      /* ------------------------------------------------------------------
+     Slide 4 — metrics
+     ------------------------------------------------------------------ */
+      .metrics {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 56px;
+        margin-bottom: 48px;
+      }
+
+      .metric-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--gray-500);
+        margin-bottom: 14px;
+      }
+
+      .metric-value {
+        font-family: var(--serif);
+        font-size: 52px;
+        font-weight: 500;
+        line-height: 1;
+        letter-spacing: -0.01em;
+      }
+
+      .metric-delta {
+        font-family: var(--mono);
+        font-size: 13px;
+        margin-top: 12px;
+      }
+      .metric-delta.down {
+        color: var(--olive);
+      }
+      .metric-delta.up {
+        color: var(--clay);
+      }
+
+      .sparkline-wrap {
+        border-top: 1px solid var(--gray-300);
+        padding-top: 28px;
+      }
+
+      .sparkline-caption {
+        font-size: 12px;
+        color: var(--gray-500);
+        margin-top: 10px;
+      }
+
+      /* ------------------------------------------------------------------
+     Slide 5 — decision (inverted)
+     ------------------------------------------------------------------ */
+      .decision-card {
+        border: 1.5px solid var(--clay);
+        border-radius: 14px;
+        padding: 36px 38px;
+        background: rgba(217, 119, 87, 0.06);
+      }
+
+      .decision-q {
+        font-family: var(--serif);
+        font-size: 24px;
+        line-height: 1.4;
+        margin-bottom: 12px;
+      }
+
+      .decision-context {
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--gray-300);
+      }
+
+      .options {
+        display: flex;
+        gap: 14px;
+        margin-top: 32px;
+        flex-wrap: wrap;
+      }
+
+      .chip {
+        font-family: var(--mono);
+        font-size: 12px;
+        padding: 10px 18px;
+        border-radius: 999px;
+        border: 1px solid var(--gray-700);
+        color: var(--ivory);
+        background: transparent;
+      }
+      .chip.lean {
+        border-color: var(--clay);
+        color: var(--clay);
+      }
+
+      /* ------------------------------------------------------------------
+     Slide 6 — next week
+     ------------------------------------------------------------------ */
+      .next-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+
+      .next-list li {
+        font-family: var(--serif);
+        font-size: 21px;
+        line-height: 1.45;
+        padding-left: 36px;
+        position: relative;
+      }
+
+      .next-list li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.55em;
+        width: 18px;
+        height: 1.5px;
+        background: var(--clay);
+      }
+
+      .footnote {
+        margin-top: 56px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--gray-500);
+      }
+
+      /* ------------------------------------------------------------------
+     Slide counter
+     ------------------------------------------------------------------ */
+      #counter {
+        position: fixed;
+        bottom: 22px;
+        right: 28px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--gray-500);
+        user-select: none;
+        z-index: 10;
+      }
+
+      @media (max-width: 640px) {
+        .metrics {
+          grid-template-columns: 1fr;
+          gap: 36px;
+        }
+        .ship-item {
+          grid-template-columns: 14px 1fr;
+        }
+        .ship-ref {
+          grid-column: 2;
+          padding-top: 8px;
+        }
+      }
+    </style>
+    <style data-docscn-template-theme>
+      :root {
+        --docscn-template-bg: #f8efe7;
+        --docscn-template-surface: #fffaf6;
+        --docscn-template-surface-strong: #ffffff;
+        --docscn-template-ink: #181927;
+        --docscn-template-muted: #706977;
+        --docscn-template-border: #decfc2;
+        --docscn-template-grid: rgba(185, 71, 25, 0.08);
+        --docscn-template-accent: #b94719;
+        --docscn-template-accent-soft: rgba(185, 71, 25, 0.12);
+        --docscn-template-accent-strong: #8f3415;
+        --docscn-template-accent-fg: #fff7ef;
+        --docscn-template-shadow: 0 24px 70px rgba(84, 45, 24, 0.12);
+        --docscn-template-radius: 28px;
+        --docscn-template-radius-sm: 14px;
+
+        --bg: var(--docscn-template-bg);
+        --fg: var(--docscn-template-ink);
+        --ink: var(--docscn-template-ink);
+        --slate: var(--docscn-template-ink);
+        --ivory: var(--docscn-template-bg);
+        --paper: var(--docscn-template-surface);
+        --white: var(--docscn-template-surface-strong);
+        --card: var(--docscn-template-surface);
+        --card-bg: linear-gradient(
+          135deg,
+          var(--docscn-template-surface-strong),
+          var(--docscn-template-surface)
+        );
+        --card-border: var(--docscn-template-border);
+        --event-border: var(--docscn-template-border);
+        --line: var(--docscn-template-border);
+        --border: var(--docscn-template-border);
+        --oat: var(--docscn-template-border);
+        --muted: var(--docscn-template-muted);
+        --gray-150: #f3e9df;
+        --gray-200: #eadccd;
+        --gray-300: var(--docscn-template-border);
+        --gray-500: var(--docscn-template-muted);
+        --gray-700: #4f4750;
+        --g100: #f3e9df;
+        --g200: #eadccd;
+        --g300: var(--docscn-template-border);
+        --g500: var(--docscn-template-muted);
+        --g700: #4f4750;
+        --accent: var(--docscn-template-accent);
+        --accent-fg: var(--docscn-template-accent-fg);
+        --clay: var(--docscn-template-accent);
+        --clay-d: var(--docscn-template-accent-strong);
+        --rust: var(--docscn-template-accent-strong);
+        --olive: #8a6f3d;
+        --good: #1f7a62;
+        --warn: #bd7a1f;
+        --sev-border: #d95f37;
+        --sev-fg: var(--docscn-template-accent-strong);
+        --pre-bg: #f4e9df;
+        --code: #f4e9df;
+        --code-bg: #f4e9df;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not(.light):not(.dark) {
+          --docscn-template-bg: #151722;
+          --docscn-template-surface: #1d202d;
+          --docscn-template-surface-strong: #232636;
+          --docscn-template-ink: #f7efe8;
+          --docscn-template-muted: #b9afb7;
+          --docscn-template-border: #38313a;
+          --docscn-template-grid: rgba(240, 142, 85, 0.1);
+          --docscn-template-accent: #f08e55;
+          --docscn-template-accent-soft: rgba(240, 142, 85, 0.16);
+          --docscn-template-accent-strong: #ffb083;
+          --docscn-template-accent-fg: #20140f;
+          --docscn-template-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+          --gray-150: #202330;
+          --gray-200: #282a38;
+          --gray-700: #d9d0d3;
+          --g100: #202330;
+          --g200: #282a38;
+          --g700: #d9d0d3;
+          --pre-bg: #171a24;
+          --code: #171a24;
+          --code-bg: #171a24;
+        }
+      }
+
+      html.dark,
+      html[data-docscn-theme='dark'] {
+        --docscn-template-bg: #151722;
+        --docscn-template-surface: #1d202d;
+        --docscn-template-surface-strong: #232636;
+        --docscn-template-ink: #f7efe8;
+        --docscn-template-muted: #b9afb7;
+        --docscn-template-border: #38313a;
+        --docscn-template-grid: rgba(240, 142, 85, 0.1);
+        --docscn-template-accent: #f08e55;
+        --docscn-template-accent-soft: rgba(240, 142, 85, 0.16);
+        --docscn-template-accent-strong: #ffb083;
+        --docscn-template-accent-fg: #20140f;
+        --docscn-template-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+        --gray-150: #202330;
+        --gray-200: #282a38;
+        --gray-700: #d9d0d3;
+        --g100: #202330;
+        --g200: #282a38;
+        --g700: #d9d0d3;
+        --pre-bg: #171a24;
+        --code: #171a24;
+        --code-bg: #171a24;
+      }
+
+      html.light,
+      html[data-docscn-theme='light'] {
+        --docscn-template-bg: #f8efe7;
+        --docscn-template-surface: #fffaf6;
+        --docscn-template-surface-strong: #ffffff;
+        --docscn-template-ink: #181927;
+        --docscn-template-muted: #706977;
+        --docscn-template-border: #decfc2;
+        --docscn-template-grid: rgba(185, 71, 25, 0.08);
+        --docscn-template-accent: #b94719;
+        --docscn-template-accent-soft: rgba(185, 71, 25, 0.12);
+        --docscn-template-accent-strong: #8f3415;
+        --docscn-template-accent-fg: #fff7ef;
+        --docscn-template-shadow: 0 24px 70px rgba(84, 45, 24, 0.12);
+        --gray-150: #f3e9df;
+        --gray-200: #eadccd;
+        --gray-700: #4f4750;
+        --g100: #f3e9df;
+        --g200: #eadccd;
+        --g700: #4f4750;
+        --pre-bg: #f4e9df;
+        --code: #f4e9df;
+        --code-bg: #f4e9df;
+      }
+
+      html {
+        background: var(--docscn-template-bg) !important;
+        color: var(--docscn-template-ink) !important;
+      }
+
+      body {
+        background:
+          radial-gradient(
+            circle at 86% 12%,
+            var(--docscn-template-accent-soft),
+            transparent 28rem
+          ),
+          linear-gradient(var(--docscn-template-grid) 1px, transparent 1px),
+          linear-gradient(
+            90deg,
+            var(--docscn-template-grid) 1px,
+            transparent 1px
+          ),
+          var(--docscn-template-bg) !important;
+        background-size:
+          auto,
+          36px 36px,
+          36px 36px,
+          auto !important;
+        color: var(--docscn-template-ink) !important;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      .title,
+      .headline {
+        color: var(--docscn-template-ink) !important;
+      }
+
+      .eyebrow,
+      .kicker,
+      .label,
+      .tag,
+      .pill,
+      .badge,
+      .chip,
+      .meta,
+      .number,
+      .index {
+        border-color: color-mix(
+          in oklab,
+          var(--docscn-template-accent) 30%,
+          var(--docscn-template-border)
+        ) !important;
+        color: var(--docscn-template-accent) !important;
+      }
+
+      a {
+        color: var(--docscn-template-accent) !important;
+      }
+
+      article,
+      section,
+      .card,
+      .panel,
+      .tile,
+      .lane,
+      .column,
+      .module,
+      .node,
+      .box,
+      .callout,
+      .prompt-box,
+      .summary,
+      .preview,
+      .surface,
+      .token,
+      .variant,
+      .report,
+      .slide,
+      .board,
+      .toolbar,
+      .component,
+      .swatch,
+      .flow-node,
+      .step {
+        border-color: var(--docscn-template-border) !important;
+        box-shadow: var(--docscn-template-shadow);
+      }
+
+      .card,
+      .panel,
+      .tile,
+      .node,
+      .box,
+      .callout,
+      .prompt-box,
+      .summary,
+      .preview,
+      .surface,
+      .lane,
+      .slide {
+        background: color-mix(
+          in oklab,
+          var(--docscn-template-surface) 92%,
+          transparent
+        ) !important;
+      }
+
+      pre,
+      .code-block,
+      .terminal,
+      .snippet {
+        border-color: color-mix(
+          in oklab,
+          var(--docscn-template-accent) 18%,
+          #101119
+        ) !important;
+        background: #151620 !important;
+        color: #fff7ef !important;
+      }
+
+      pre code,
+      .code-block code,
+      .terminal code,
+      .snippet code {
+        background: transparent !important;
+        color: inherit !important;
+      }
+
+      code:not(pre code),
+      textarea,
+      input,
+      select {
+        border-color: var(--docscn-template-border) !important;
+        background: var(--pre-bg) !important;
+        color: var(--docscn-template-ink) !important;
+      }
+
+      button,
+      .button,
+      [role='button'] {
+        border-color: color-mix(
+          in oklab,
+          var(--docscn-template-accent) 42%,
+          var(--docscn-template-border)
+        ) !important;
+        border-radius: var(--docscn-template-radius-sm);
+      }
+
+      button:not(.ghost),
+      .button:not(.ghost) {
+        background: var(--docscn-template-accent) !important;
+        color: var(--docscn-template-accent-fg) !important;
+      }
+
+      ::selection {
+        background: color-mix(
+          in oklab,
+          var(--docscn-template-accent) 28%,
+          transparent
+        );
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ============================================================
+       Slide 1 — Title
+       ============================================================ -->
+    <section class="slide title-slide" id="s1">
+      <div class="slide-inner">
+        <svg
+          class="ornament"
+          width="56"
+          height="56"
+          viewBox="0 0 56 56"
+          aria-hidden="true"
+        >
+          <circle
+            cx="28"
+            cy="28"
+            r="22"
+            fill="none"
+            stroke="#D1CFC5"
+            stroke-width="1.5"
+          />
+          <path
+            d="M16 28 H40 M28 16 V40"
+            stroke="#D97757"
+            stroke-width="1.5"
+            stroke-linecap="round"
+          />
+          <circle cx="28" cy="28" r="3" fill="#141413" />
+        </svg>
+        <h1>Platform Eng<br />— Week of Mar 10</h1>
+        <p class="subtitle">
+          What shipped, what's moving, and one decision we need from the room
+          before the Acme 2.4 cut.
+        </p>
+        <div class="byline">
+          <span>Friday demo</span>
+          <span>6 slides</span>
+          <span>~4 min</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+       Slide 2 — Shipped
+       ============================================================ -->
+    <section class="slide" id="s2">
+      <div class="slide-inner">
+        <div class="eyebrow">Shipped this week</div>
+        <h2>Three things out the door</h2>
+        <ul class="ship-list">
+          <li class="ship-item">
+            <span class="ship-dot"></span>
+            <div>
+              <div class="ship-title">Bulk task import</div>
+              <div class="ship-desc">
+                CSV and JSON uploads now land straight into a board with column
+                mapping — no more paste-and-pray.
+              </div>
+            </div>
+            <span class="ship-ref">#4211</span>
+          </li>
+          <li class="ship-item">
+            <span class="ship-dot"></span>
+            <div>
+              <div class="ship-title">Webhook retries v2</div>
+              <div class="ship-desc">
+                Exponential backoff with jitter; dead-letter queue surfaces in
+                the workspace admin panel.
+              </div>
+            </div>
+            <span class="ship-ref">#4188 #4203</span>
+          </li>
+          <li class="ship-item">
+            <span class="ship-dot"></span>
+            <div>
+              <div class="ship-title">Postgres 16 migration</div>
+              <div class="ship-desc">
+                All read replicas cut over Tuesday night; zero customer-facing
+                downtime, ~9% faster aggregate queries.
+              </div>
+            </div>
+            <span class="ship-ref">#4179</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============================================================
+       Slide 3 — In progress
+       ============================================================ -->
+    <section class="slide" id="s3">
+      <div class="slide-inner">
+        <div class="eyebrow">In progress</div>
+        <h2>Carrying into next week</h2>
+        <ul class="prog-list">
+          <li class="prog-item">
+            <div class="prog-head">
+              <span class="prog-title">Recurring tasks engine</span>
+              <span class="prog-pct">~70%</span>
+            </div>
+            <div class="prog-track">
+              <div class="prog-fill" style="width: 70%"></div>
+            </div>
+            <p class="prog-note">
+              Scheduler and RRULE parsing are done; remaining work is the
+              timezone edge cases and the "skip holidays" toggle.
+            </p>
+          </li>
+          <li class="prog-item">
+            <div class="prog-head">
+              <span class="prog-title">Audit log export</span>
+              <span class="prog-pct">~35%</span>
+            </div>
+            <div class="prog-track">
+              <div class="prog-fill" style="width: 35%"></div>
+            </div>
+            <p class="prog-note">
+              Streaming NDJSON endpoint is up behind a flag; still wiring the S3
+              destination picker and retention policy UI.
+            </p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============================================================
+       Slide 4 — Metrics
+       ============================================================ -->
+    <section class="slide" id="s4">
+      <div class="slide-inner">
+        <div class="eyebrow">Metrics</div>
+        <h2>Numbers we watch</h2>
+
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-label">API p95 latency</div>
+            <div class="metric-value">
+              184<span style="font-size: 28px">ms</span>
+            </div>
+            <div class="metric-delta down">↓ 12% wk/wk</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Background job error rate</div>
+            <div class="metric-value">
+              0.21<span style="font-size: 28px">%</span>
+            </div>
+            <div class="metric-delta down">↓ 0.08pp</div>
+          </div>
+        </div>
+
+        <div class="sparkline-wrap">
+          <svg
+            width="100%"
+            height="64"
+            viewBox="0 0 780 64"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <polyline
+              points="0,22 110,30 220,18 330,34 440,26 550,40 660,24 780,12"
+              fill="none"
+              stroke="#788C5D"
+              stroke-width="2"
+              stroke-linejoin="round"
+              stroke-linecap="round"
+            />
+            <circle cx="780" cy="12" r="3.5" fill="#788C5D" />
+            <line
+              x1="0"
+              y1="63"
+              x2="780"
+              y2="63"
+              stroke="#D1CFC5"
+              stroke-width="1"
+            />
+          </svg>
+          <div class="sparkline-caption">
+            p95 latency, trailing 8 days — lower is better
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+       Slide 5 — Decision needed (inverted)
+       ============================================================ -->
+    <section class="slide invert" id="s5">
+      <div class="slide-inner">
+        <div class="eyebrow">Decision needed</div>
+        <h2>One call to make</h2>
+
+        <div class="decision-card">
+          <p class="decision-q">
+            Do we ship recurring tasks behind a workspace flag in 2.4, or hold
+            one more week for the timezone fixes?
+          </p>
+          <p class="decision-context">
+            Flagged rollout gets it to design partners Friday but means two code
+            paths for ~2 weeks. Holding keeps a single path but slips the
+            partner promise.
+          </p>
+        </div>
+
+        <div class="options">
+          <span class="chip lean">A — Flag it, ship Friday</span>
+          <span class="chip">B — Hold for 2.5</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+       Slide 6 — Next week
+       ============================================================ -->
+    <section class="slide" id="s6">
+      <div class="slide-inner">
+        <div class="eyebrow">Next week</div>
+        <h2>On deck</h2>
+        <ul class="next-list">
+          <li>
+            Finish recurring tasks — timezone matrix tests, then dogfood on the
+            internal ops board.
+          </li>
+          <li>Audit log export to private beta — three workspaces lined up.</li>
+          <li>
+            Start scoping rate-limit headers for the public API; RFC draft by
+            Thursday.
+          </li>
+        </ul>
+        <div class="footnote">
+          Questions → drop them in the platform channel or grab anyone after
+          standup.
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+       Slide counter
+       ============================================================ -->
+    <div id="counter">1 / 6</div>
+
+    <script>
+      (function () {
+        const slides = Array.from(document.querySelectorAll('.slide'));
+        const counter = document.getElementById('counter');
+        let current = 0;
+
+        function go(i) {
+          current = Math.max(0, Math.min(slides.length - 1, i));
+          slides[current].scrollIntoView({ behavior: 'smooth' });
+        }
+
+        document.addEventListener('keydown', function (e) {
+          if (
+            e.key === 'ArrowRight' ||
+            e.key === 'ArrowDown' ||
+            e.key === ' '
+          ) {
+            e.preventDefault();
+            go(current + 1);
+          }
+          if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            go(current - 1);
+          }
+        });
+
+        const obs = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (en) {
+              if (en.isIntersecting) {
+                current = slides.indexOf(en.target);
+                counter.textContent = current + 1 + ' / ' + slides.length;
+              }
+            });
+          },
+          { threshold: 0.6 },
+        );
+
+        slides.forEach(function (s) {
+          obs.observe(s);
+        });
+      })();
+    </script>
+  </body>
+</html>

@@ -119,6 +119,7 @@ cat <<'NEXT'
 
 Next steps:
   docscn login
+  docscn template list
   docscn publish artifact.html
 
 To update later, rerun this installer.

@@ -15,15 +15,19 @@ function GitHubMark(props: SVGProps<SVGSVGElement>) {
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95">
+    <header className="app-header sticky top-0 z-50">
       <Shell className="flex items-center justify-between py-4">
         <Link href="/" className="group flex items-center gap-3">
-          <span className="relative grid h-9 w-9 place-items-center overflow-hidden rounded-lg border border-primary/30 bg-primary/10 text-lg text-primary transition group-hover:border-primary/50">
-            <span className="relative z-10 font-semibold">d</span>
-            <span className="absolute inset-0 bg-linear-to-br from-primary/20 to-transparent opacity-0 transition group-hover:opacity-100" />
+          <span className="relative grid h-9 w-9 place-items-center overflow-hidden rounded-md border border-primary/35 bg-primary/10 text-sm font-semibold text-primary transition group-hover:border-primary/55">
+            d
           </span>
-          <span className="text-sm font-medium tracking-tight text-foreground">
-            docscn
+          <span className="leading-tight">
+            <span className="block font-mono text-[0.68rem] uppercase tracking-[0.28em] text-muted-foreground">
+              docscn
+            </span>
+            <span className="block text-sm font-medium tracking-tight text-foreground">
+              artifact platform
+            </span>
           </span>
         </Link>
         <div className="flex items-center gap-2">
