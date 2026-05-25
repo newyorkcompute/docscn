@@ -23,9 +23,9 @@ test('recovers an anonymous artifact after sign-up', async ({ browser }) => {
 
   await page.goto('/');
   await page.evaluate(
-    ({ artifactId, claimToken, slug, title: receiptTitle }) => {
+    ({ artifactId, claimToken, slug, title: receiptTitle, storageKey }) => {
       window.localStorage.setItem(
-        'docscn.anonymousClaims.v1',
+        storageKey,
         JSON.stringify([
           {
             artifactId,
@@ -42,6 +42,7 @@ test('recovers an anonymous artifact after sign-up', async ({ browser }) => {
       claimToken: published.result.claimToken,
       slug: published.result.slug,
       title,
+      storageKey: claimStorageKey,
     },
   );
 
