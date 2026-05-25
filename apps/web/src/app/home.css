@@ -472,6 +472,10 @@
   .home-manifest-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .home-manifest-link:nth-child(odd) {
+    border-right: 1px solid var(--home-rule);
+  }
 }
 
 .home-manifest-link {
@@ -481,10 +485,6 @@
   transition:
     background 160ms ease,
     color 160ms ease;
-}
-
-.home-manifest-link:nth-child(odd) {
-  border-right: 1px solid var(--home-rule);
 }
 
 @media (min-width: 640px) {
