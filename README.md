@@ -37,6 +37,7 @@ This repo uses Nx with npm workspaces.
 ```text
 apps/
   web/        Next.js app for hosting and collaborating on artifacts
+  web-e2e/    Playwright browser tests for critical publishing and sharing flows
 packages/
   ui/         Shared shadcn-inspired UI primitives
   db/         Drizzle/Postgres schema, migrations, repository, mock fallback
@@ -72,6 +73,7 @@ Useful commands:
 npm run build
 npm run lint
 npm test
+npm run test:e2e
 npm run typecheck
 npm run format
 ```
@@ -152,6 +154,9 @@ The core stack is intentionally OSS-friendly and provider-portable:
 - **Publishing credentials:** first publish can be anonymous and unlisted with a
   local recovery receipt that can claim ownership for 90 days; hashed API keys
   stored in Postgres unlock owned/private artifacts and collaboration.
+- **Future queues/cache:** Redis-compatible infrastructure is planned for
+  automation and scheduled reports; it is not required for the current local
+  stack.
 
 No core data path depends on a single hosted vendor. Hosted defaults can be
 convenient, but the interfaces are meant to be replaceable.
@@ -164,18 +169,22 @@ convenient, but the interfaces are meant to be replaceable.
 - Anonymous unlisted publishing with automatic recovery for 90 days after
   sign-in, plus hashed API keys for owned agent and CLI publishing through
   `Authorization: Bearer`.
+- Private artifact sharing by email with viewer/commenter roles, plus public and
+  unlisted link-sharing modes. Invites grant access immediately; v1 does not send
+  email notifications.
 - Publish Artifact flow backed by `/api/artifacts`, with Drizzle/Postgres when
   configured and a local runtime fallback otherwise.
 - Sandboxed artifact viewer using iframe `srcDoc`.
 - Artifact metadata: title, description, author/agent, date, visibility, source.
 - Visibility rules: public artifacts are listed, unlisted artifacts are direct
-  link shareable, and private artifacts are owner-only.
+  link shareable, and private artifacts require ownership or an email invite.
 - Review threads, revision history, and collaboration metadata around each artifact.
 - Figma-style comment pins over the artifact viewer for review context.
 - SDK contracts shaped for publish APIs, MCP tools, skills, and agents.
 - Agent-first CLI flow for no-login unlisted publishing, browser login, local
-  credential storage, reading feedback, comments, and revisions.
-- MCP server with tools for publish, list, fetch, feedback, review threads, revisions, claims, and identity.
+  credential storage, sharing, reading feedback, comments, and revisions.
+- MCP server with tools for publish, list, fetch, sharing, visibility, feedback,
+  review threads, revisions, claims, and identity.
 - Public `/skills.md` endpoint that tells agents how to interact with docscn.
 - OpenAPI spec at `/openapi.json` for REST integrations.
 
@@ -187,7 +196,7 @@ open-source, self-hostable architecture:
 - Postgres with Drizzle ORM.
 - Better Auth for login and public/private artifacts.
 - S3-compatible storage for artifact HTML and assets.
-- Redis-compatible queues/cache for automation and scheduled reports.
+- Future Redis-compatible queues/cache for automation and scheduled reports.
 - Docker Compose friendly local services.
 - Cloud-hosted friendly deployments on replaceable providers such as Neon,
   Upstash, Cloudflare R2, and Vercel.
@@ -233,6 +242,10 @@ docscn thread create <artifact-id-or-slug> \
   --title "Suggested improvement" \
   --body "..." \
   --host http://localhost:3000
+docscn share <artifact-id-or-slug> \
+  --email reviewer@example.com \
+  --role commenter \
+  --host http://localhost:3000
 docscn comment <thread-id> \
   --body "Updated in revision 2." \
   --host http://localhost:3000
@@ -272,19 +285,22 @@ REST clients can use the OpenAPI spec at `/openapi.json` (source: `packages/sdk/
 
 ## Tests And Smoke
 
-The current test coverage focuses on the agent/API/CLI contract. UI tests can
-wait until the interface settles.
+The test suite covers the agent/API/CLI contract plus browser E2E coverage for
+the highest-risk user flows.
 
 ```bash
 npm run test:cli       # CLI config and command behavior
 npm run test:mcp       # MCP server module and tool registration
 npm run test:backend   # localhost backend API contract
+npm run test:e2e       # Playwright coverage for publish/claim and private sharing
 npm test               # CLI + MCP + backend tests
 npm run smoke:agent    # full local agent flow through the built CLI
 ```
 
-`npm run test:backend` and `npm run smoke:agent` expect the local web app to be
-running at `http://localhost:3000` with Postgres and MinIO available. The smoke
+`npm run test:backend`, `npm run test:e2e`, and `npm run smoke:agent` expect the
+local web app to be running at `http://localhost:3000` with Postgres and MinIO
+available. The Playwright suite exercises anonymous publish recovery after
+sign-up and private sharing access for viewer/commenter/revoked users. The smoke
 script signs up a test user, completes CLI device auth, verifies saved config,
 publishes an artifact, verifies the published URL is viewable, reads feedback,
 creates a thread, submits a revision, and comments as an agent.
@@ -316,6 +332,7 @@ npm run doctor
 npm run setup:local
 npm run dev:persistent
 npm run test
+npm run test:e2e
 ```
 
 ## License
