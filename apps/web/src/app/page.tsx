@@ -5,7 +5,6 @@ import {
   BookOpenText,
   Braces,
   Code2,
-  Download,
   MessageSquare,
   PackageCheck,
   PanelsTopLeft,
@@ -16,10 +15,7 @@ import {
 import { Button, Shell } from '@docscn/ui';
 import { GITHUB_REPO_URL } from '../lib/constants';
 import { HomeHeader } from '../components/home-header';
-import {
-  HeroCliQuickstartPreview,
-  HeroInstallTerminal,
-} from '../components/hero-cli-commands';
+import { HeroInstallTerminal } from '../components/hero-cli-commands';
 import { HomeGallerySection } from '../components/home-gallery-section';
 import './home.css';
 
@@ -84,12 +80,6 @@ export default function Index() {
     },
   ];
 
-  const flowSteps = [
-    ['Publish', 'unlisted URL for a self-contained HTML artifact'],
-    ['Review', 'point, text, and element feedback on the render'],
-    ['Revise', 'structured threads returned to the next agent run'],
-  ];
-
   return (
     <div className="home-page">
       <HomeHeader />
@@ -144,47 +134,34 @@ export default function Index() {
                   </Link>
                 </Button>
               </div>
-
-              <HeroInstallTerminal className="home-terminal home-reveal home-delay-5 mt-10" />
             </section>
 
             <aside
-              aria-label="Artifact workflow preview"
+              aria-label="CLI install preview"
               className="home-sheet home-reveal home-delay-3"
             >
               <div className="home-sheet-inner p-5">
-                <div className="flex items-start justify-between gap-4 border-b border-border/70 pb-4">
+                <div className="border-b border-border/70 pb-5">
                   <div>
-                    <p className="home-sheet-label">artifact review · v2</p>
+                    <p className="home-sheet-label">local agent workflow</p>
                     <p className="mt-2 font-display text-2xl font-semibold tracking-tight">
-                      Generated incident report
+                      Install the CLI once.
+                    </p>
+                    <p className="mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
+                      Then any agent, script, or terminal can publish a
+                      self-contained HTML artifact to a stable review URL.
                     </p>
                   </div>
-                  <span className="home-stat">v2</span>
                 </div>
 
-                <div className="grid gap-3 py-5">
-                  {flowSteps.map((item, index) => (
-                    <div className="home-flow-step" key={item[0]}>
-                      <p className="home-flow-index">0{index + 1}</p>
-                      <p className="mt-1 text-sm leading-6">
-                        <strong className="text-foreground">{item[0]}</strong>
-                        <span className="text-muted-foreground">
-                          {' '}
-                          — {item[1]}
-                        </span>
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="rounded-xl border border-dashed border-primary/35 bg-primary/8 p-4">
-                  <div className="flex items-center gap-2 text-xs font-medium text-primary">
-                    <Download className="h-3.5 w-3.5" />
-                    CLI quickstart
-                  </div>
-                  <HeroCliQuickstartPreview />
-                </div>
+                <HeroInstallTerminal className="home-terminal mt-5" />
+                <p className="mt-4 text-xs leading-5 text-muted-foreground">
+                  After install, run{' '}
+                  <code className="rounded-md border border-border bg-background/70 px-1.5 py-0.5 font-mono text-foreground">
+                    docscn help
+                  </code>{' '}
+                  to see publish, template, review, and revision commands.
+                </p>
               </div>
             </aside>
           </Shell>

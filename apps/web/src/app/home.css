@@ -231,18 +231,6 @@
   color: color-mix(in oklch, var(--muted-foreground) 85%, transparent);
 }
 
-.home-flow-step {
-  border-left: 2px solid color-mix(in oklch, var(--primary) 35%, transparent);
-  padding-left: 0.85rem;
-}
-
-.home-flow-index {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.14em;
-  color: var(--primary);
-}
-
 .home-bento {
   display: grid;
   gap: 1rem;
