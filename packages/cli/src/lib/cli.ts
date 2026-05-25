@@ -900,7 +900,6 @@ export async function shareArtifactFromCli(args: string[]) {
   }
 
   const role = parseShareRole(parseFlagValue(args, '--role') ?? 'viewer');
-
   const result = await apiFetch<ShareResponse>(credentials, path, {
     method: 'POST',
     body: JSON.stringify({ email, role }),

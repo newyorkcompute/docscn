@@ -202,6 +202,8 @@ await assertRejectsWith(
       'artifact-unit',
       '--host',
       'http://localhost:3000',
+      '--email',
+      'reviewer@example.com',
       '--role',
       'editor',
     ]),
@@ -282,6 +284,8 @@ try {
       cliShareHost,
       '--api-key',
       'docscn_sk_unit',
+      '--role',
+      'editor',
     ]),
   );
   assert.match(listShareLogs.join('\n'), /reviewer@example.com {2}commenter/);
@@ -296,6 +300,8 @@ try {
       '--email',
       'reviewer@example.com',
       '--remove',
+      '--role',
+      'editor',
     ]),
   );
   assert.match(removeShareLogs.join('\n'), /Removed reviewer@example.com/);
