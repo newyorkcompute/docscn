@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReviewAnchor } from '@docscn/sdk';
 import { cn } from '@docscn/ui';
 
 export type ArtifactAnnotationMode = 'idle' | 'point' | 'text' | 'element';
@@ -31,6 +32,12 @@ export interface ArtifactViewportState {
   viewportHeight: number;
 }
 
+export interface ArtifactFocusAnchor {
+  x: number;
+  y: number;
+  requestId: number;
+}
+
 function buildAnnotationBridgeScript(
   bridgeId: string,
   initialMode: ArtifactAnnotationMode,
@@ -43,6 +50,8 @@ function buildAnnotationBridgeScript(
   const initialTheme = ${JSON.stringify(initialTheme)};
   let highlightedElement;
 
+  let pinHighlightedElement;
+
   const style = document.createElement('style');
   style.textContent = \`
     [data-docscn-element-hover] {
@@ -50,6 +59,12 @@ function buildAnnotationBridgeScript(
       outline-offset: 3px !important;
       box-shadow: 0 0 0 6px rgba(22, 119, 255, 0.18) !important;
       cursor: crosshair !important;
+    }
+    [data-docscn-pin-highlight] {
+      outline: 2px solid #f97316 !important;
+      outline-offset: 2px !important;
+      box-shadow: 0 0 0 6px rgba(249, 115, 22, 0.15) !important;
+      transition: outline-color 150ms, box-shadow 150ms !important;
     }
   \`;
   document.head.appendChild(style);
@@ -206,6 +221,21 @@ function buildAnnotationBridgeScript(
     );
   }
 
+  function scrollToAnchor(anchor) {
+    const metrics = viewportMetrics();
+    const targetX = (anchor.x / 100) * metrics.scrollWidth - metrics.viewportWidth / 2;
+    const targetY = (anchor.y / 100) * metrics.scrollHeight - metrics.viewportHeight / 2;
+
+    window.scrollTo({
+      left: clamp(targetX, 0, Math.max(metrics.scrollWidth - metrics.viewportWidth, 0)),
+      top: clamp(targetY, 0, Math.max(metrics.scrollHeight - metrics.viewportHeight, 0)),
+      behavior: 'smooth',
+    });
+
+    scheduleViewport();
+    window.setTimeout(scheduleViewport, 260);
+  }
+
   let viewportFrame = 0;
 
   function scheduleViewport() {
@@ -230,6 +260,53 @@ function buildAnnotationBridgeScript(
     );
   }
 
+  function clearPinHighlight() {
+    if (pinHighlightedElement) {
+      pinHighlightedElement.removeAttribute('data-docscn-pin-highlight');
+      pinHighlightedElement = undefined;
+    }
+  }
+
+  function highlightAnchor(anchor) {
+    clearPinHighlight();
+
+    if (anchor && anchor.selector) {
+      try {
+        const target = document.querySelector(anchor.selector);
+
+        if (target) {
+          pinHighlightedElement = target;
+          target.setAttribute('data-docscn-pin-highlight', 'true');
+          return;
+        }
+      } catch (_) {
+        // invalid selector
+      }
+    }
+
+    if (anchor && anchor.quote) {
+      const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+      );
+      const snippet = anchor.quote.slice(0, 80);
+      let node;
+
+      while ((node = walker.nextNode())) {
+        if (node.textContent && node.textContent.includes(snippet)) {
+          const parent = node.parentElement;
+
+          if (parent) {
+            pinHighlightedElement = parent;
+            parent.setAttribute('data-docscn-pin-highlight', 'true');
+          }
+
+          return;
+        }
+      }
+    }
+  }
+
   window.addEventListener('message', (event) => {
     const data = event.data || {};
 
@@ -240,6 +317,22 @@ function buildAnnotationBridgeScript(
     if (data.type === 'docscn:set-artifact-theme' && data.bridgeId === bridgeId) {
       setTheme(data.theme);
     }
+
+    if (data.type === 'docscn:request-viewport' && data.bridgeId === bridgeId) {
+      scheduleViewport();
+    }
+
+    if (data.type === 'docscn:focus-anchor' && data.bridgeId === bridgeId && data.anchor) {
+      scrollToAnchor(data.anchor);
+    }
+
+    if (data.type === 'docscn:highlight-anchor' && data.bridgeId === bridgeId) {
+      if (data.anchor) {
+        highlightAnchor(data.anchor);
+      } else {
+        clearPinHighlight();
+      }
+    }
   });
 
   setMode(mode);
@@ -249,6 +342,20 @@ function buildAnnotationBridgeScript(
 
   window.addEventListener('scroll', scheduleViewport, { passive: true });
   window.addEventListener('resize', scheduleViewport);
+
+  if (window.ResizeObserver) {
+    if (window.__docscnResizeObserver) {
+      window.__docscnResizeObserver.disconnect();
+    }
+
+    window.__docscnResizeObserver = new ResizeObserver(scheduleViewport);
+
+    window.__docscnResizeObserver.observe(document.documentElement);
+
+    if (document.body) {
+      window.__docscnResizeObserver.observe(document.body);
+    }
+  }
 
   document.addEventListener(
     'keydown',
@@ -441,6 +548,9 @@ export function ArtifactFrame({
   showChrome = true,
   annotationBridgeId,
   annotationMode = 'idle',
+  focusAnchor,
+  highlightedAnchor,
+  viewportRequestId,
   onAnnotation,
   onAnnotationCancel,
   onViewportChange,
@@ -452,6 +562,9 @@ export function ArtifactFrame({
   showChrome?: boolean;
   annotationBridgeId?: string;
   annotationMode?: ArtifactAnnotationMode;
+  focusAnchor?: ArtifactFocusAnchor;
+  highlightedAnchor?: ReviewAnchor;
+  viewportRequestId?: number;
   onAnnotation?: (annotation: ArtifactAnnotationEvent) => void;
   onAnnotationCancel?: () => void;
   onViewportChange?: (viewport: ArtifactViewportState) => void;
@@ -492,6 +605,40 @@ export function ArtifactFrame({
         type: 'docscn:set-artifact-theme',
         bridgeId: annotationBridgeId,
         theme,
+      },
+      '*',
+    );
+  }
+
+  function postViewportRequest() {
+    iframeRef.current?.contentWindow?.postMessage(
+      {
+        type: 'docscn:request-viewport',
+        bridgeId: annotationBridgeId,
+      },
+      '*',
+    );
+  }
+
+  function postHighlightAnchor(anchor?: ReviewAnchor) {
+    iframeRef.current?.contentWindow?.postMessage(
+      {
+        type: 'docscn:highlight-anchor',
+        bridgeId: annotationBridgeId,
+        anchor: anchor
+          ? { selector: anchor.selector, quote: anchor.quote }
+          : null,
+      },
+      '*',
+    );
+  }
+
+  function postFocusAnchor(anchor: ArtifactFocusAnchor) {
+    iframeRef.current?.contentWindow?.postMessage(
+      {
+        type: 'docscn:focus-anchor',
+        bridgeId: annotationBridgeId,
+        anchor,
       },
       '*',
     );
@@ -558,6 +705,37 @@ export function ArtifactFrame({
   }, [annotationBridgeId, annotationMode]);
 
   useEffect(() => {
+    if (!annotationBridgeId || !focusAnchor) {
+      return;
+    }
+
+    postFocusAnchor(focusAnchor);
+  }, [annotationBridgeId, focusAnchor]);
+
+  useEffect(() => {
+    if (!annotationBridgeId) {
+      return;
+    }
+
+    postHighlightAnchor(highlightedAnchor);
+  }, [annotationBridgeId, highlightedAnchor]);
+
+  useEffect(() => {
+    if (!annotationBridgeId || viewportRequestId == null) {
+      return;
+    }
+
+    postViewportRequest();
+    const t1 = window.setTimeout(postViewportRequest, 220);
+    const t2 = window.setTimeout(postViewportRequest, 420);
+
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [annotationBridgeId, viewportRequestId]);
+
+  useEffect(() => {
     if (!annotationBridgeId) {
       return;
     }
@@ -579,6 +757,40 @@ export function ArtifactFrame({
     return () => {
       observer.disconnect();
       mediaQuery.removeEventListener('change', syncTheme);
+    };
+  }, [annotationBridgeId]);
+
+  useEffect(() => {
+    if (!annotationBridgeId) {
+      return;
+    }
+
+    let frame = 0;
+
+    function requestViewport() {
+      if (frame) {
+        return;
+      }
+
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        postViewportRequest();
+      });
+    }
+
+    window.addEventListener('resize', requestViewport);
+    window.visualViewport?.addEventListener('resize', requestViewport);
+    window.visualViewport?.addEventListener('scroll', requestViewport);
+    requestViewport();
+
+    return () => {
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+      }
+
+      window.removeEventListener('resize', requestViewport);
+      window.visualViewport?.removeEventListener('resize', requestViewport);
+      window.visualViewport?.removeEventListener('scroll', requestViewport);
     };
   }, [annotationBridgeId]);
 
@@ -609,6 +821,10 @@ export function ArtifactFrame({
           onLoad={() => {
             postAnnotationMode();
             postArtifactTheme();
+            postViewportRequest();
+            if (focusAnchor) {
+              postFocusAnchor(focusAnchor);
+            }
           }}
         />
       ) : (

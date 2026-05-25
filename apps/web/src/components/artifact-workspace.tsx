@@ -5,13 +5,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Clock3,
+  CheckCircle2,
   Copy,
+  Eye,
+  EyeOff,
   GitCommitHorizontal,
   MessageCircle,
   MousePointer2,
   MessageSquareText,
-  PanelRightOpen,
+  MoreVertical,
   Type,
+  X,
 } from 'lucide-react';
 import type {
   Artifact,
@@ -29,6 +33,7 @@ import { Badge, Button, Card, Eyebrow, Shell, cn } from '@docscn/ui';
 import {
   ArtifactFrame,
   type ArtifactAnnotationEvent,
+  type ArtifactFocusAnchor,
   type ArtifactAnnotationMode,
   type ArtifactViewportState,
 } from './artifact-frame';
@@ -156,6 +161,24 @@ function getAnchorSummary(anchor?: ReviewAnchor) {
   return anchor.label;
 }
 
+function getInitials(name?: string) {
+  return (
+    name
+      ?.split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('') || 'A'
+  );
+}
+
+function formatCommentTime(value: string) {
+  return new Date(value).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 function ToolbarTip({
   align = 'center',
   children,
@@ -208,25 +231,38 @@ export function ArtifactWorkspace({
   const [activeDrawerView, setActiveDrawerView] = useState<
     'review' | 'revisions'
   >('review');
+  const [reviewThreadFilter, setReviewThreadFilter] = useState<
+    'remaining' | 'resolved'
+  >('remaining');
   const [commentBodies, setCommentBodies] = useState<Record<string, string>>(
     {},
   );
-  const [revisionSummary, setRevisionSummary] = useState('');
-  const [revisionHtml, setRevisionHtml] = useState('');
-  const [revisionAuthor, setRevisionAuthor] = useState('Cursor agent');
-  const [resolvedThreadIds, setResolvedThreadIds] = useState<string[]>([]);
   const [pendingAction, setPendingAction] = useState<string | undefined>();
   const [actionError, setActionError] = useState<string | undefined>();
   const [copiedBundle, setCopiedBundle] = useState<string | undefined>();
   const [activeThreadId, setActiveThreadId] = useState<string | undefined>();
+  const [activeThreadMenuId, setActiveThreadMenuId] = useState<
+    string | undefined
+  >();
   const [activeThreadPopoverId, setActiveThreadPopoverId] = useState<
     string | undefined
   >();
   const [annotationMode, setAnnotationMode] =
     useState<ArtifactAnnotationMode>('idle');
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [showCommentPins, setShowCommentPins] = useState(true);
+  const [viewportRequestId, setViewportRequestId] = useState(0);
   const [artifactViewport, setArtifactViewport] =
     useState<ArtifactViewportState>();
+  const [focusedArtifactAnchor, setFocusedArtifactAnchor] =
+    useState<ArtifactFocusAnchor>();
+  const [highlightedAnchor, setHighlightedAnchor] = useState<
+    ReviewAnchor | undefined
+  >();
+
+  useEffect(() => {
+    setViewportRequestId((n) => n + 1);
+  }, [isReviewOpen]);
   const [pendingAnchor, setPendingAnchor] = useState<
     PendingAnchor | undefined
   >();
@@ -245,10 +281,6 @@ export function ArtifactWorkspace({
     [artifact, selectedRevisionId],
   );
 
-  useEffect(() => {
-    setRevisionHtml(selectedRevision?.html ?? '');
-  }, [selectedRevision?.id, selectedRevision?.html]);
-
   const annotationBridgeId = useMemo(
     () => `${artifactId}:${selectedRevision?.id ?? 'pending'}`,
     [artifactId, selectedRevision?.id],
@@ -257,6 +289,21 @@ export function ArtifactWorkspace({
   const openThreads = useMemo(
     () => threads.filter((thread) => thread.status !== 'resolved'),
     [threads],
+  );
+  const resolvedThreads = useMemo(
+    () => threads.filter((thread) => thread.status === 'resolved'),
+    [threads],
+  );
+  const visibleThreadEntries = useMemo(
+    () =>
+      threads
+        .map((thread, index) => ({ index, thread }))
+        .filter(({ thread }) =>
+          reviewThreadFilter === 'resolved'
+            ? thread.status === 'resolved'
+            : thread.status !== 'resolved',
+        ),
+    [reviewThreadFilter, threads],
   );
 
   const feedbackBundle = useMemo(() => {
@@ -281,6 +328,14 @@ export function ArtifactWorkspace({
     window.setTimeout(() => setCopiedBundle(undefined), 1600);
   }
 
+  async function copyThreadLink(threadId: string) {
+    const url = `${window.location.origin}${window.location.pathname}#thread-${threadId}`;
+
+    await navigator.clipboard.writeText(url);
+    setCopiedBundle(`thread-${threadId}`);
+    window.setTimeout(() => setCopiedBundle(undefined), 1600);
+  }
+
   const activeThreadPopover = useMemo(
     () => threads.find((thread) => thread.id === activeThreadPopoverId),
     [activeThreadPopoverId, threads],
@@ -292,8 +347,15 @@ export function ArtifactWorkspace({
   );
 
   function selectThreadInDrawer(threadId: string) {
+    const thread = threads.find((t) => t.id === threadId);
+    if (thread) {
+      setReviewThreadFilter(
+        thread.status === 'resolved' ? 'resolved' : 'remaining',
+      );
+    }
     setActiveDrawerView('review');
     setActiveThreadId(threadId);
+    setActiveThreadMenuId(undefined);
     setActiveThreadPopoverId(undefined);
     setIsReviewOpen(true);
     window.setTimeout(() => {
@@ -321,10 +383,25 @@ export function ArtifactWorkspace({
     }
 
     setActiveThreadId(threadId);
+    setActiveThreadMenuId(undefined);
     setActiveThreadPopoverId(threadId);
     setPendingAnchor(undefined);
     setAnnotationMode('idle');
     setIsReviewOpen(false);
+  }
+
+  function highlightThreadOnArtifact(thread: ReviewThread, index: number) {
+    const point = getAnchorPoint(thread, index);
+
+    setShowCommentPins(true);
+    setActiveThreadId(thread.id);
+    setActiveThreadMenuId(undefined);
+    setIsReviewOpen(false);
+    setActiveThreadPopoverId(thread.id);
+    setFocusedArtifactAnchor({
+      ...point,
+      requestId: Date.now(),
+    });
   }
 
   function placeCommentAnchor(event: MouseEvent<HTMLButtonElement>) {
@@ -347,6 +424,7 @@ export function ArtifactWorkspace({
     setIsReviewOpen(false);
     setActiveThreadPopoverId(undefined);
     setAnnotationMode('idle');
+    setShowCommentPins(true);
   }
 
   function handleArtifactAnnotation(annotation: ArtifactAnnotationEvent) {
@@ -377,6 +455,7 @@ export function ArtifactWorkspace({
     setIsReviewOpen(false);
     setActiveThreadPopoverId(undefined);
     setAnnotationMode('idle');
+    setShowCommentPins(true);
   }
 
   async function refreshAfterAction() {
@@ -531,56 +610,15 @@ export function ArtifactWorkspace({
     }
   }
 
-  async function submitRevision(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!canRevise) {
-      setActionError('Only the artifact owner can submit revisions.');
-      return;
-    }
-
-    if (
-      !artifact ||
-      !revisionSummary.trim() ||
-      !revisionHtml.includes('<html')
-    ) {
-      return;
-    }
-
-    setPendingAction('revision');
-    setActionError(undefined);
-
-    try {
-      const response = await fetch(`/api/artifacts/${artifact.id}/revisions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          summary: revisionSummary,
-          html: revisionHtml,
-          authorName: revisionAuthor,
-          source: 'web',
-          resolvedThreadIds,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Could not submit revision.');
-      }
-
-      setRevisionSummary('');
-      setResolvedThreadIds([]);
-      await refreshAfterAction();
-    } catch (error) {
-      setActionError(
-        error instanceof Error ? error.message : 'Revision failed.',
-      );
-    } finally {
-      setPendingAction(undefined);
-    }
-  }
-
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== 'Escape') {
+        return;
+      }
+
+      if (activeThreadMenuId) {
+        event.preventDefault();
+        setActiveThreadMenuId(undefined);
         return;
       }
 
@@ -605,13 +643,25 @@ export function ArtifactWorkspace({
       if (activeThreadPopoverId) {
         event.preventDefault();
         setActiveThreadPopoverId(undefined);
+        return;
+      }
+
+      if (isReviewOpen) {
+        event.preventDefault();
+        setIsReviewOpen(false);
       }
     }
 
     window.addEventListener('keydown', onKeyDown);
 
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activeThreadPopoverId, annotationMode, pendingAnchor]);
+  }, [
+    activeThreadMenuId,
+    activeThreadPopoverId,
+    annotationMode,
+    isReviewOpen,
+    pendingAnchor,
+  ]);
 
   if (!artifact || !selectedRevision) {
     return (
@@ -678,6 +728,9 @@ export function ArtifactWorkspace({
           iframeClassName="h-screen min-h-screen"
           showChrome={false}
           title={artifact.metadata.title}
+          focusAnchor={focusedArtifactAnchor}
+          highlightedAnchor={highlightedAnchor}
+          viewportRequestId={viewportRequestId}
           onAnnotation={handleArtifactAnnotation}
           onAnnotationCancel={() => setAnnotationMode('idle')}
           onViewportChange={setArtifactViewport}
@@ -711,6 +764,7 @@ export function ArtifactWorkspace({
               setActionError(undefined);
               setActiveDrawerView('review');
               setIsReviewOpen(false);
+              setShowCommentPins(true);
               setAnnotationMode((current) =>
                 current === 'point' ? 'idle' : 'point',
               );
@@ -739,6 +793,7 @@ export function ArtifactWorkspace({
               setActiveThreadPopoverId(undefined);
               setActionError(undefined);
               setIsReviewOpen(false);
+              setShowCommentPins(true);
               setAnnotationMode((current) =>
                 current === 'text' ? 'idle' : 'text',
               );
@@ -767,6 +822,7 @@ export function ArtifactWorkspace({
               setActiveThreadPopoverId(undefined);
               setActionError(undefined);
               setIsReviewOpen(false);
+              setShowCommentPins(true);
               setAnnotationMode((current) =>
                 current === 'element' ? 'idle' : 'element',
               );
@@ -776,10 +832,49 @@ export function ArtifactWorkspace({
           </Button>
         </ToolbarTip>
         <div className="mx-1 h-5 w-px bg-white/15" />
+        <ToolbarTip
+          label={showCommentPins ? 'Hide comment pins' : 'Show comment pins'}
+        >
+          <Button
+            aria-label={
+              showCommentPins ? 'Hide comment pins' : 'Show comment pins'
+            }
+            className={cn(
+              'h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white',
+              !showCommentPins && 'bg-white/15',
+            )}
+            size="sm"
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setShowCommentPins((current) => {
+                const next = !current;
+
+                if (!next) {
+                  cancelPendingComment();
+                  setActiveThreadPopoverId(undefined);
+                  setActiveThreadMenuId(undefined);
+                  setAnnotationMode('idle');
+                }
+
+                return next;
+              });
+            }}
+          >
+            {showCommentPins ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </Button>
+        </ToolbarTip>
         <ToolbarTip label={`Revision history: v${selectedRevision.version}`}>
           <Button
             aria-label={`Open revision history, currently version ${selectedRevision.version}`}
-            className="h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white"
+            className={cn(
+              'h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white',
+              isReviewOpen && activeDrawerView === 'revisions' && 'bg-white/15',
+            )}
             size="sm"
             type="button"
             variant="ghost"
@@ -795,6 +890,7 @@ export function ArtifactWorkspace({
         <ToolbarTip align="right" label="Theme">
           <ThemeToggle
             className="h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white"
+            iconClassName="h-[22px] w-[22px] [stroke-width:2.4]"
             showLabel={false}
             variant="ghost"
           />
@@ -808,7 +904,7 @@ export function ArtifactWorkspace({
               aria-label={`Open review drawer, ${openThreads.length} open threads`}
               className={cn(
                 'h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white',
-                isReviewOpen && 'bg-white/15',
+                isReviewOpen && activeDrawerView === 'review' && 'bg-white/15',
               )}
               size="sm"
               type="button"
@@ -867,7 +963,7 @@ export function ArtifactWorkspace({
         </div>
       ) : null}
 
-      {threads.length ? (
+      {showCommentPins && threads.length ? (
         <div className={cn(artifactSurfaceClass, 'pointer-events-none z-20')}>
           {threads.map((thread, index) => {
             if (!isAnchorVisible(thread, index, artifactViewport)) {
@@ -890,6 +986,8 @@ export function ArtifactWorkspace({
                 style={position}
                 type="button"
                 onClick={() => openThreadPopover(thread.id)}
+                onMouseEnter={() => setHighlightedAnchor(thread.anchor)}
+                onMouseLeave={() => setHighlightedAnchor(undefined)}
               >
                 {index + 1}
               </button>
@@ -899,6 +997,7 @@ export function ArtifactWorkspace({
       ) : null}
 
       {activeThreadPopover &&
+      showCommentPins &&
       activeThreadPopoverPoint &&
       activeThreadPopoverVisible ? (
         <div
@@ -998,7 +1097,7 @@ export function ArtifactWorkspace({
         </div>
       ) : null}
 
-      {pendingAnchor && pendingViewportPoint ? (
+      {showCommentPins && pendingAnchor && pendingViewportPoint ? (
         <div className={cn(artifactSurfaceClass, 'pointer-events-none z-30')}>
           <button
             aria-label="Pending comment pin"
@@ -1014,7 +1113,10 @@ export function ArtifactWorkspace({
         </div>
       ) : null}
 
-      {pendingAnchor && pendingPopoverPoint && !isReviewOpen ? (
+      {showCommentPins &&
+      pendingAnchor &&
+      pendingPopoverPoint &&
+      !isReviewOpen ? (
         <form
           className="fixed z-50 w-[min(340px,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-neutral-950/95 p-4 text-white shadow-2xl shadow-black/30 backdrop-blur-xl"
           data-source="pin"
@@ -1087,12 +1189,14 @@ export function ArtifactWorkspace({
                 <p className="text-sm font-medium">{artifact.metadata.title}</p>
               </div>
               <Button
+                aria-label="Close review drawer"
+                className="h-9 w-9 rounded-full p-0"
                 size="sm"
                 type="button"
                 variant="ghost"
                 onClick={() => setIsReviewOpen(false)}
               >
-                Close
+                <X className="h-4 w-4" />
               </Button>
             </div>
             {actionError ? (
@@ -1103,14 +1207,67 @@ export function ArtifactWorkspace({
 
             {activeDrawerView === 'review' ? (
               <section className="px-1">
-                <div className="flex items-center gap-2">
-                  <PanelRightOpen className="h-4 w-4 text-primary" />
-                  <h2 className="font-semibold">Review threads</h2>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <MessageSquareText className="h-4 w-4 text-primary" />
+                    <h2 className="font-semibold">Comments</h2>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <ToolbarTip label="Copy an agent-ready feedback prompt">
+                      <Button
+                        className="h-7 rounded-full px-2 text-xs text-muted-foreground"
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                        onClick={() => copyFeedback(feedbackPrompt, 'prompt')}
+                      >
+                        <Copy className="h-3 w-3" />
+                        {copiedBundle === 'prompt' ? 'Copied' : 'Agent prompt'}
+                      </Button>
+                    </ToolbarTip>
+                    <ToolbarTip
+                      align="right"
+                      label="Copy structured feedback JSON"
+                    >
+                      <Button
+                        className="h-7 rounded-full px-2 text-xs text-muted-foreground"
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                        onClick={() => copyFeedback(feedbackJson, 'json')}
+                      >
+                        <Copy className="h-3 w-3" />
+                        {copiedBundle === 'json' ? 'Copied' : 'JSON'}
+                      </Button>
+                    </ToolbarTip>
+                  </div>
                 </div>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Read, reply, and resolve comments. Add new feedback from the
-                  canvas tools.
-                </p>
+                <div className="mt-4 flex items-center gap-4 border-b border-border">
+                  <button
+                    className={cn(
+                      'inline-flex border-b-2 px-1 pb-2 text-sm font-medium transition',
+                      reviewThreadFilter === 'remaining'
+                        ? 'border-primary text-primary'
+                        : 'border-b-0 text-muted-foreground hover:text-foreground',
+                    )}
+                    type="button"
+                    onClick={() => setReviewThreadFilter('remaining')}
+                  >
+                    Remaining ({openThreads.length})
+                  </button>
+                  <button
+                    className={cn(
+                      'inline-flex border-b-2 px-1 pb-2 text-sm font-medium transition',
+                      reviewThreadFilter === 'resolved'
+                        ? 'border-primary text-primary'
+                        : 'border-b-0 text-muted-foreground hover:text-foreground',
+                    )}
+                    type="button"
+                    onClick={() => setReviewThreadFilter('resolved')}
+                  >
+                    Resolved ({resolvedThreads.length})
+                  </button>
+                </div>
                 {!canComment ? (
                   <Card className="mt-4 border-primary/25 bg-primary/10 p-4">
                     <p className="text-sm font-medium">
@@ -1132,184 +1289,270 @@ export function ArtifactWorkspace({
                     </Button>
                   </Card>
                 ) : null}
-                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="mr-1 font-medium">Agent context</span>
-                  <Button
-                    className="h-7 rounded-full px-2 text-xs text-muted-foreground"
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                    onClick={() => copyFeedback(feedbackPrompt, 'prompt')}
-                  >
-                    <Copy className="h-3 w-3" />
-                    {copiedBundle === 'prompt' ? 'Copied' : 'Prompt'}
-                  </Button>
-                  <Button
-                    className="h-7 rounded-full px-2 text-xs text-muted-foreground"
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                    onClick={() => copyFeedback(feedbackJson, 'json')}
-                  >
-                    <Copy className="h-3 w-3" />
-                    {copiedBundle === 'json' ? 'Copied' : 'JSON'}
-                  </Button>
-                </div>
-                <div className="mt-5 divide-y divide-border">
-                  {threads.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No review threads yet. This artifact is ready for first
-                      pass feedback.
+                <div className="mt-5 space-y-3">
+                  {visibleThreadEntries.length === 0 ? (
+                    <p className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
+                      {reviewThreadFilter === 'resolved'
+                        ? 'No resolved threads yet.'
+                        : 'No remaining threads. This artifact is ready for the next revision.'}
                     </p>
                   ) : (
-                    threads.map((thread, index) => (
-                      <div
-                        className={cn(
-                          'py-5 transition',
-                          thread.id === activeThreadId
-                            ? 'rounded-lg bg-primary/5 px-3 ring-1 ring-primary/20'
-                            : '',
-                        )}
-                        id={`thread-${thread.id}`}
-                        key={thread.id}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="grid h-6 w-6 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                                {index + 1}
-                              </span>
-                              <Badge
-                                tone={
+                    visibleThreadEntries.map(({ thread, index }) => {
+                      const firstComment = thread.comments[0];
+
+                      return (
+                        <div
+                          className={cn(
+                            'rounded-2xl border border-border bg-card p-4 shadow-sm transition',
+                            thread.id === activeThreadId &&
+                              'border-primary/40 ring-4 ring-primary/10',
+                            thread.status === 'resolved' && 'opacity-70',
+                          )}
+                          id={`thread-${thread.id}`}
+                          key={thread.id}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="grid h-7 w-7 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                                  {index + 1}
+                                </span>
+                                <Badge
+                                  tone={
+                                    thread.status === 'resolved'
+                                      ? 'success'
+                                      : thread.status === 'needs-revision'
+                                        ? 'warning'
+                                        : 'muted'
+                                  }
+                                >
+                                  {thread.status}
+                                </Badge>
+                              </div>
+                              <h3 className="mt-3 text-sm font-medium leading-5">
+                                {thread.title}
+                              </h3>
+                            </div>
+                            <div className="relative flex items-center gap-1">
+                              <ToolbarTip
+                                align="right"
+                                label={
                                   thread.status === 'resolved'
-                                    ? 'success'
-                                    : thread.status === 'needs-revision'
-                                      ? 'warning'
-                                      : 'muted'
+                                    ? 'Reopen this thread'
+                                    : 'Mark this thread resolved'
                                 }
                               >
-                                {thread.status}
-                              </Badge>
+                                <input
+                                  aria-label={
+                                    thread.status === 'resolved'
+                                      ? 'Reopen thread'
+                                      : 'Resolve thread'
+                                  }
+                                  checked={thread.status === 'resolved'}
+                                  className="h-4 w-4 rounded border-border accent-primary"
+                                  disabled={
+                                    pendingAction ===
+                                      `status-${thread.id}-resolved` ||
+                                    pendingAction === `status-${thread.id}-open`
+                                  }
+                                  type="checkbox"
+                                  onChange={(event) =>
+                                    updateThreadStatus(
+                                      thread.id,
+                                      event.currentTarget.checked
+                                        ? 'resolved'
+                                        : 'open',
+                                    )
+                                  }
+                                />
+                              </ToolbarTip>
+                              <ToolbarTip
+                                align="right"
+                                label="More comment actions"
+                              >
+                                <button
+                                  aria-expanded={
+                                    activeThreadMenuId === thread.id
+                                  }
+                                  aria-label="More comment actions"
+                                  className="rounded-full p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                  type="button"
+                                  onClick={() =>
+                                    setActiveThreadMenuId((current) =>
+                                      current === thread.id
+                                        ? undefined
+                                        : thread.id,
+                                    )
+                                  }
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </button>
+                              </ToolbarTip>
+                              {activeThreadMenuId === thread.id ? (
+                                <div className="app-popover absolute right-6 top-12 z-10 w-56 overflow-hidden rounded-xl p-1 text-sm text-popover-foreground shadow-xl">
+                                  <button
+                                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-secondary"
+                                    type="button"
+                                    onClick={() =>
+                                      highlightThreadOnArtifact(thread, index)
+                                    }
+                                  >
+                                    <MousePointer2 className="h-4 w-4 text-muted-foreground" />
+                                    Highlight on artifact
+                                  </button>
+                                  {thread.status !== 'resolved' ? (
+                                    <button
+                                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-secondary"
+                                      disabled={
+                                        pendingAction ===
+                                        `status-${thread.id}-resolved`
+                                      }
+                                      type="button"
+                                      onClick={async () => {
+                                        setActiveThreadMenuId(undefined);
+                                        await updateThreadStatus(
+                                          thread.id,
+                                          'resolved',
+                                        );
+                                      }}
+                                    >
+                                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                                      Mark resolved
+                                    </button>
+                                  ) : (
+                                    <button
+                                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-secondary"
+                                      disabled={
+                                        pendingAction ===
+                                        `status-${thread.id}-open`
+                                      }
+                                      type="button"
+                                      onClick={async () => {
+                                        setActiveThreadMenuId(undefined);
+                                        await updateThreadStatus(
+                                          thread.id,
+                                          'open',
+                                        );
+                                      }}
+                                    >
+                                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                                      Re-open
+                                    </button>
+                                  )}
+                                  {thread.status !== 'needs-revision' ? (
+                                    <button
+                                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-secondary"
+                                      disabled={
+                                        pendingAction ===
+                                        `status-${thread.id}-needs-revision`
+                                      }
+                                      type="button"
+                                      onClick={async () => {
+                                        setActiveThreadMenuId(undefined);
+                                        await updateThreadStatus(
+                                          thread.id,
+                                          'needs-revision',
+                                        );
+                                      }}
+                                    >
+                                      <MessageSquareText className="h-4 w-4 text-muted-foreground" />
+                                      Needs revision
+                                    </button>
+                                  ) : null}
+                                  <button
+                                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-secondary"
+                                    type="button"
+                                    onClick={async () => {
+                                      setActiveThreadMenuId(undefined);
+                                      await copyThreadLink(thread.id);
+                                    }}
+                                  >
+                                    <Copy className="h-4 w-4 text-muted-foreground" />
+                                    {copiedBundle === `thread-${thread.id}`
+                                      ? 'Copied link'
+                                      : 'Get link to this comment'}
+                                  </button>
+                                </div>
+                              ) : null}
                             </div>
-                            <h3 className="mt-3 text-sm font-medium leading-5">
-                              {thread.title}
-                            </h3>
                           </div>
-                          <button
-                            className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                            type="button"
-                            onClick={() => selectThreadInDrawer(thread.id)}
-                          >
-                            <MessageSquareText className="h-4 w-4" />
-                          </button>
-                        </div>
-                        {thread.requestedChange ? (
-                          <p className="mt-3 rounded-lg bg-secondary/50 p-3 text-xs leading-5 text-muted-foreground">
-                            {thread.requestedChange}
-                          </p>
-                        ) : null}
-                        {thread.anchor ? (
-                          <p className="mt-3 font-mono text-[11px] text-muted-foreground">
-                            anchor: {getAnchorSummary(thread.anchor)}
-                          </p>
-                        ) : null}
-                        <div className="mt-3 space-y-3">
-                          {thread.comments.map((comment) => (
-                            <div key={comment.id} className="text-sm">
-                              <p className="font-medium">
-                                {comment.author.name}
-                              </p>
-                              <p className="mt-1 text-muted-foreground">
-                                {comment.body}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="mt-4 flex flex-wrap gap-1.5 border-t border-border pt-3">
-                          {thread.status !== 'resolved' ? (
-                            <Button
-                              className="h-7 rounded-full px-2 text-xs text-muted-foreground"
-                              disabled={
-                                pendingAction === `status-${thread.id}-resolved`
-                              }
-                              size="sm"
-                              type="button"
-                              variant="ghost"
-                              onClick={() =>
-                                updateThreadStatus(thread.id, 'resolved')
-                              }
-                            >
-                              Resolve
-                            </Button>
-                          ) : (
-                            <Button
-                              className="h-7 rounded-full px-2 text-xs text-muted-foreground"
-                              disabled={
-                                pendingAction === `status-${thread.id}-open`
-                              }
-                              size="sm"
-                              type="button"
-                              variant="ghost"
-                              onClick={() =>
-                                updateThreadStatus(thread.id, 'open')
-                              }
-                            >
-                              Reopen
-                            </Button>
-                          )}
-                          {thread.status !== 'needs-revision' ? (
-                            <Button
-                              className="h-7 rounded-full px-2 text-xs text-muted-foreground"
-                              disabled={
-                                pendingAction ===
-                                `status-${thread.id}-needs-revision`
-                              }
-                              size="sm"
-                              type="button"
-                              variant="ghost"
-                              onClick={() =>
-                                updateThreadStatus(thread.id, 'needs-revision')
-                              }
-                            >
-                              Needs revision
-                            </Button>
+
+                          {thread.anchor ? (
+                            <p className="mt-4 rounded-xl bg-secondary/45 p-3 text-xs leading-5 text-muted-foreground">
+                              {getAnchorSummary(thread.anchor)}
+                            </p>
                           ) : null}
+                          {thread.requestedChange ? (
+                            <p className="mt-3 rounded-xl bg-primary/10 p-3 text-xs leading-5 text-muted-foreground">
+                              {thread.requestedChange}
+                            </p>
+                          ) : null}
+
+                          <div className="mt-4 space-y-4">
+                            {thread.comments.map((comment) => (
+                              <div className="flex gap-3" key={comment.id}>
+                                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground">
+                                  {getInitials(comment.author.name)}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                    <p className="text-sm font-medium">
+                                      {comment.author.name}
+                                    </p>
+                                    <span className="text-xs text-muted-foreground">
+                                      {formatCommentTime(comment.createdAt)}
+                                    </span>
+                                  </div>
+                                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                                    {comment.body}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                            {!firstComment ? (
+                              <p className="text-sm text-muted-foreground">
+                                No comments in this thread yet.
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <div className="mt-4 flex items-end gap-2 rounded-2xl border border-border bg-background px-3 py-2">
+                            <textarea
+                              className="min-h-8 flex-1 resize-none bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground"
+                              disabled={!canComment}
+                              placeholder={
+                                canComment
+                                  ? 'Reply or add others with @'
+                                  : 'Sign in to reply'
+                              }
+                              value={commentBodies[thread.id] ?? ''}
+                              onChange={(event) =>
+                                setCommentBodies((current) => ({
+                                  ...current,
+                                  [thread.id]: event.target.value,
+                                }))
+                              }
+                            />
+                            <Button
+                              className="h-8 rounded-full px-3 text-xs"
+                              disabled={
+                                !canComment ||
+                                !commentBodies[thread.id]?.trim() ||
+                                pendingAction === `comment-${thread.id}`
+                              }
+                              size="sm"
+                              type="button"
+                              variant="outline"
+                              onClick={() => addComment(thread.id)}
+                            >
+                              {pendingAction === `comment-${thread.id}`
+                                ? 'Adding...'
+                                : 'Reply'}
+                            </Button>
+                          </div>
                         </div>
-                        <div className="mt-4 space-y-2">
-                          <textarea
-                            className="app-field min-h-16 w-full resize-none rounded-lg px-3 py-2 text-xs"
-                            disabled={!canComment}
-                            placeholder={
-                              canComment
-                                ? 'Reply to this thread'
-                                : 'Sign in to reply'
-                            }
-                            value={commentBodies[thread.id] ?? ''}
-                            onChange={(event) =>
-                              setCommentBodies((current) => ({
-                                ...current,
-                                [thread.id]: event.target.value,
-                              }))
-                            }
-                          />
-                          <Button
-                            className="h-7 rounded-full px-2 text-xs text-muted-foreground"
-                            disabled={
-                              !canComment ||
-                              pendingAction === `comment-${thread.id}`
-                            }
-                            size="sm"
-                            type="button"
-                            variant="ghost"
-                            onClick={() => addComment(thread.id)}
-                          >
-                            {pendingAction === `comment-${thread.id}`
-                              ? 'Adding reply...'
-                              : 'Add reply'}
-                          </Button>
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </section>
@@ -1317,104 +1560,40 @@ export function ArtifactWorkspace({
 
             {activeDrawerView === 'revisions' ? (
               <Card className="p-5">
-                <div className="flex items-center gap-2">
-                  <GitCommitHorizontal className="h-4 w-4 text-primary" />
-                  <h2 className="font-semibold">Revision history</h2>
+                <div className="flex items-start gap-3">
+                  <GitCommitHorizontal className="mt-0.5 h-4 w-4 text-primary" />
+                  <div>
+                    <h2 className="font-semibold">Revision timeline</h2>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      Select an earlier version to preview it. Agents and the
+                      CLI submit new revisions.
+                    </p>
+                  </div>
                 </div>
-                {canRevise ? (
-                  <form className="mt-5 space-y-3" onSubmit={submitRevision}>
-                    <input
-                      className="app-field w-full rounded-md px-3 py-2 text-sm"
-                      placeholder="Revision summary"
-                      value={revisionSummary}
-                      onChange={(event) =>
-                        setRevisionSummary(event.target.value)
-                      }
-                    />
-                    <input
-                      className="app-field w-full rounded-md px-3 py-2 text-sm"
-                      placeholder="Author / agent"
-                      value={revisionAuthor}
-                      onChange={(event) =>
-                        setRevisionAuthor(event.target.value)
-                      }
-                    />
-                    <textarea
-                      className="app-field min-h-40 w-full rounded-md px-3 py-2 font-mono text-xs"
-                      value={revisionHtml}
-                      onChange={(event) => setRevisionHtml(event.target.value)}
-                    />
-                    {threads.filter((thread) => thread.status !== 'resolved')
-                      .length ? (
-                      <div className="app-code-panel space-y-2 rounded-lg p-3">
-                        <p className="text-xs font-medium text-muted-foreground">
-                          Mark threads resolved by this revision
-                        </p>
-                        {threads
-                          .filter((thread) => thread.status !== 'resolved')
-                          .map((thread) => (
-                            <label
-                              className="flex items-start gap-2 text-xs text-muted-foreground"
-                              key={thread.id}
-                            >
-                              <input
-                                className="mt-0.5"
-                                checked={resolvedThreadIds.includes(thread.id)}
-                                type="checkbox"
-                                onChange={(event) => {
-                                  setResolvedThreadIds((current) =>
-                                    event.target.checked
-                                      ? [...current, thread.id]
-                                      : current.filter(
-                                          (id) => id !== thread.id,
-                                        ),
-                                  );
-                                }}
-                              />
-                              <span>{thread.title}</span>
-                            </label>
-                          ))}
-                      </div>
-                    ) : null}
-                    <Button
-                      className="w-full"
-                      disabled={pendingAction === 'revision'}
-                      size="sm"
-                      type="submit"
-                    >
-                      {pendingAction === 'revision'
-                        ? 'Submitting revision...'
-                        : 'Submit revision'}
-                    </Button>
-                  </form>
-                ) : (
-                  <Card className="mt-5 border-primary/25 bg-primary/10 p-4">
-                    <p className="text-sm font-medium">
-                      Revisions are available for owned artifacts.
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      Anonymous and starter artifacts are view-only. Sign in and
-                      publish with your account to submit revisions from review
-                      feedback.
-                    </p>
-                    <Button asChild className="mt-3" size="sm">
-                      <Link href={isAuthenticated ? '/publish' : '/sign-in'}>
-                        {isAuthenticated ? 'Publish owned artifact' : 'Sign in'}
-                      </Link>
-                    </Button>
-                  </Card>
-                )}
-                <div className="mt-5 space-y-4">
+                <div className="mt-5 border-l border-border pl-4">
                   {artifact.revisions
                     .slice()
                     .reverse()
                     .map((revision) => (
                       <button
-                        className="block w-full rounded-lg border border-border bg-card p-4 text-left transition hover:border-primary/50"
+                        className={cn(
+                          'relative mb-4 block w-full rounded-xl border bg-card p-4 text-left transition last:mb-0 hover:border-primary/50',
+                          revision.id === selectedRevision.id
+                            ? 'border-primary/45 bg-primary/10'
+                            : 'border-border',
+                        )}
                         key={revision.id}
                         type="button"
                         onClick={() => setSelectedRevisionId(revision.id)}
                       >
+                        <span
+                          className={cn(
+                            'absolute left-[-1.35rem] top-5 h-2.5 w-2.5 rounded-full border bg-background',
+                            revision.id === selectedRevision.id
+                              ? 'border-primary bg-primary'
+                              : 'border-border',
+                          )}
+                        />
                         <div className="flex items-center justify-between gap-3">
                           <Badge
                             tone={
@@ -1433,6 +1612,11 @@ export function ArtifactWorkspace({
                         <p className="mt-3 text-sm text-muted-foreground">
                           {revision.summary}
                         </p>
+                        {revision.id === artifact.currentRevisionId ? (
+                          <p className="mt-2 font-mono text-[0.68rem] uppercase tracking-[0.14em] text-primary">
+                            Current version
+                          </p>
+                        ) : null}
                       </button>
                     ))}
                 </div>

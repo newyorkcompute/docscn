@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -14,16 +15,23 @@ import {
 } from 'lucide-react';
 import { Button, Shell } from '@docscn/ui';
 import { GITHUB_REPO_URL } from '../lib/constants';
+import { getServerSession } from '../lib/session';
 import { HomeHeader } from '../components/home-header';
 import { HeroInstallTerminal } from '../components/hero-cli-commands';
 import './home.css';
 
-export default function Index() {
+export default async function Index() {
+  const session = await getServerSession();
+
+  if (session) {
+    redirect('/dashboard');
+  }
+
   const features = [
     {
       index: '01',
       title: 'Publish HTML',
-      body: 'Upload a self-contained HTML artifact from the browser, CLI, API, or MCP and get a stable URL.',
+      body: 'Publish a self-contained HTML artifact from the CLI, API, or MCP and get a stable URL.',
       Icon: Code2,
     },
     {
@@ -42,9 +50,9 @@ export default function Index() {
 
   const agentIntegrations = [
     {
-      title: 'Hosted workspace',
+      title: 'Publishing guide',
       path: '/publish',
-      body: 'Publish from the browser now; sign in later for ownership and review.',
+      body: 'Install the CLI, copy the publish command, and point agents at the right workflow.',
       Icon: PanelsTopLeft,
     },
     {
@@ -221,10 +229,10 @@ export default function Index() {
         <Shell className="home-scroll-reveal pb-24 pt-4">
           <div className="home-section-head mb-8 max-w-xl">
             <p className="home-kicker">Publishing paths</p>
-            <h2>Use the browser, CLI, API, or MCP.</h2>
+            <h2>Use the CLI, API, or MCP.</h2>
             <p className="text-sm leading-7 text-muted-foreground">
-              Start with the hosted workspace, install the local CLI, or wire
-              docscn into agent workflows with OpenAPI, MCP, and skills.md.
+              Start with the CLI guide, then wire docscn into agent workflows
+              with OpenAPI, MCP, and skills.md.
             </p>
           </div>
 
@@ -271,7 +279,7 @@ export default function Index() {
                 Ready to publish your first artifact?
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
-                No account required. Stable URL in seconds.
+                Copy the CLI command and get a stable review URL in seconds.
               </p>
             </div>
             <Button asChild size="lg">

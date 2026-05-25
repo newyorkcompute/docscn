@@ -1,6 +1,5 @@
 'use client';
 
-import { cn } from '@docscn/ui';
 import { CopyCommandButton } from './copy-command-button';
 import { TerminalCommandShell } from './terminal-command-shell';
 
