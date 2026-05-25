@@ -10,6 +10,18 @@ const globalForDb = globalThis as unknown as {
   docscnDb?: Db;
 };
 
+const databaseUrlEnvKeys = [
+  'DATABASE_URL',
+  'POSTGRES_URL',
+  'POSTGRES_DATABASE_URL',
+] as const;
+
+function readEnvValue(key: string) {
+  const value = process.env[key]?.trim();
+
+  return value ? value : undefined;
+}
+
 function createSql(databaseUrl: string) {
   return postgres(databaseUrl, {
     prepare: false,
@@ -22,7 +34,15 @@ function createSql(databaseUrl: string) {
 }
 
 export function getDatabaseUrl() {
-  return process.env['DATABASE_URL'] ?? process.env['POSTGRES_URL'];
+  for (const key of databaseUrlEnvKeys) {
+    const value = readEnvValue(key);
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return undefined;
 }
 
 export function isDatabaseConfigured() {
