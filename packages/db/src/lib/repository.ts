@@ -73,28 +73,12 @@ interface ArtifactAccessContext extends ArtifactAccessOptions {
   sharedArtifactIds?: Set<string>;
 }
 
-function canViewArtifact(
-  artifact: Artifact,
-  options: ArtifactAccessContext = {},
-) {
-  if (artifact.ownerUserId && artifact.ownerUserId === options.viewerUserId) {
-    return true;
-  }
-
-  if (artifact.metadata.visibility === 'public') {
-    return true;
-  }
-
-  return (
-    (artifact.metadata.visibility === 'unlisted' &&
-      options.includeUnlisted === true) ||
-    (artifact.metadata.visibility === 'private' &&
-      Boolean(options.sharedArtifactIds?.has(artifact.id)))
-  );
-}
-
-function canViewArtifactRow(
-  artifact: typeof artifacts.$inferSelect,
+function canViewArtifactVisibility(
+  artifact: {
+    id: string;
+    ownerUserId?: string | null;
+    visibility: ArtifactVisibility;
+  },
   options: ArtifactAccessContext = {},
 ) {
   if (artifact.ownerUserId && artifact.ownerUserId === options.viewerUserId) {
@@ -110,6 +94,27 @@ function canViewArtifactRow(
     (artifact.visibility === 'private' &&
       Boolean(options.sharedArtifactIds?.has(artifact.id)))
   );
+}
+
+function canViewArtifact(
+  artifact: Artifact,
+  options: ArtifactAccessContext = {},
+) {
+  return canViewArtifactVisibility(
+    {
+      id: artifact.id,
+      ownerUserId: artifact.ownerUserId,
+      visibility: artifact.metadata.visibility,
+    },
+    options,
+  );
+}
+
+function canViewArtifactRow(
+  artifact: typeof artifacts.$inferSelect,
+  options: ArtifactAccessContext = {},
+) {
+  return canViewArtifactVisibility(artifact, options);
 }
 
 export function canMutateArtifact(
