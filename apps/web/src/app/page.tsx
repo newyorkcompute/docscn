@@ -18,7 +18,7 @@ import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
 import { GITHUB_REPO_URL } from '../lib/constants';
 import { getAppOrigin } from '../lib/app-origin';
 import { HomeGallerySection } from '../components/home-gallery-section';
-import { HeroInstallCommand } from '../components/hero-install-command';
+import { TerminalCommandShell } from '../components/terminal-command-shell';
 import { SiteHeader } from '../components/site-header';
 
 export const dynamic = 'force-dynamic';
@@ -111,7 +111,7 @@ export default function Index() {
                   </Link>
                 </Button>
               </div>
-              <HeroInstallCommand
+              <TerminalCommandShell
                 className="animate-fade-up delay-4 mt-10"
                 command={installCommand}
                 label="Get started in 30 seconds"
