@@ -40,14 +40,16 @@ export function CliLoginApproval({ userCode }: CliLoginApprovalProps) {
   return (
     <Card className="mx-auto max-w-xl p-8">
       <p className="text-sm font-medium text-primary">docscn CLI login</p>
-      <h1 className="mt-3 text-2xl font-semibold">Approve this local agent</h1>
+      <h1 className="mt-3 font-display text-2xl font-semibold tracking-tight">
+        Approve this local agent
+      </h1>
       <p className="mt-3 text-sm leading-6 text-muted-foreground">
         This lets the local docscn CLI save an API key on this machine and act
         on your behalf. Only approve this if you started the login from your
         terminal or agent.
       </p>
 
-      <div className="mt-6 rounded-lg border border-border bg-secondary/40 p-4 text-center">
+      <div className="app-code-panel mt-6 rounded-xl p-4 text-center">
         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
           Login code
         </p>

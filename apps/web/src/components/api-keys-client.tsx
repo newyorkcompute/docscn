@@ -5,6 +5,7 @@ import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ApiKey } from '@docscn/sdk';
 import { Badge, Button, Card } from '@docscn/ui';
+import { CopyCommandButton } from './copy-command-button';
 
 interface ApiKeysClientProps {
   apiKeys: ApiKey[];
@@ -65,7 +66,9 @@ export function ApiKeysClient({ apiKeys }: ApiKeysClientProps) {
     <div className="grid gap-6">
       <div>
         <Badge tone="outline">agent access</Badge>
-        <h2 className="mt-4 text-2xl font-semibold tracking-tight">API keys</h2>
+        <h2 className="mt-4 font-display text-2xl font-semibold tracking-tight">
+          API keys
+        </h2>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
           Create scoped publishing credentials for local CLI experiments, Cursor
           agents, scheduled reports, and future MCP workflows.
@@ -80,7 +83,7 @@ export function ApiKeysClient({ apiKeys }: ApiKeysClientProps) {
           <label className="grid gap-2 text-sm">
             Key name
             <input
-              className="rounded-lg border border-border bg-background px-3 py-2 text-foreground outline-none ring-primary/30 focus:ring-2"
+              className="app-field rounded-md px-3 py-2 text-foreground"
               minLength={2}
               onChange={(event) => setName(event.target.value)}
               required
@@ -95,13 +98,16 @@ export function ApiKeysClient({ apiKeys }: ApiKeysClientProps) {
         </form>
 
         {createdToken ? (
-          <div className="mt-5 rounded-lg border border-primary/30 bg-primary/10 p-4">
+          <div className="mt-5 rounded-xl border border-primary/30 bg-primary/10 p-4">
             <p className="text-sm font-medium text-primary">
               Copy this token now. It will not be shown again.
             </p>
-            <code className="mt-3 block overflow-x-auto rounded-md bg-background p-3 text-xs text-foreground">
-              {createdToken}
-            </code>
+            <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+              <code className="app-code-panel block overflow-x-auto rounded-md p-3 text-xs text-foreground">
+                {createdToken}
+              </code>
+              <CopyCommandButton command={createdToken} label="Copy token" />
+            </div>
           </div>
         ) : null}
 

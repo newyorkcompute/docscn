@@ -302,7 +302,12 @@ Contributions are welcome. Start with:
 - [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) for community standards
 - [SECURITY.md](./SECURITY.md) for vulnerability reporting
 - [examples/artifacts/](./examples/artifacts/) for sample HTML to publish locally
-- `/examples` in the web app for previewing the starter gallery before publishing
+- `/templates` in the web app for browsing the grouped template library
+- `/artifacts/minimal`, `/artifacts/incident-timeline`,
+  `/artifacts/design-directions`, `/artifacts/module-map`,
+  `/artifacts/html-effectiveness-code-approaches`, and
+  `/artifacts/html-effectiveness-prompt-tuner` in the web app for previewing
+  starter artifacts
 
 Useful contributor commands:
 

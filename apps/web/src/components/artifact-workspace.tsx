@@ -1277,7 +1277,7 @@ export function ArtifactWorkspace({
                         </div>
                         <div className="mt-4 space-y-2">
                           <textarea
-                            className="min-h-16 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-xs outline-none ring-ring focus:ring-2"
+                            className="app-field min-h-16 w-full resize-none rounded-lg px-3 py-2 text-xs"
                             disabled={!canComment}
                             placeholder={
                               canComment
@@ -1324,7 +1324,7 @@ export function ArtifactWorkspace({
                 {canRevise ? (
                   <form className="mt-5 space-y-3" onSubmit={submitRevision}>
                     <input
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                      className="app-field w-full rounded-md px-3 py-2 text-sm"
                       placeholder="Revision summary"
                       value={revisionSummary}
                       onChange={(event) =>
@@ -1332,7 +1332,7 @@ export function ArtifactWorkspace({
                       }
                     />
                     <input
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                      className="app-field w-full rounded-md px-3 py-2 text-sm"
                       placeholder="Author / agent"
                       value={revisionAuthor}
                       onChange={(event) =>
@@ -1340,13 +1340,13 @@ export function ArtifactWorkspace({
                       }
                     />
                     <textarea
-                      className="min-h-40 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs outline-none ring-ring focus:ring-2"
+                      className="app-field min-h-40 w-full rounded-md px-3 py-2 font-mono text-xs"
                       value={revisionHtml}
                       onChange={(event) => setRevisionHtml(event.target.value)}
                     />
                     {threads.filter((thread) => thread.status !== 'resolved')
                       .length ? (
-                      <div className="space-y-2 rounded-lg border border-border bg-secondary/40 p-3">
+                      <div className="app-code-panel space-y-2 rounded-lg p-3">
                         <p className="text-xs font-medium text-muted-foreground">
                           Mark threads resolved by this revision
                         </p>

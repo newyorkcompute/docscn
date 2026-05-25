@@ -27,24 +27,3 @@ export function HeroInstallTerminal({ className }: { className?: string }) {
     />
   );
 }
-
-export function HeroCliQuickstartPreview() {
-  const origin = usePageOrigin();
-  const installCommand = origin
-    ? `curl ${origin}/install -fsS | bash`
-    : 'curl <host>/install -fsS | bash';
-  const publishCommand = origin
-    ? `docscn publish artifact.html --host ${origin}`
-    : 'docscn publish artifact.html --host <host>';
-
-  return (
-    <>
-      <p className="mt-3 font-mono text-xs leading-6 text-primary/90">
-        {installCommand}
-      </p>
-      <p className="mt-2 font-mono text-xs leading-6 text-primary/90">
-        {publishCommand}
-      </p>
-    </>
-  );
-}

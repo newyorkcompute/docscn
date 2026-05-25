@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { basename, extname } from 'node:path';
 import type {
   ClaimArtifactsResult,
@@ -26,6 +26,7 @@ export const commands = [
   'login',
   'publish',
   'revise',
+  'template',
   'thread',
   'version',
   'whoami',
@@ -56,6 +57,7 @@ const valueFlags = new Set([
   '--description',
   '--host',
   '--kind',
+  '--output',
   '--requested-change',
   '--resolve',
   '--revision',
@@ -90,6 +92,33 @@ interface PublishResponse {
 
 interface ApiErrorResponse {
   error?: string;
+}
+
+interface TemplateSummary {
+  id: string;
+  title: string;
+  description: string;
+  kind: ArtifactKind;
+  category: string;
+  filename: string;
+  source?: {
+    label: string;
+    href: string;
+  };
+}
+
+interface TemplateCategory {
+  id: string;
+  title: string;
+  description: string;
+}
+
+interface TemplateManifest {
+  schemaVersion: number;
+  repository: string;
+  templatesRoot: string;
+  categories: TemplateCategory[];
+  templates: TemplateSummary[];
 }
 
 interface CliLoginStartResponse extends ApiErrorResponse {
@@ -402,6 +431,64 @@ function buildArtifactUrl(baseUrl: string, pathOrUrl: string) {
   return pathOrUrl.startsWith('http') ? pathOrUrl : `${baseUrl}${pathOrUrl}`;
 }
 
+function getTemplateRepository() {
+  return process.env['DOCSCN_TEMPLATE_REPOSITORY'] ?? 'newyorkcompute/docscn';
+}
+
+function getTemplateRef() {
+  return process.env['DOCSCN_TEMPLATE_REF'] ?? 'main';
+}
+
+function getTemplateRawBase() {
+  const rawBase = process.env['DOCSCN_TEMPLATE_RAW_BASE'];
+
+  if (rawBase) {
+    return rawBase.replace(/\/+$/, '');
+  }
+
+  const repository = getTemplateRepository();
+  const ref = getTemplateRef();
+
+  return `https://raw.githubusercontent.com/${repository}/${ref}`;
+}
+
+async function templateFetchJson<T>(url: string) {
+  const response = await fetch(url);
+  const payload = await readJsonResponse<T & ApiErrorResponse>(response);
+
+  if (!response.ok) {
+    throw new Error(
+      payload?.error ??
+        `Template request failed with ${response.status}: ${url}`,
+    );
+  }
+
+  return payload;
+}
+
+async function templateFetchText(url: string) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Template request failed with ${response.status}: ${url}`);
+  }
+
+  return response.text();
+}
+
+async function readTemplateManifest() {
+  const rawBase = getTemplateRawBase();
+  const manifest = await templateFetchJson<TemplateManifest>(
+    `${rawBase}/examples/artifacts/templates.json`,
+  );
+
+  if (!manifest?.categories || !manifest.templates || !manifest.templatesRoot) {
+    throw new Error('Template manifest is missing required fields.');
+  }
+
+  return manifest;
+}
+
 async function claimSavedAnonymousArtifacts(credentials: Credentials) {
   const receipts = await getAnonymousClaimReceipts(credentials.baseUrl);
   if (!receipts.length) {
@@ -453,6 +540,8 @@ Usage:
   docscn login [--host <url>]
   docscn whoami [--host <url>]
   docscn publish artifact.html [options]
+  docscn template list [--json]
+  docscn template get <template-id> [--output artifact.html]
   docscn artifact get <artifact-id-or-slug> [--json]
   docscn artifact feedback <artifact-id-or-slug> [--json] [--revision <revision-id>]
   docscn revise <artifact-id-or-slug> artifact.html --summary <text> [--resolve <thread-id>]
@@ -467,17 +556,79 @@ Options:
   --visibility <value>     public, unlisted, or private. Defaults to unlisted.
   --kind <value>           Artifact kind. Defaults to custom-html.
   --author <name>          Artifact author/agent name. Defaults to docscn CLI.
+  --output <file>          Write template HTML to a file.
   --summary <text>         Revision summary.
   --resolve <thread-id>    Mark a thread resolved when revising. Repeatable.
   --json                   Print machine-readable JSON for supported commands.
 
 Examples:
   docscn login --host http://localhost:3000
+  docscn template list
+  docscn template get html-effectiveness-code-approaches --output artifact.html
   docscn publish report.html --host http://localhost:3000
   docscn publish report.html --visibility private
   docscn artifact get artifact-slug --json
   docscn artifact feedback artifact-slug --json
   docscn revise artifact-slug report.html --summary "Addressed open feedback" --resolve thread-123`;
+}
+
+export async function listTemplatesFromCli(args: string[]) {
+  const manifest = await readTemplateManifest();
+
+  if (hasFlag(args, '--json')) {
+    console.log(JSON.stringify(manifest, null, 2));
+    return;
+  }
+
+  const categories = manifest.categories;
+  const templates = manifest.templates;
+  const repositoryUrl = `https://github.com/${getTemplateRepository()}/tree/${getTemplateRef()}/${manifest.templatesRoot}`;
+
+  console.log(`Template source: ${repositoryUrl}`);
+
+  for (const category of categories) {
+    const categoryTemplates = templates.filter(
+      (template) => template.category === category.id,
+    );
+
+    if (!categoryTemplates.length) {
+      continue;
+    }
+
+    console.log(`\n${category.title}`);
+    for (const template of categoryTemplates) {
+      console.log(`  ${template.id}  ${template.title} (${template.kind})`);
+    }
+  }
+}
+
+export async function getTemplateFromCli(args: string[]) {
+  const [templateId] = getPositionals(args);
+
+  if (!templateId) {
+    throw new Error('Missing template id.');
+  }
+
+  const manifest = await readTemplateManifest();
+  const template = manifest.templates.find((item) => item.id === templateId);
+
+  if (!template) {
+    throw new Error(`Template "${templateId}" was not found.`);
+  }
+
+  const rawBase = getTemplateRawBase();
+  const templateUrl = `${rawBase}/${manifest.templatesRoot}/${template.filename}`;
+  const html = await templateFetchText(templateUrl);
+  const output = parseFlagValue(args, '--output');
+
+  if (output) {
+    await writeFile(output, html);
+    console.log(`Wrote ${output}`);
+    console.log(`Source: ${templateUrl}`);
+    return;
+  }
+
+  console.log(html);
 }
 
 export async function publishArtifactFromCli(args: string[]) {
@@ -818,6 +969,16 @@ export async function runDocscnCli(args = process.argv.slice(2)) {
     console.log(`Published ${published.artifactId}`);
     console.log(`Revision ${published.revisionId}`);
     console.log(published.url);
+    return;
+  }
+
+  if (command === 'template' && rest[0] === 'list') {
+    await listTemplatesFromCli(rest.slice(1));
+    return;
+  }
+
+  if (command === 'template' && (rest[0] === 'get' || rest[0] === 'copy')) {
+    await getTemplateFromCli(rest.slice(1));
     return;
   }
 
