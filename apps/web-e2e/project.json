@@ -1,0 +1,20 @@
+{
+  "name": "web-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/web-e2e/src",
+  "projectType": "application",
+  "implicitDependencies": ["web"],
+  "targets": {
+    "e2e": {
+      "executor": "@nx/playwright:playwright",
+      "outputs": [
+        "{workspaceRoot}/playwright-report/apps/web-e2e",
+        "{workspaceRoot}/test-results/apps/web-e2e"
+      ],
+      "options": {
+        "config": "apps/web-e2e/playwright.config.ts",
+        "skipInstall": true
+      }
+    }
+  }
+}
