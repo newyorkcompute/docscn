@@ -80,8 +80,8 @@ export function ThemeToggle({
     <Button
       aria-label={`Theme: ${label}. Click to change theme.`}
       className={cn(
-        !showLabel && 'h-8 w-8 px-0',
-        showLabel && 'px-2 sm:px-3',
+        !showLabel && !className && 'h-8 w-8 px-0',
+        showLabel && !className && 'px-2 sm:px-3',
         className,
       )}
       onClick={cycleTheme}

@@ -770,7 +770,7 @@ export function ArtifactWorkspace({
               );
             }}
           >
-            <MessageCircle className="h-4 w-4" />
+            <MessageCircle className="h-[18px] w-[18px]" />
           </Button>
         </ToolbarTip>
         <ToolbarTip label="Text annotation">
@@ -799,7 +799,7 @@ export function ArtifactWorkspace({
               );
             }}
           >
-            <Type className="h-4 w-4" />
+            <Type className="h-[18px] w-[18px]" />
           </Button>
         </ToolbarTip>
         <ToolbarTip label="Element annotation">
@@ -828,10 +828,10 @@ export function ArtifactWorkspace({
               );
             }}
           >
-            <MousePointer2 className="h-4 w-4" />
+            <MousePointer2 className="h-[18px] w-[18px]" />
           </Button>
         </ToolbarTip>
-        <div className="mx-1 h-5 w-px bg-white/15" />
+        <div className="mx-1 h-6 w-px bg-white/15" />
         <ToolbarTip
           label={showCommentPins ? 'Hide comment pins' : 'Show comment pins'}
         >
@@ -862,9 +862,9 @@ export function ArtifactWorkspace({
             }}
           >
             {showCommentPins ? (
-              <EyeOff className="h-4 w-4" />
+              <EyeOff className="h-[18px] w-[18px]" />
             ) : (
-              <Eye className="h-4 w-4" />
+              <Eye className="h-[18px] w-[18px]" />
             )}
           </Button>
         </ToolbarTip>
@@ -883,14 +883,13 @@ export function ArtifactWorkspace({
               setIsReviewOpen(true);
             }}
           >
-            <GitCommitHorizontal className="h-4 w-4" />
-            <span className="text-xs">v{selectedRevision.version}</span>
+            <GitCommitHorizontal className="h-[18px] w-[18px]" />
           </Button>
         </ToolbarTip>
         <ToolbarTip align="right" label="Theme">
           <ThemeToggle
             className="h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white"
-            iconClassName="h-[22px] w-[22px] [stroke-width:2.4]"
+            iconClassName="h-5 w-5 [stroke-width:2.2]"
             showLabel={false}
             variant="ghost"
           />
@@ -918,7 +917,7 @@ export function ArtifactWorkspace({
                 );
               }}
             >
-              <MessageSquareText className="h-4 w-4" />
+              <MessageSquareText className="h-[18px] w-[18px]" />
               <span className="sr-only">
                 {isReviewOpen ? 'Hide review' : 'Review'}
               </span>
