@@ -102,6 +102,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
       - name: Prepare persistent local stack
         run: npm run setup:local
 
@@ -125,6 +128,17 @@ jobs:
 
       - name: Run MCP integration tests
         run: npm run test:mcp:integration
+
+      - name: Run Playwright E2E tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
 
       - name: Stop web app
         if: always()

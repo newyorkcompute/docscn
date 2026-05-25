@@ -150,3 +150,7 @@ vite.config.ts.timestamp-*
 
 # Local scratch and generated Nx build outputs
 tmp/
+
+# Playwright
+playwright-report/
+test-results/
