@@ -1,5 +1,4 @@
 import {
-  canCommentOnArtifact,
   canMutateArtifact,
   findArtifact,
   getArtifactAccessRole,
@@ -46,7 +45,11 @@ export default async function ArtifactPage({
     isAuthenticated &&
     Boolean(artifact) &&
     !isGalleryArtifact &&
-    Boolean(artifact && (await canCommentOnArtifact(artifact, accessOptions)));
+    Boolean(
+      accessRole === 'owner' ||
+      accessRole === 'commenter' ||
+      (accessRole === 'viewer' && artifact?.metadata.visibility !== 'private'),
+    );
   const canRevise = Boolean(
     artifact && canMutateArtifact(artifact, session?.user.id),
   );
