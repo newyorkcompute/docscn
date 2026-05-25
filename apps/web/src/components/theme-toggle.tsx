@@ -33,10 +33,12 @@ function getStoredTheme(): ThemePreference {
 
 export function ThemeToggle({
   className,
+  iconClassName,
   showLabel = false,
   variant = 'outline',
 }: {
   className?: string;
+  iconClassName?: string;
   showLabel?: boolean;
   variant?: 'default' | 'secondary' | 'ghost' | 'outline';
 }) {
@@ -87,7 +89,7 @@ export function ThemeToggle({
       title={`Theme: ${label}`}
       variant={variant}
     >
-      <Icon className="h-4 w-4" />
+      <Icon className={iconClassName ?? 'h-4 w-4'} />
       {showLabel ? <span className="hidden sm:inline">{label}</span> : null}
     </Button>
   );
