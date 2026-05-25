@@ -19,7 +19,7 @@ export function UserMenu({ email, name }: UserMenuProps) {
 
   return (
     <details className="group relative">
-      <summary className="app-field flex cursor-pointer list-none items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-input bg-muted/40 px-2 py-1.5 text-sm transition-colors hover:bg-accent [&::-webkit-details-marker]:hidden">
         <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/10 font-mono text-xs text-primary">
           {getInitial(name, email)}
         </span>

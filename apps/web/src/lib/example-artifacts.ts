@@ -46,7 +46,3 @@ export const exampleArtifacts = manifest.templates;
 export function getExampleArtifact(id: string) {
   return exampleArtifacts.find((example) => example.id === id);
 }
-
-export function getExamplePublishCommand(origin: string, filename: string) {
-  return `docscn publish examples/artifacts/${filename} --host ${origin}`;
-}
