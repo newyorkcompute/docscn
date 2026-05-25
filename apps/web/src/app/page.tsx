@@ -16,16 +16,14 @@ import {
 } from 'lucide-react';
 import { Badge, Button, Card, Eyebrow, Shell } from '@docscn/ui';
 import { GITHUB_REPO_URL } from '../lib/constants';
-import { getAppOrigin } from '../lib/app-origin';
+import {
+  HeroCliQuickstartPreview,
+  HeroInstallTerminal,
+} from '../components/hero-cli-commands';
 import { HomeGallerySection } from '../components/home-gallery-section';
-import { TerminalCommandShell } from '../components/terminal-command-shell';
 import { SiteHeader } from '../components/site-header';
 
 export default function Index() {
-  const origin = getAppOrigin();
-  const installCommand = `curl ${origin}/install -fsS | bash`;
-  const publishCommand = `docscn publish artifact.html --host ${origin}`;
-
   const agentIntegrations = [
     {
       title: 'Hosted workspace',
@@ -37,14 +35,14 @@ export default function Index() {
     {
       title: 'Agent instructions',
       body: 'Teach coding agents how to publish, read feedback, and revise.',
-      href: `${origin}/skills.md`,
+      href: '/skills.md',
       label: '/skills.md',
       Icon: BookOpenText,
     },
     {
       title: 'API automation',
       body: 'Automate artifacts, threads, comments, and feedback bundles.',
-      href: `${origin}/openapi.json`,
+      href: '/openapi.json',
       label: 'openapi.json',
       Icon: Braces,
     },
@@ -109,11 +107,7 @@ export default function Index() {
                   </Link>
                 </Button>
               </div>
-              <TerminalCommandShell
-                className="animate-fade-up delay-4 mt-10"
-                command={installCommand}
-                label="Get started in 30 seconds"
-              />
+              <HeroInstallTerminal className="animate-fade-up delay-4 mt-10" />
             </section>
 
             <Card className="animate-fade-up delay-3 feature-card relative hidden overflow-hidden p-1.5 lg:block">
@@ -167,12 +161,7 @@ export default function Index() {
                     <Download className="h-3.5 w-3.5" />
                     CLI quickstart
                   </div>
-                  <p className="mt-3 font-mono text-xs leading-6 text-primary/90">
-                    {installCommand}
-                  </p>
-                  <p className="mt-2 font-mono text-xs leading-6 text-primary/90">
-                    {publishCommand}
-                  </p>
+                  <HeroCliQuickstartPreview />
                 </div>
               </div>
             </Card>
@@ -235,17 +224,11 @@ export default function Index() {
                   href={item.href}
                   key={item.label}
                   rel={
-                    item.href.startsWith('http') &&
-                    !item.href.startsWith(origin)
+                    item.href.startsWith('http')
                       ? 'noopener noreferrer'
                       : undefined
                   }
-                  target={
-                    item.href.startsWith('http') &&
-                    !item.href.startsWith(origin)
-                      ? '_blank'
-                      : undefined
-                  }
+                  target={item.href.startsWith('http') ? '_blank' : undefined}
                 >
                   <div className="flex items-center gap-2">
                     <span className="inline-flex rounded-md border border-primary/15 bg-primary/10 p-1.5">
