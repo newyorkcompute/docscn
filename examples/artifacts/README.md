@@ -53,8 +53,6 @@ docscn template get incident-timeline --output incident-timeline.html
 docscn publish incident-timeline.html --host http://localhost:3000
 ```
 
-Or publish from the browser at `/publish`.
-
 Each file must include a full `<html>` document because docscn renders artifacts
 inside a sandboxed iframe.
 

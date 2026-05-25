@@ -27,7 +27,7 @@ export function DashboardClient({
     (example) => example.id !== 'minimal',
   );
   const description = isEmpty
-    ? 'Publish your first HTML artifact to get a stable URL and review surface.'
+    ? 'Publish your first HTML artifact from an agent or CLI workflow.'
     : `${artifacts.length} visible artifact${
         artifacts.length === 1 ? '' : 's'
       } in this workspace.`;
@@ -42,7 +42,7 @@ export function DashboardClient({
               <Link href="/templates">Browse templates</Link>
             </Button>
             <Button asChild>
-              <Link href="/publish">Publish artifact</Link>
+              <Link href="/publish">Publishing guide</Link>
             </Button>
           </>
         }
@@ -58,8 +58,8 @@ export function DashboardClient({
             No artifacts yet
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Publish from the browser, or copy the CLI command and run it from an
-            agent workflow.
+            Copy the CLI command and run it from an agent workflow to get a
+            stable review URL.
           </p>
           <div className="mt-6 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
             <code className="app-code-panel overflow-x-auto rounded-xl p-3 font-mono text-xs text-foreground">
@@ -69,7 +69,7 @@ export function DashboardClient({
           </div>
           <div className="mt-6">
             <Button asChild>
-              <Link href="/publish">Publish from browser</Link>
+              <Link href="/publish">Open publishing guide</Link>
             </Button>
           </div>
         </Card>
