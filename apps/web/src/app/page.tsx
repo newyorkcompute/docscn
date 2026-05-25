@@ -21,6 +21,8 @@ import { HomeGallerySection } from '../components/home-gallery-section';
 import { HeroInstallCommand } from '../components/hero-install-command';
 import { SiteHeader } from '../components/site-header';
 
+export const dynamic = 'force-dynamic';
+
 export default function Index() {
   const origin = getAppOrigin();
   const installCommand = `curl ${origin}/install -fsS | bash`;
