@@ -183,15 +183,15 @@ iframe {
   animation: fade-up 0.65s var(--ease-out) both;
 }
 
+.animate-fade-in {
+  animation: fade-in 0.5s var(--ease-out) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
   .animate-fade-in {
     animation: none;
   }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.5s var(--ease-out) both;
 }
 
 .animate-drift {
