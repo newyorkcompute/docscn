@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@docscn/ui';
@@ -23,9 +24,42 @@ function getInitials(name?: string | null, email?: string | null) {
 
 export function UserMenu({ email, name }: UserMenuProps) {
   const router = useRouter();
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    function close() {
+      if (detailsRef.current) {
+        detailsRef.current.open = false;
+      }
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && detailsRef.current?.open) {
+        event.preventDefault();
+        close();
+      }
+    }
+
+    function onClickOutside(event: MouseEvent) {
+      if (
+        detailsRef.current?.open &&
+        !detailsRef.current.contains(event.target as Node)
+      ) {
+        close();
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('click', onClickOutside, true);
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('click', onClickOutside, true);
+    };
+  }, []);
 
   return (
-    <details className="group relative">
+    <details ref={detailsRef} className="group relative">
       <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-input bg-muted/40 px-2 py-1.5 text-sm transition-colors hover:bg-accent [&::-webkit-details-marker]:hidden">
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold leading-none text-primary">
           {getInitials(name, email)}
