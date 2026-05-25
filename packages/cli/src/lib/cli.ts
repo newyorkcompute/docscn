@@ -865,7 +865,6 @@ export async function shareArtifactFromCli(args: string[]) {
   }
 
   const email = parseFlagValue(args, '--email')?.trim().toLowerCase();
-  const role = parseShareRole(parseFlagValue(args, '--role') ?? 'viewer');
   const credentials = await resolveCredentials(args);
   const path = `/api/artifacts/${encodeURIComponent(artifactId)}/shares`;
 
@@ -899,6 +898,8 @@ export async function shareArtifactFromCli(args: string[]) {
     console.log(`Removed ${email}`);
     return;
   }
+
+  const role = parseShareRole(parseFlagValue(args, '--role') ?? 'viewer');
 
   const result = await apiFetch<ShareResponse>(credentials, path, {
     method: 'POST',
