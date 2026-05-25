@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80"><style>.st{stroke:#87867F;fill:none;stroke-width:2.5}.fl{fill:#D1CFC5}.cl{fill:#D97757}.ol{fill:#788C5D}.oa{fill:#E3DACC;stroke:#87867F;stroke-width:2.5}.sl{fill:#141413}.wh{fill:#FFF;stroke:#87867F;stroke-width:2.5}.ln{stroke:#87867F;stroke-width:2.5;fill:none;stroke-linecap:round}.lc{stroke:#D97757;stroke-width:2.5;fill:none;stroke-linecap:round}.da{stroke-dasharray:4 4}</style>
+          <rect class="cl" x="8" y="8" width="104" height="20" rx="4" opacity=".35"></rect>
+          <rect class="fl" x="14" y="15" width="60" height="6" rx="3"></rect>
+          <rect class="wh" x="8" y="34" width="104" height="14" rx="4"></rect>
+          <rect class="wh" x="8" y="52" width="104" height="14" rx="4"></rect>
+          <path class="ln" d="M16 39 l4 4 l-4 4"></path><rect class="fl" x="28" y="38" width="46" height="5" rx="2.5"></rect>
+          <path class="ln" d="M16 57 l4 4 l-4 4"></path><rect class="fl" x="28" y="56" width="38" height="5" rx="2.5"></rect>
+        </svg>

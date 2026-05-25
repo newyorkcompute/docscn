@@ -145,7 +145,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-code-approaches.svg"
     },
     {
       "id": "html-effectiveness-visual-designs",
@@ -157,7 +158,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-visual-designs.svg"
     },
     {
       "id": "html-effectiveness-implementation-plan",
@@ -169,7 +171,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-implementation-plan.svg"
     },
     {
       "id": "html-effectiveness-code-review-pr",
@@ -181,7 +184,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-code-review-pr.svg"
     },
     {
       "id": "html-effectiveness-pr-writeup",
@@ -193,7 +197,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-pr-writeup.svg"
     },
     {
       "id": "html-effectiveness-code-understanding",
@@ -205,7 +210,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-code-understanding.svg"
     },
     {
       "id": "html-effectiveness-design-system",
@@ -217,7 +223,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-design-system.svg"
     },
     {
       "id": "html-effectiveness-component-variants",
@@ -229,7 +236,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-component-variants.svg"
     },
     {
       "id": "html-effectiveness-prototype-animation",
@@ -241,7 +249,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-prototype-animation.svg"
     },
     {
       "id": "html-effectiveness-prototype-interaction",
@@ -253,7 +262,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-prototype-interaction.svg"
     },
     {
       "id": "html-effectiveness-svg-illustrations",
@@ -265,7 +275,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-svg-illustrations.svg"
     },
     {
       "id": "html-effectiveness-flowchart-diagram",
@@ -277,7 +288,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-flowchart-diagram.svg"
     },
     {
       "id": "html-effectiveness-slide-deck",
@@ -289,7 +301,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-slide-deck.svg"
     },
     {
       "id": "html-effectiveness-feature-explainer",
@@ -301,7 +314,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-feature-explainer.svg"
     },
     {
       "id": "html-effectiveness-concept-explainer",
@@ -313,7 +327,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-concept-explainer.svg"
     },
     {
       "id": "html-effectiveness-status-report",
@@ -325,7 +340,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-status-report.svg"
     },
     {
       "id": "html-effectiveness-incident-report",
@@ -337,7 +353,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-incident-report.svg"
     },
     {
       "id": "html-effectiveness-triage-board",
@@ -349,7 +366,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-triage-board.svg"
     },
     {
       "id": "html-effectiveness-feature-flags",
@@ -361,7 +379,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-feature-flags.svg"
     },
     {
       "id": "html-effectiveness-prompt-tuner",
@@ -373,7 +392,8 @@
       "source": {
         "label": "HTML effectiveness",
         "href": "https://github.com/ThariqS/html-effectiveness"
-      }
+      },
+      "thumbnail": "/templates/thumbnails/html-effectiveness-prompt-tuner.svg"
     }
   ]
 }

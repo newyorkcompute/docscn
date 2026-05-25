@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80"><style>.st{stroke:#87867F;fill:none;stroke-width:2.5}.fl{fill:#D1CFC5}.cl{fill:#D97757}.ol{fill:#788C5D}.oa{fill:#E3DACC;stroke:#87867F;stroke-width:2.5}.sl{fill:#141413}.wh{fill:#FFF;stroke:#87867F;stroke-width:2.5}.ln{stroke:#87867F;stroke-width:2.5;fill:none;stroke-linecap:round}.lc{stroke:#D97757;stroke-width:2.5;fill:none;stroke-linecap:round}.da{stroke-dasharray:4 4}</style>
+          <rect class="cl" x="10" y="14" width="44" height="14" rx="7"></rect>
+          <rect class="wh" x="10" y="34" width="44" height="14" rx="7"></rect>
+          <rect class="oa" x="10" y="54" width="44" height="14" rx="7"></rect>
+          <rect class="cl" x="66" y="14" width="34" height="11" rx="5.5"></rect>
+          <rect class="wh" x="66" y="32" width="34" height="11" rx="5.5"></rect>
+          <rect class="oa" x="66" y="50" width="34" height="11" rx="5.5"></rect>
+          <circle class="cl" cx="110" cy="20" r="4"></circle><circle class="fl" cx="110" cy="37" r="4"></circle><circle class="ol" cx="110" cy="56" r="4"></circle>
+        </svg>
