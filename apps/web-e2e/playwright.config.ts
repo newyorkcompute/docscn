@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
+import { testBaseURL } from './src/test-env';
 
-const baseURL = process.env.DOCSCN_TEST_URL ?? 'http://localhost:3000';
 const reportOutput = '../../playwright-report/apps/web-e2e';
 
 export default defineConfig({
@@ -14,7 +14,7 @@ export default defineConfig({
     ? [['github'], ['html', { open: 'never', outputFolder: reportOutput }]]
     : [['list'], ['html', { open: 'never', outputFolder: reportOutput }]],
   use: {
-    baseURL,
+    baseURL: testBaseURL,
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
     video: 'retain-on-failure',

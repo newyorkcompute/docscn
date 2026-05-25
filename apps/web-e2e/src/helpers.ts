@@ -1,6 +1,6 @@
 import { expect, type APIRequestContext, type Browser } from '@playwright/test';
+import { testBaseURL } from './test-env';
 
-export const baseURL = process.env.DOCSCN_TEST_URL ?? 'http://localhost:3000';
 export const claimStorageKey = 'docscn.anonymousClaims.v1';
 
 const password = 'docscn-playwright-password';
@@ -32,7 +32,7 @@ export function uniqueTitle(prefix: string) {
 }
 
 export async function newContext(browser: Browser) {
-  return browser.newContext({ baseURL });
+  return browser.newContext({ baseURL: testBaseURL });
 }
 
 export async function signUp(
@@ -47,7 +47,7 @@ export async function signUp(
 ) {
   const response = await request.post('/api/auth/sign-up/email', {
     headers: {
-      origin: baseURL,
+      origin: testBaseURL,
     },
     data: {
       email,
