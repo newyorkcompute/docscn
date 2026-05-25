@@ -18,6 +18,8 @@ const {
   saveDefaultProfile,
 } = await import('../dist/packages/cli/src/lib/config.js');
 const {
+  getArtifactFeedbackFromCli,
+  getArtifactFromCli,
   getCliHelp,
   getTemplateFromCli,
   listTemplatesFromCli,
@@ -103,6 +105,7 @@ assert.match(help, /docscn share/);
 assert.match(help, /docscn revise/);
 assert.match(help, /docscn template list/);
 assert.match(help, /docscn template get/);
+assert.match(help, /https:\/\/docscn\.ai/);
 
 const templateServer = createServer((request, response) => {
   if (request.url === '/examples/artifacts/templates.json') {
@@ -195,6 +198,127 @@ await assertRejectsWith(
   () => publishArtifactFromCli([htmlPath, '--host', 'http://localhost:3000']),
   /self-contained HTML/,
 );
+
+const goodHtmlPath = join(configDir, 'artifact.html');
+await writeFile(goodHtmlPath, '<html><body>hello docscn</body></html>');
+const cliReadRequests = [];
+const cliPublishServer = createServer(async (request, response) => {
+  cliReadRequests.push({
+    authorization: request.headers.authorization,
+    method: request.method,
+    url: request.url,
+  });
+
+  if (request.url === '/api/artifacts' && request.method === 'POST') {
+    assert.equal(request.headers.authorization, undefined);
+    const chunks = [];
+    for await (const chunk of request) {
+      chunks.push(chunk);
+    }
+    const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+    assert.equal(body.title, 'CLI JSON unit');
+    assert.equal(body.visibility, 'unlisted');
+    response.statusCode = 201;
+    response.setHeader('content-type', 'application/json');
+    response.end(
+      JSON.stringify({
+        result: {
+          artifactId: 'artifact-json-unit',
+          slug: 'cli-json-unit',
+          url: '/artifacts/cli-json-unit',
+          revisionId: 'revision-json-unit',
+          claimToken: 'docscn_claim_json_unit',
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.url === '/api/artifacts/cli-json-unit') {
+    assert.equal(request.headers.authorization, undefined);
+    response.setHeader('content-type', 'application/json');
+    response.end(
+      JSON.stringify({
+        artifact: {
+          id: 'artifact-json-unit',
+          slug: 'cli-json-unit',
+          currentRevisionId: 'revision-json-unit',
+          metadata: { title: 'CLI JSON unit' },
+        },
+        threads: [],
+      }),
+    );
+    return;
+  }
+
+  if (request.url === '/api/artifacts/cli-json-unit/feedback') {
+    assert.equal(request.headers.authorization, undefined);
+    response.setHeader('content-type', 'application/json');
+    response.end(
+      JSON.stringify({
+        bundle: {
+          artifact: { id: 'artifact-json-unit', title: 'CLI JSON unit' },
+          revision: { id: 'revision-json-unit', version: 1 },
+          openThreads: [],
+        },
+        prompt: 'No feedback yet.',
+      }),
+    );
+    return;
+  }
+
+  response.statusCode = 404;
+  response.end('not found');
+});
+await new Promise((resolve) =>
+  cliPublishServer.listen(0, '127.0.0.1', resolve),
+);
+const cliPublishAddress = cliPublishServer.address();
+const cliPublishHost = `http://127.0.0.1:${cliPublishAddress.port}`;
+
+try {
+  const publishLogs = await captureLogs(() =>
+    runDocscnCli([
+      'publish',
+      goodHtmlPath,
+      '--host',
+      cliPublishHost,
+      '--title',
+      'CLI JSON unit',
+      '--json',
+    ]),
+  );
+  const published = JSON.parse(publishLogs.join('\n'));
+  assert.equal(published.anonymous, true);
+  assert.equal(published.claimReceiptSaved, true);
+  assert.equal(published.url, `${cliPublishHost}/artifacts/cli-json-unit`);
+  assert.deepEqual(published.nextCommands, [
+    `docscn login --host ${cliPublishHost}`,
+  ]);
+
+  const artifactLogs = await captureLogs(() =>
+    getArtifactFromCli(['cli-json-unit', '--host', cliPublishHost, '--json']),
+  );
+  assert.equal(
+    JSON.parse(artifactLogs.join('\n')).artifact.id,
+    published.artifactId,
+  );
+
+  const feedbackLogs = await captureLogs(() =>
+    getArtifactFeedbackFromCli([
+      'cli-json-unit',
+      '--host',
+      cliPublishHost,
+      '--json',
+    ]),
+  );
+  assert.equal(JSON.parse(feedbackLogs.join('\n')).prompt, 'No feedback yet.');
+  assert.ok(
+    cliReadRequests.every((request) => request.authorization === undefined),
+  );
+} finally {
+  await new Promise((resolve) => cliPublishServer.close(resolve));
+}
 
 await assertRejectsWith(
   () =>

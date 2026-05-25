@@ -143,6 +143,7 @@ After login, verify the connection:
 7. Inspect open and needs-revision threads from the bundle or prompt.
 8. Produce a full replacement HTML document, then run \`docscn revise <artifact-id-or-slug> revised.html --summary "..." --resolve <thread-id> --host ${origin}\`.
 9. Reply to reviewers when useful with \`docscn comment <thread-id> --body "..." --host ${origin}\`.
+10. Invite private reviewers when asked with \`docscn share <artifact-id-or-slug> --email reviewer@example.com --role viewer --host ${origin}\`.
 
 ## CLI commands
 
@@ -161,6 +162,12 @@ Use \`--json\` for the structured \`{ bundle, prompt }\` response. Use \`--revis
 For full artifact metadata and all threads:
 
     docscn artifact get <artifact-id-or-slug> --json --host ${origin}
+
+Share a private artifact or grant commenter access:
+
+    docscn share <artifact-id-or-slug> --email reviewer@example.com --role viewer --host ${origin}
+    docscn share <artifact-id-or-slug> --email reviewer@example.com --role commenter --host ${origin}
+    docscn share <artifact-id-or-slug> --email reviewer@example.com --remove --host ${origin}
 
 Submit a revision (repeat \`--resolve\` for multiple threads):
 

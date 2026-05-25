@@ -47,10 +47,10 @@ GitHub-backed CLI template commands.
 ## Publish from the CLI
 
 ```bash
-docscn login --host http://localhost:3000
 docscn template list
 docscn template get incident-timeline --output incident-timeline.html
 docscn publish incident-timeline.html --host http://localhost:3000
+docscn login --host http://localhost:3000 # optional: claim ownership
 ```
 
 Each file must include a full `<html>` document because docscn renders artifacts

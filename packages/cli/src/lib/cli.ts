@@ -37,6 +37,7 @@ export const commands = [
 
 export type DocscnCommand = (typeof commands)[number];
 export const docscnCliVersion = '0.0.1';
+const defaultDocscnHost = 'https://docscn.ai';
 
 const cliVisibilityOptions = ['public', 'unlisted', 'private'] as const;
 const cliArtifactKinds = [
@@ -83,6 +84,18 @@ interface CliPublishOptions {
   visibility: ArtifactVisibility;
   authorName: string;
   kind: ArtifactKind;
+  json: boolean;
+}
+
+interface PublishedArtifactResult {
+  anonymous: boolean;
+  artifactId: string;
+  claimReceiptSaved: boolean;
+  nextCommands: string[];
+  revisionId: string;
+  title: string;
+  url: string;
+  visibility: ArtifactVisibility;
 }
 
 interface PublishResponse {
@@ -223,8 +236,11 @@ interface Credentials {
   baseUrl: string;
 }
 
+type ApiKeySource = 'flag' | 'env' | 'config';
+
 interface PublishTarget {
   apiKey?: string;
+  apiKeySource?: ApiKeySource;
   baseUrl: string;
 }
 
@@ -332,19 +348,47 @@ function parseCoordinate(value: string | undefined) {
   return parsed;
 }
 
-async function resolveCredentials(args: string[]): Promise<Credentials> {
-  const config = await readCliConfig();
-  const baseUrl = normalizeHost(
+function resolveBaseUrl(
+  args: string[],
+  config: Awaited<ReturnType<typeof readCliConfig>>,
+) {
+  return normalizeHost(
     parseFlagValue(args, '--host') ??
       parseFlagValue(args, '--url') ??
       process.env['DOCSCN_URL'] ??
       config?.defaultHost ??
-      'http://localhost:3000',
+      defaultDocscnHost,
   );
-  const apiKey =
-    parseFlagValue(args, '--api-key') ??
-    process.env['DOCSCN_API_KEY'] ??
-    findProfileForHost(config, baseUrl)?.apiKey;
+}
+
+function resolveApiKey(
+  args: string[],
+  config: Awaited<ReturnType<typeof readCliConfig>>,
+  baseUrl: string,
+): { apiKey?: string; apiKeySource?: ApiKeySource } {
+  const flagApiKey = parseFlagValue(args, '--api-key');
+
+  if (flagApiKey) {
+    return { apiKey: flagApiKey, apiKeySource: 'flag' };
+  }
+
+  if (process.env['DOCSCN_API_KEY']) {
+    return { apiKey: process.env['DOCSCN_API_KEY'], apiKeySource: 'env' };
+  }
+
+  const profileApiKey = findProfileForHost(config, baseUrl)?.apiKey;
+
+  if (profileApiKey) {
+    return { apiKey: profileApiKey, apiKeySource: 'config' };
+  }
+
+  return {};
+}
+
+async function resolveCredentials(args: string[]): Promise<Credentials> {
+  const config = await readCliConfig();
+  const baseUrl = resolveBaseUrl(args, config);
+  const { apiKey } = resolveApiKey(args, config, baseUrl);
 
   if (!apiKey) {
     throw new Error(
@@ -357,19 +401,14 @@ async function resolveCredentials(args: string[]): Promise<Credentials> {
 
 async function resolvePublishTarget(args: string[]): Promise<PublishTarget> {
   const config = await readCliConfig();
-  const baseUrl = normalizeHost(
-    parseFlagValue(args, '--host') ??
-      parseFlagValue(args, '--url') ??
-      process.env['DOCSCN_URL'] ??
-      config?.defaultHost ??
-      'http://localhost:3000',
-  );
-  const apiKey =
-    parseFlagValue(args, '--api-key') ??
-    process.env['DOCSCN_API_KEY'] ??
-    findProfileForHost(config, baseUrl)?.apiKey;
+  const baseUrl = resolveBaseUrl(args, config);
+  const { apiKey, apiKeySource } = resolveApiKey(args, config, baseUrl);
 
-  return { apiKey, baseUrl };
+  return { apiKey, apiKeySource, baseUrl };
+}
+
+async function resolveOptionalTarget(args: string[]): Promise<PublishTarget> {
+  return resolvePublishTarget(args);
 }
 
 async function parsePublishOptions(args: string[]): Promise<CliPublishOptions> {
@@ -400,6 +439,7 @@ async function parsePublishOptions(args: string[]): Promise<CliPublishOptions> {
     visibility,
     authorName: parseFlagValue(args, '--author') ?? 'docscn CLI',
     kind: parseKind(parseFlagValue(args, '--kind') ?? 'custom-html'),
+    json: hasFlag(args, '--json'),
   };
 }
 
@@ -426,6 +466,58 @@ async function apiFetch<T>(
     throw new Error(
       payload?.error ?? `Request failed with ${response.status}.`,
     );
+  }
+
+  return payload;
+}
+
+async function apiFetchOptional<T>(
+  target: PublishTarget,
+  path: string,
+  init: RequestInit = {},
+) {
+  const headers = {
+    ...(target.apiKey ? { authorization: `Bearer ${target.apiKey}` } : {}),
+    'content-type': 'application/json',
+    ...init.headers,
+  };
+  const response = await fetch(`${target.baseUrl}${path}`, {
+    ...init,
+    headers,
+  });
+  let payload = await readJsonResponse<T & ApiErrorResponse>(response);
+  let status = response.status;
+
+  if (
+    !response.ok &&
+    response.status === 401 &&
+    target.apiKey &&
+    target.apiKeySource === 'config'
+  ) {
+    const retryResponse = await fetch(`${target.baseUrl}${path}`, {
+      ...init,
+      headers: {
+        'content-type': 'application/json',
+        ...init.headers,
+      },
+    });
+    const retryPayload = await readJsonResponse<T & ApiErrorResponse>(
+      retryResponse,
+    );
+
+    if (retryResponse.ok) {
+      console.warn(
+        `Saved API key was rejected by ${target.baseUrl}; retried without credentials. Run "docscn login --host ${target.baseUrl}" to refresh local credentials.`,
+      );
+      return retryPayload;
+    }
+
+    payload = retryPayload;
+    status = retryResponse.status;
+  }
+
+  if (status < 200 || status >= 300) {
+    throw new Error(payload?.error ?? `Request failed with ${status}.`);
   }
 
   return payload;
@@ -575,7 +667,7 @@ Usage:
 
 Options:
   --api-key <key>          API key. Defaults to DOCSCN_API_KEY or ~/.docscn/config.json. Publish can run without this for unlisted view-only artifacts and saves a recovery receipt.
-  --host, --url <url>      docscn server URL. Defaults to DOCSCN_URL, saved config, or http://localhost:3000.
+  --host, --url <url>      docscn server URL. Defaults to DOCSCN_URL, saved config, or ${defaultDocscnHost}.
   --title <title>          Artifact title. Defaults to the file name.
   --description <text>     Artifact description.
   --visibility <value>     public, unlisted, or private. Defaults to unlisted.
@@ -590,10 +682,11 @@ Options:
   --json                   Print machine-readable JSON for supported commands.
 
 Examples:
-  docscn login --host http://localhost:3000
+  docscn publish report.html
+  docscn login --host ${defaultDocscnHost}
   docscn template list
-  docscn template get html-effectiveness-code-approaches --output artifact.html
-  docscn publish report.html --host http://localhost:3000
+  docscn template get minimal --output artifact.html
+  docscn publish artifact.html
   docscn publish report.html --visibility private
   docscn share artifact-slug --email reviewer@example.com --role commenter
   docscn artifact get artifact-slug --json
@@ -708,27 +801,30 @@ export async function publishArtifactFromCli(args: string[]) {
         createdAt: new Date().toISOString(),
       });
     }
-    console.warn(
-      'Published as an anonymous unlisted artifact and saved a local recovery receipt. Sign in with "docscn login" within 90 days to recover ownership and unlock comments, revisions, private sharing, and future analytics.',
-    );
+    if (!options.json) {
+      console.warn(
+        'Published as an anonymous unlisted artifact and saved a local recovery receipt. Sign in within 90 days to recover ownership and unlock comments, revisions, private sharing, and future analytics.',
+      );
+    }
   }
 
   return {
+    anonymous: !options.apiKey,
     artifactId: result.result.artifactId,
+    claimReceiptSaved: Boolean(result.result.claimToken),
+    nextCommands: !options.apiKey
+      ? [`docscn login --host ${options.baseUrl}`]
+      : [`open ${buildArtifactUrl(options.baseUrl, result.result.url)}`],
     revisionId: result.result.revisionId,
+    title: payload.title,
     url: buildArtifactUrl(options.baseUrl, result.result.url),
-  };
+    visibility: payload.visibility,
+  } satisfies PublishedArtifactResult;
 }
 
 export async function loginFromCli(args: string[]) {
   const config = await readCliConfig();
-  const baseUrl = normalizeHost(
-    parseFlagValue(args, '--host') ??
-      parseFlagValue(args, '--url') ??
-      process.env['DOCSCN_URL'] ??
-      config?.defaultHost ??
-      'http://localhost:3000',
-  );
+  const baseUrl = resolveBaseUrl(args, config);
   const response = await fetch(`${baseUrl}/api/cli/auth/start`, {
     method: 'POST',
   });
@@ -803,9 +899,9 @@ export async function getArtifactFromCli(args: string[]) {
     throw new Error('Missing artifact id or slug.');
   }
 
-  const credentials = await resolveCredentials(args);
-  const result = await apiFetch<ArtifactResponse>(
-    credentials,
+  const target = await resolveOptionalTarget(args);
+  const result = await apiFetchOptional<ArtifactResponse>(
+    target,
     `/api/artifacts/${encodeURIComponent(artifactId)}`,
   );
 
@@ -833,13 +929,13 @@ export async function getArtifactFeedbackFromCli(args: string[]) {
     throw new Error('Missing artifact id or slug.');
   }
 
-  const credentials = await resolveCredentials(args);
+  const target = await resolveOptionalTarget(args);
   const revisionId = parseFlagValue(args, '--revision');
   const query = revisionId
     ? `?revisionId=${encodeURIComponent(revisionId)}`
     : '';
-  const result = await apiFetch<ArtifactFeedbackResponse>(
-    credentials,
+  const result = await apiFetchOptional<ArtifactFeedbackResponse>(
+    target,
     `/api/artifacts/${encodeURIComponent(artifactId)}/feedback${query}`,
   );
 
@@ -959,6 +1055,11 @@ export async function reviseArtifactFromCli(args: string[]) {
     throw new Error('Revision response did not include revision details.');
   }
 
+  if (hasFlag(args, '--json')) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
   console.log(`Revision ${result.revision.id}`);
   console.log(`Version ${result.revision.version}`);
 }
@@ -1057,9 +1158,23 @@ export async function runDocscnCli(args = process.argv.slice(2)) {
   if (command === 'publish') {
     const published = await publishArtifactFromCli(rest);
 
-    console.log(`Published ${published.artifactId}`);
-    console.log(`Revision ${published.revisionId}`);
+    if (hasFlag(rest, '--json')) {
+      console.log(JSON.stringify(published, null, 2));
+      return;
+    }
+
+    console.log(`Published "${published.title}"`);
+    console.log(`Artifact: ${published.artifactId}`);
+    console.log(`Revision: ${published.revisionId}`);
+    console.log(`Visibility: ${published.visibility}`);
     console.log(published.url);
+    if (published.anonymous) {
+      console.log('');
+      console.log(
+        'Next: run this to claim ownership and unlock collaboration:',
+      );
+      console.log(`  ${published.nextCommands[0]}`);
+    }
     return;
   }
 

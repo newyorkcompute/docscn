@@ -165,16 +165,15 @@ After deploy:
 
 ```bash
 curl https://docscn.example.com/install -fsS | bash
-docscn login --host https://docscn.example.com
-docscn whoami --host https://docscn.example.com
 ```
 
 4. Publish a test artifact:
 
 ```bash
-docscn publish examples/artifacts/minimal.html \
-  --host https://docscn.example.com \
-  --visibility unlisted
+docscn template get minimal --output minimal.html
+docscn publish minimal.html --host https://docscn.example.com
+docscn login --host https://docscn.example.com
+docscn whoami --host https://docscn.example.com
 ```
 
 5. Open the returned URL in a private window to confirm sharing works

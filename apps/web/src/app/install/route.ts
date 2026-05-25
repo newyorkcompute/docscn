@@ -1,12 +1,20 @@
 const releaseRepository = 'newyorkcompute/docscn';
 
-function buildInstallScript() {
+function shellSingleQuote(value: string) {
+  return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+function buildInstallScript(origin: string) {
+  const defaultHost = shellSingleQuote(origin);
+
   return `#!/usr/bin/env bash
 set -euo pipefail
 
 repo="\${DOCSCN_RELEASE_REPOSITORY:-${releaseRepository}}"
 version="\${DOCSCN_VERSION:-latest}"
 install_dir="\${DOCSCN_INSTALL_DIR:-$HOME/.local/bin}"
+default_host=${defaultHost}
+host="\${DOCSCN_URL:-$default_host}"
 
 info() {
   printf '\\033[1;34m%s\\033[0m\\n' "$1"
@@ -115,20 +123,25 @@ case ":$PATH:" in
     ;;
 esac
 
-cat <<'NEXT'
+cat <<NEXT
 
 Next steps:
-  docscn login
   docscn template list
-  docscn publish artifact.html
+  docscn template get minimal --output artifact.html
+  docscn publish artifact.html --host $host
+
+Run this when you want ownership, comments, revisions, private sharing, or API keys:
+  docscn login --host $host
 
 To update later, rerun this installer.
 NEXT
 `;
 }
 
-export function GET() {
-  return new Response(buildInstallScript(), {
+export function GET(request: Request) {
+  const origin = new URL(request.url).origin;
+
+  return new Response(buildInstallScript(origin), {
     headers: {
       'cache-control': 'public, max-age=300',
       'content-disposition': 'inline; filename="install.sh"',
