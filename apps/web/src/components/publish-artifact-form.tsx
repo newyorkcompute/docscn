@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { ChangeEvent, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileCode2, UploadCloud } from 'lucide-react';
+import { BookOpenText, TerminalSquare, UploadCloud } from 'lucide-react';
 import {
   artifactKinds,
   type ArtifactKind,
@@ -132,57 +132,63 @@ export function PublishArtifactForm({
   }
 
   return (
-    <Shell className="grid gap-8 py-10 lg:grid-cols-[0.9fr_1.1fr]">
+    <Shell className="grid gap-8 py-10 lg:grid-cols-[0.88fr_1.12fr]">
       <div className="space-y-6">
         <AppPageHeader
+          actions={
+            <>
+              <Button asChild>
+                <a href="/skills.md">Open skills.md</a>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/settings/api-keys">API keys</Link>
+              </Button>
+            </>
+          }
           description={
             isAuthenticated
-              ? 'The primary docscn path is API-key publishing from Cursor, Claude, scheduled reports, CLIs, and MCP workflows. Keep this page around for local smoke tests and one-off manual uploads.'
+              ? 'The happy path is agent or CLI publishing. Keep this form for smoke tests, demos, and one-off uploads.'
               : 'Anonymous publishes are unlisted, view-only links. Sign in when you want comments, revisions, analytics, private sharing, and artifact ownership.'
           }
           eyebrow={
-            isAuthenticated ? 'manual publish fallback' : 'instant publish'
+            isAuthenticated ? 'agent publishing first' : 'instant publish'
           }
           title={
             isAuthenticated
-              ? 'Agents should publish artifacts. This form is for testing.'
+              ? 'Point agents at the CLI and skills.md.'
               : 'Publish an artifact now. No account required.'
           }
         />
-        <Card className="p-5">
-          <div className="flex items-center gap-3">
-            <FileCode2 className="h-5 w-5 text-primary" />
-            <div>
-              <p className="font-medium">
-                {isAuthenticated
-                  ? 'Agent publishing contract'
-                  : 'Want review features?'}
+        <Card className="space-y-5 p-5">
+          <div className="flex items-start gap-3">
+            <TerminalSquare className="mt-0.5 h-5 w-5 text-primary" />
+            <div className="min-w-0">
+              <p className="font-medium">Preferred path: CLI publish</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Install once, sign in from the terminal, then let Cursor,
+                Claude, scheduled jobs, and MCP workflows publish artifacts
+                without touching this form.
               </p>
-              <p className="text-sm text-muted-foreground">
-                {isAuthenticated ? (
-                  <>
-                    Point agents to{' '}
-                    <a
-                      className="text-primary hover:underline"
-                      href="/skills.md"
-                    >
-                      /skills.md
-                    </a>{' '}
-                    so they can run the CLI login flow and publish end to end.
-                  </>
-                ) : (
-                  <>
-                    Publish instantly, then{' '}
-                    <Link
-                      className="text-primary hover:underline"
-                      href="/sign-in"
-                    >
-                      sign in
-                    </Link>{' '}
-                    for comments, revisions, private artifacts, and future
-                    analytics.
-                  </>
-                )}
+              <code className="app-code-panel mt-3 block overflow-x-auto rounded-xl p-3 font-mono text-xs text-foreground">
+                curl /install -fsS | bash
+                <br />
+                docscn login
+                <br />
+                docscn publish artifact.html
+              </code>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 border-t border-border pt-5">
+            <BookOpenText className="mt-0.5 h-5 w-5 text-primary" />
+            <div>
+              <p className="font-medium">Agent instructions</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Give agents{' '}
+                <a className="text-primary hover:underline" href="/skills.md">
+                  /skills.md
+                </a>{' '}
+                so they know how to publish, read feedback, and submit
+                revisions.
               </p>
             </div>
           </div>
@@ -190,6 +196,17 @@ export function PublishArtifactForm({
       </div>
 
       <Card className="space-y-5 p-6">
+        <div>
+          <p className="home-sheet-label">manual upload fallback</p>
+          <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight">
+            Paste or upload HTML.
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Useful for local smoke tests and one-off artifacts when an agent is
+            not driving the workflow.
+          </p>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2 text-sm">
             <span className="text-muted-foreground">Title</span>
