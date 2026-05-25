@@ -5,9 +5,11 @@
 @source '../components/**/*.{ts,tsx}';
 
 @theme inline {
-  --font-sans: var(--font-family-sans), 'IBM Plex Sans', ui-sans-serif, sans-serif;
+  --font-sans:
+    var(--font-family-sans), 'IBM Plex Sans', ui-sans-serif, sans-serif;
   --font-display: var(--font-family-display), 'Fraunces', ui-serif, serif;
-  --font-mono: var(--font-family-mono), 'IBM Plex Mono', ui-monospace, monospace;
+  --font-mono:
+    var(--font-family-mono), 'IBM Plex Mono', ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -137,16 +139,6 @@ body {
     var(--color-background);
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 50;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
 ::selection {
   background: color-mix(in oklch, var(--primary) 35%, transparent);
 }
@@ -158,12 +150,10 @@ iframe {
 
 @keyframes fade-up {
   from {
-    opacity: 0;
     transform: translateY(18px);
   }
 
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
@@ -195,6 +185,13 @@ iframe {
 
 .animate-fade-in {
   animation: fade-in 0.5s var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade-in {
+    animation: none;
+  }
 }
 
 .animate-drift {
@@ -258,12 +255,11 @@ iframe {
 }
 
 .terminal-block {
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in oklch, var(--secondary) 80%, transparent),
-      color-mix(in oklch, var(--card) 90%, transparent)
-    );
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklch, var(--secondary) 80%, transparent),
+    color-mix(in oklch, var(--card) 90%, transparent)
+  );
   box-shadow: inset 0 1px 0 color-mix(in oklch, white 40%, transparent);
 }
 
