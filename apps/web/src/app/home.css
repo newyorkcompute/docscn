@@ -339,11 +339,6 @@
   letter-spacing: -0.03em;
 }
 
-.home-gallery-grid {
-  display: grid;
-  gap: 1rem;
-}
-
 .home-html-note {
   border: 1px solid var(--home-rule);
   border-radius: var(--home-radius-surface);
@@ -353,86 +348,6 @@
     color-mix(in oklch, var(--card) 76%, transparent)
   );
   padding: clamp(1.25rem, 3vw, 2rem);
-}
-
-@media (min-width: 768px) {
-  .home-gallery-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (min-width: 1024px) {
-  .home-gallery-grid {
-    grid-template-columns: 1.1fr 0.95fr 0.95fr;
-  }
-
-  .home-gallery-card:first-child {
-    grid-row: span 2;
-  }
-}
-
-.home-gallery-card {
-  position: relative;
-  display: flex;
-  min-height: 13rem;
-  flex-direction: column;
-  justify-content: space-between;
-  overflow: hidden;
-  border: 1px solid var(--home-rule);
-  border-radius: var(--home-radius-surface);
-  background:
-    radial-gradient(
-      circle at 12% 12%,
-      color-mix(in oklch, var(--primary) 9%, transparent),
-      transparent 32%
-    ),
-    color-mix(in oklch, var(--card) 78%, transparent);
-  padding: 1.25rem;
-  transition:
-    transform 180ms var(--ease-out),
-    border-color 180ms ease,
-    background 180ms ease;
-}
-
-.home-gallery-card::after {
-  content: '';
-  position: absolute;
-  inset: 0.7rem;
-  pointer-events: none;
-  border: 1px dashed color-mix(in oklch, var(--primary) 16%, transparent);
-  opacity: 0;
-  transition: opacity 180ms ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .home-gallery-card:hover {
-    transform: translateY(-3px);
-    border-color: color-mix(in oklch, var(--primary) 38%, var(--border));
-    background:
-      radial-gradient(
-        circle at 12% 12%,
-        color-mix(in oklch, var(--primary) 13%, transparent),
-        transparent 34%
-      ),
-      color-mix(in oklch, var(--card) 86%, transparent);
-  }
-
-  .home-gallery-card:hover::after {
-    opacity: 1;
-  }
-}
-
-.home-gallery-kind {
-  width: fit-content;
-  border: 1px solid color-mix(in oklch, var(--primary) 28%, var(--border));
-  border-radius: var(--home-radius-control);
-  background: color-mix(in oklch, var(--primary) 9%, transparent);
-  padding: 0.2rem 0.5rem;
-  font-family: var(--font-mono);
-  font-size: 0.64rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--primary);
 }
 
 .home-manifest {
@@ -533,7 +448,6 @@
 
 .dark .home-terminal.terminal-block,
 .dark .home-bento-card,
-.dark .home-gallery-card,
 .dark .home-manifest,
 .dark .home-cta-band {
   box-shadow: 0 1px 0 color-mix(in oklch, white 7%, transparent) inset;

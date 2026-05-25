@@ -16,7 +16,6 @@ import { Button, Shell } from '@docscn/ui';
 import { GITHUB_REPO_URL } from '../lib/constants';
 import { HomeHeader } from '../components/home-header';
 import { HeroInstallTerminal } from '../components/hero-cli-commands';
-import { HomeGallerySection } from '../components/home-gallery-section';
 import './home.css';
 
 export default function Index() {
@@ -218,8 +217,6 @@ export default function Index() {
             </p>
           </aside>
         </Shell>
-
-        <HomeGallerySection className="border-t border-border/60" />
 
         <Shell className="home-scroll-reveal pb-24 pt-4">
           <div className="home-section-head mb-8 max-w-xl">
