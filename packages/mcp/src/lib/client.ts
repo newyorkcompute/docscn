@@ -4,6 +4,8 @@ import type {
   Artifact,
   ArtifactKind,
   ArtifactRevision,
+  ArtifactShare,
+  ArtifactShareRole,
   ArtifactVisibility,
   ClaimArtifactsResult,
   CreateArtifactInput,
@@ -71,6 +73,18 @@ interface MeResponse extends ApiErrorResponse {
     apiKeyId?: string;
     kind: 'session' | 'api-key';
   };
+}
+
+interface SharesResponse extends ApiErrorResponse {
+  shares?: ArtifactShare[];
+}
+
+interface ShareResponse extends ApiErrorResponse {
+  share?: ArtifactShare;
+}
+
+interface VisibilityResponse extends ApiErrorResponse {
+  artifact?: Artifact;
 }
 
 async function readJsonResponse<T>(response: Response): Promise<T | null> {
@@ -143,6 +157,22 @@ export interface ClaimArtifactsRequest {
   receipts?: AnonymousClaimReceipt[];
 }
 
+export interface ShareArtifactRequest {
+  artifactIdOrSlug: string;
+  email: string;
+  role?: ArtifactShareRole;
+}
+
+export interface RemoveArtifactShareRequest {
+  artifactIdOrSlug: string;
+  email: string;
+}
+
+export interface UpdateArtifactVisibilityRequest {
+  artifactIdOrSlug: string;
+  visibility: ArtifactVisibility;
+}
+
 export function createDocscnApiClient(credentials: DocscnCredentials) {
   async function apiFetch<T>(
     path: string,
@@ -199,13 +229,10 @@ export function createDocscnApiClient(credentials: DocscnCredentials) {
         kind: input.kind ?? 'custom-html',
       };
 
-      const result = await apiFetch<PublishArtifactResponse>(
-        '/api/artifacts',
-        {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        },
-      );
+      const result = await apiFetch<PublishArtifactResponse>('/api/artifacts', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
 
       if (!result.result) {
         throw new Error('Publish response did not include artifact details.');
@@ -249,6 +276,74 @@ export function createDocscnApiClient(credentials: DocscnCredentials) {
         artifact: result.artifact,
         threads: result.threads ?? [],
       };
+    },
+
+    async listArtifactShares(artifactIdOrSlug: string) {
+      const result = await apiFetch<SharesResponse>(
+        `/api/artifacts/${encodeURIComponent(artifactIdOrSlug)}/shares`,
+        {},
+        { requireAuth: true },
+      );
+
+      return result.shares ?? [];
+    },
+
+    async shareArtifact(input: ShareArtifactRequest) {
+      requireApiKey(credentials, 'Sharing artifacts');
+
+      const result = await apiFetch<ShareResponse>(
+        `/api/artifacts/${encodeURIComponent(input.artifactIdOrSlug)}/shares`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            email: input.email,
+            role: input.role ?? 'viewer',
+          }),
+        },
+        { requireAuth: true },
+      );
+
+      if (!result.share) {
+        throw new Error('Share response did not include share details.');
+      }
+
+      return result.share;
+    },
+
+    async removeArtifactShare(input: RemoveArtifactShareRequest) {
+      requireApiKey(credentials, 'Removing artifact shares');
+
+      await apiFetch<{ ok?: boolean }>(
+        `/api/artifacts/${encodeURIComponent(input.artifactIdOrSlug)}/shares`,
+        {
+          method: 'DELETE',
+          body: JSON.stringify({ email: input.email }),
+        },
+        { requireAuth: true },
+      );
+
+      return { ok: true };
+    },
+
+    async updateArtifactVisibility(input: UpdateArtifactVisibilityRequest) {
+      requireApiKey(credentials, 'Updating artifact visibility');
+
+      const result = await apiFetch<VisibilityResponse>(
+        `/api/artifacts/${encodeURIComponent(input.artifactIdOrSlug)}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ visibility: input.visibility }),
+        },
+        { requireAuth: true },
+      );
+
+      if (!result.artifact) {
+        throw new Error(
+          'Visibility response did not include artifact details.',
+        );
+      }
+
+      return result.artifact;
     },
 
     async getFeedback(input: GetFeedbackRequest) {
@@ -415,7 +510,11 @@ export function createDocscnApiClient(credentials: DocscnCredentials) {
     async getMe() {
       requireApiKey(credentials, 'Reading caller identity');
 
-      const result = await apiFetch<MeResponse>('/api/me', {}, { requireAuth: true });
+      const result = await apiFetch<MeResponse>(
+        '/api/me',
+        {},
+        { requireAuth: true },
+      );
 
       if (!result.principal) {
         throw new Error('Identity response did not include a principal.');
@@ -428,8 +527,6 @@ export function createDocscnApiClient(credentials: DocscnCredentials) {
 
 export type DocscnApiClient = ReturnType<typeof createDocscnApiClient>;
 
-export async function claimSavedAnonymousArtifacts(
-  client: DocscnApiClient,
-) {
+export async function claimSavedAnonymousArtifacts(client: DocscnApiClient) {
   return client.claimArtifacts();
 }

@@ -50,6 +50,13 @@
       "when": 1779651470842,
       "tag": "0006_pink_ink",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1779731095196,
+      "tag": "0007_artifact_shares",
+      "breakpoints": true
     }
   ]
 }

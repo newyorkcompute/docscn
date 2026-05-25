@@ -1,4 +1,11 @@
-import { findArtifact, listReviewThreads } from '@docscn/db';
+import {
+  canCommentOnArtifact,
+  canMutateArtifact,
+  findArtifact,
+  getArtifactAccessRole,
+  listArtifactShares,
+  listReviewThreads,
+} from '@docscn/db';
 import { findGalleryArtifact } from '../../../lib/gallery-artifacts.server';
 import { getServerSession } from '../../../lib/session';
 import { ArtifactWorkspace } from '../../../components/artifact-workspace';
@@ -16,15 +23,32 @@ export default async function ArtifactPage({
     (await findArtifact(artifactId, {
       includeUnlisted: true,
       viewerUserId: session?.user.id,
+      viewerEmail: session?.user.email,
     })) ?? (await findGalleryArtifact(artifactId));
   const threads = artifact ? await listReviewThreads(artifact.id) : [];
   const isGalleryArtifact = artifact?.id.startsWith('gallery-') ?? false;
   const isAuthenticated = Boolean(session);
-  const canComment = isAuthenticated && Boolean(artifact) && !isGalleryArtifact;
+  const accessOptions = {
+    includeUnlisted: true,
+    viewerUserId: session?.user.id,
+    viewerEmail: session?.user.email,
+  };
+  const [accessRole, shares] =
+    artifact && !isGalleryArtifact
+      ? await Promise.all([
+          getArtifactAccessRole(artifact, accessOptions),
+          canMutateArtifact(artifact, session?.user.id)
+            ? listArtifactShares(artifact.id)
+            : Promise.resolve([]),
+        ])
+      : [undefined, []];
+  const canComment =
+    isAuthenticated &&
+    Boolean(artifact) &&
+    !isGalleryArtifact &&
+    Boolean(artifact && (await canCommentOnArtifact(artifact, accessOptions)));
   const canRevise = Boolean(
-    session?.user.id &&
-      artifact?.ownerUserId &&
-      artifact.ownerUserId === session.user.id,
+    artifact && canMutateArtifact(artifact, session?.user.id),
   );
 
   return (
@@ -34,6 +58,8 @@ export default async function ArtifactPage({
         artifactId={artifactId}
         canComment={canComment}
         canRevise={canRevise}
+        accessRole={accessRole}
+        shares={shares}
         isAuthenticated={isAuthenticated}
         threads={threads}
       />

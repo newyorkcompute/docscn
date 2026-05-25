@@ -1,10 +1,12 @@
 import {
   boolean,
+  index,
   integer,
   jsonb,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import type {
   Actor,
@@ -154,6 +156,32 @@ export const artifactClaims = pgTable('artifact_claims', {
     withTimezone: true,
   }),
 });
+
+export const artifactShares = pgTable(
+  'artifact_shares',
+  {
+    id: text('id').primaryKey(),
+    artifactId: text('artifact_id')
+      .notNull()
+      .references(() => artifacts.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    role: text('role').$type<'viewer' | 'commenter'>().notNull(),
+    createdAt: timestamp('created_at', {
+      mode: 'string',
+      withTimezone: true,
+    }).notNull(),
+    invitedByUserId: text('invited_by_user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+  },
+  (table) => [
+    uniqueIndex('artifact_shares_artifact_email_unique').on(
+      table.artifactId,
+      table.email,
+    ),
+    index('artifact_shares_email_idx').on(table.email),
+  ],
+);
 
 export const artifactRevisions = pgTable('artifact_revisions', {
   id: text('id').primaryKey(),

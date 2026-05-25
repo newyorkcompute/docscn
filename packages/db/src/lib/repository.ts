@@ -1,12 +1,16 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { and, eq, or } from 'drizzle-orm';
+import { and, eq, inArray, or } from 'drizzle-orm';
 import type {
   Actor,
   AgentFeedbackBundle,
   ApiKey,
   ApiKeyPrincipal,
   Artifact,
+  ArtifactAccessRole,
   ArtifactRevision,
+  ArtifactShare,
+  ArtifactShareRole,
+  ArtifactVisibility,
   ClaimArtifactsInput,
   ClaimArtifactsResult,
   CliLoginApproval,
@@ -30,10 +34,12 @@ import {
   apiKeys,
   artifactClaims,
   artifactRevisions,
+  artifactShares,
   artifacts,
   cliDeviceLogins,
   reviewComments,
   reviewThreads,
+  user,
 } from './schema';
 import {
   getAgentFeedbackBundle as getMockAgentFeedbackBundle,
@@ -45,6 +51,7 @@ import {
 const runtimeArtifacts: Artifact[] = [];
 const runtimeThreads: ReviewThread[] = [];
 const runtimeArtifactClaims: Array<typeof artifactClaims.$inferSelect> = [];
+const runtimeArtifactShares: ArtifactShare[] = [];
 const runtimeCliDeviceLogins: Array<
   typeof cliDeviceLogins.$inferSelect & { deviceCode: string }
 > = [];
@@ -59,11 +66,16 @@ const anonymousArtifactClaimTtlMs =
 interface ArtifactAccessOptions {
   includeUnlisted?: boolean;
   viewerUserId?: string | null;
+  viewerEmail?: string | null;
+}
+
+interface ArtifactAccessContext extends ArtifactAccessOptions {
+  sharedArtifactIds?: Set<string>;
 }
 
 function canViewArtifact(
   artifact: Artifact,
-  options: ArtifactAccessOptions = {},
+  options: ArtifactAccessContext = {},
 ) {
   if (artifact.ownerUserId && artifact.ownerUserId === options.viewerUserId) {
     return true;
@@ -74,8 +86,29 @@ function canViewArtifact(
   }
 
   return (
-    artifact.metadata.visibility === 'unlisted' &&
-    options.includeUnlisted === true
+    (artifact.metadata.visibility === 'unlisted' &&
+      options.includeUnlisted === true) ||
+    (artifact.metadata.visibility === 'private' &&
+      Boolean(options.sharedArtifactIds?.has(artifact.id)))
+  );
+}
+
+function canViewArtifactRow(
+  artifact: typeof artifacts.$inferSelect,
+  options: ArtifactAccessContext = {},
+) {
+  if (artifact.ownerUserId && artifact.ownerUserId === options.viewerUserId) {
+    return true;
+  }
+
+  if (artifact.visibility === 'public') {
+    return true;
+  }
+
+  return (
+    (artifact.visibility === 'unlisted' && options.includeUnlisted === true) ||
+    (artifact.visibility === 'private' &&
+      Boolean(options.sharedArtifactIds?.has(artifact.id)))
   );
 }
 
@@ -84,6 +117,91 @@ export function canMutateArtifact(
   viewerUserId?: string | null,
 ) {
   return Boolean(artifact.ownerUserId && artifact.ownerUserId === viewerUserId);
+}
+
+function normalizeShareEmail(email?: string | null) {
+  return email?.trim().toLowerCase() || undefined;
+}
+
+function isArtifactShareRole(value: unknown): value is ArtifactShareRole {
+  return value === 'viewer' || value === 'commenter';
+}
+
+function mapArtifactShareRow(
+  row: typeof artifactShares.$inferSelect,
+): ArtifactShare {
+  return {
+    id: row.id,
+    artifactId: row.artifactId,
+    email: row.email,
+    role: row.role,
+    createdAt: row.createdAt,
+    invitedByUserId: row.invitedByUserId ?? undefined,
+  };
+}
+
+function findRuntimeShare(artifactId: string, email?: string | null) {
+  const normalizedEmail = normalizeShareEmail(email);
+
+  if (!normalizedEmail) {
+    return undefined;
+  }
+
+  return runtimeArtifactShares.find(
+    (share) =>
+      share.artifactId === artifactId && share.email === normalizedEmail,
+  );
+}
+
+async function findArtifactShare(
+  artifactId: string,
+  email?: string | null,
+): Promise<ArtifactShare | undefined> {
+  const normalizedEmail = normalizeShareEmail(email);
+
+  if (!normalizedEmail) {
+    return undefined;
+  }
+
+  if (!isDatabaseConfigured()) {
+    return findRuntimeShare(artifactId, normalizedEmail);
+  }
+
+  const rows = await getDb()
+    .select()
+    .from(artifactShares)
+    .where(
+      and(
+        eq(artifactShares.artifactId, artifactId),
+        eq(artifactShares.email, normalizedEmail),
+      ),
+    )
+    .limit(1);
+
+  return rows[0] ? mapArtifactShareRow(rows[0]) : undefined;
+}
+
+async function getSharedArtifactIds(email?: string | null) {
+  const normalizedEmail = normalizeShareEmail(email);
+
+  if (!normalizedEmail) {
+    return new Set<string>();
+  }
+
+  if (!isDatabaseConfigured()) {
+    return new Set(
+      runtimeArtifactShares
+        .filter((share) => share.email === normalizedEmail)
+        .map((share) => share.artifactId),
+    );
+  }
+
+  const rows = await getDb()
+    .select({ artifactId: artifactShares.artifactId })
+    .from(artifactShares)
+    .where(eq(artifactShares.email, normalizedEmail));
+
+  return new Set(rows.map((row) => row.artifactId));
 }
 
 async function storeRevisionHtml(input: {
@@ -389,10 +507,17 @@ export async function verifyApiKey(
     .set({ lastUsedAt: new Date().toISOString() })
     .where(eq(apiKeys.id, row.id));
 
+  const [owner] = await getDb()
+    .select({ email: user.email })
+    .from(user)
+    .where(eq(user.id, row.userId))
+    .limit(1);
+
   return {
     apiKeyId: row.id,
     userId: row.userId,
     name: row.name,
+    email: owner?.email,
   };
 }
 
@@ -558,21 +683,35 @@ export async function pollCliLoginRequest(
 export async function listArtifacts(
   options: ArtifactAccessOptions = {},
 ): Promise<Artifact[]> {
+  const sharedArtifactIds = await getSharedArtifactIds(options.viewerEmail);
+
   if (!isDatabaseConfigured()) {
     return [...runtimeArtifacts, ...getMockArtifacts()].filter((artifact) =>
-      canViewArtifact(artifact, options),
+      canViewArtifact(artifact, { ...options, sharedArtifactIds }),
     );
   }
 
   const db = getDb();
-  const [artifactRows, revisionRows] = await Promise.all([
-    db.select().from(artifacts),
-    db.select().from(artifactRevisions),
-  ]);
-
-  return (await mapArtifactRows(artifactRows, revisionRows)).filter(
-    (artifact) => canViewArtifact(artifact, options),
+  const artifactRows = await db.select().from(artifacts);
+  const visibleArtifactRows = artifactRows.filter((artifact) =>
+    canViewArtifactRow(artifact, { ...options, sharedArtifactIds }),
   );
+
+  if (!visibleArtifactRows.length) {
+    return [];
+  }
+
+  const revisionRows = await db
+    .select()
+    .from(artifactRevisions)
+    .where(
+      inArray(
+        artifactRevisions.artifactId,
+        visibleArtifactRows.map((artifact) => artifact.id),
+      ),
+    );
+
+  return mapArtifactRows(visibleArtifactRows, revisionRows);
 }
 
 export async function findArtifact(
@@ -584,9 +723,16 @@ export async function findArtifact(
   );
 
   if (runtimeArtifact) {
+    const runtimeShare = findRuntimeShare(
+      runtimeArtifact.id,
+      options.viewerEmail,
+    );
     return canViewArtifact(runtimeArtifact, {
       includeUnlisted: true,
       ...options,
+      sharedArtifactIds: runtimeShare
+        ? new Set([runtimeArtifact.id])
+        : undefined,
     })
       ? runtimeArtifact
       : undefined;
@@ -594,8 +740,15 @@ export async function findArtifact(
 
   if (!isDatabaseConfigured()) {
     const mockArtifact = getMockArtifactById(idOrSlug);
+    const mockShare = mockArtifact
+      ? findRuntimeShare(mockArtifact.id, options.viewerEmail)
+      : undefined;
     return mockArtifact &&
-      canViewArtifact(mockArtifact, { includeUnlisted: true, ...options })
+      canViewArtifact(mockArtifact, {
+        includeUnlisted: true,
+        ...options,
+        sharedArtifactIds: mockShare ? new Set([mockArtifact.id]) : undefined,
+      })
       ? mockArtifact
       : undefined;
   }
@@ -612,6 +765,21 @@ export async function findArtifact(
     return undefined;
   }
 
+  const share =
+    artifact.visibility === 'private'
+      ? await findArtifactShare(artifact.id, options.viewerEmail)
+      : undefined;
+
+  if (
+    !canViewArtifactRow(artifact, {
+      includeUnlisted: true,
+      ...options,
+      sharedArtifactIds: share ? new Set([artifact.id]) : undefined,
+    })
+  ) {
+    return undefined;
+  }
+
   const revisionRows = await db
     .select()
     .from(artifactRevisions)
@@ -619,14 +787,215 @@ export async function findArtifact(
 
   const mappedArtifact = (await mapArtifactRows([artifact], revisionRows))[0];
 
-  if (
-    !mappedArtifact ||
-    !canViewArtifact(mappedArtifact, { includeUnlisted: true, ...options })
-  ) {
+  if (!mappedArtifact) {
     return undefined;
   }
 
   return mappedArtifact;
+}
+
+export async function getArtifactAccessRole(
+  artifact: Artifact,
+  options: ArtifactAccessOptions = {},
+): Promise<ArtifactAccessRole | undefined> {
+  if (artifact.ownerUserId && artifact.ownerUserId === options.viewerUserId) {
+    return 'owner';
+  }
+
+  const share = await findArtifactShare(artifact.id, options.viewerEmail);
+
+  if (share) {
+    return share.role;
+  }
+
+  if (
+    artifact.metadata.visibility === 'public' ||
+    (artifact.metadata.visibility === 'unlisted' &&
+      options.includeUnlisted === true)
+  ) {
+    return 'viewer';
+  }
+
+  return undefined;
+}
+
+export async function canCommentOnArtifact(
+  artifact: Artifact,
+  options: ArtifactAccessOptions = {},
+) {
+  if (!options.viewerUserId) {
+    return false;
+  }
+
+  const role = await getArtifactAccessRole(artifact, options);
+
+  if (role === 'owner' || role === 'commenter') {
+    return true;
+  }
+
+  return role === 'viewer' && artifact.metadata.visibility !== 'private';
+}
+
+export async function listArtifactShares(
+  artifactId: string,
+): Promise<ArtifactShare[]> {
+  if (!isDatabaseConfigured()) {
+    return runtimeArtifactShares.filter(
+      (share) => share.artifactId === artifactId,
+    );
+  }
+
+  const rows = await getDb()
+    .select()
+    .from(artifactShares)
+    .where(eq(artifactShares.artifactId, artifactId));
+
+  return rows.map(mapArtifactShareRow);
+}
+
+export async function upsertArtifactShare(input: {
+  artifactId: string;
+  email: string;
+  role: ArtifactShareRole;
+  invitedByUserId?: string | null;
+}): Promise<ArtifactShare> {
+  const email = normalizeShareEmail(input.email);
+
+  if (!email) {
+    throw new Error('Share email is required.');
+  }
+
+  if (!isArtifactShareRole(input.role)) {
+    throw new Error('Invalid artifact share role.');
+  }
+
+  const now = new Date().toISOString();
+
+  if (!isDatabaseConfigured()) {
+    const existing = runtimeArtifactShares.find(
+      (share) => share.artifactId === input.artifactId && share.email === email,
+    );
+
+    if (existing) {
+      existing.role = input.role;
+      return existing;
+    }
+
+    const share: ArtifactShare = {
+      id: `share-${randomUUID()}`,
+      artifactId: input.artifactId,
+      email,
+      role: input.role,
+      createdAt: now,
+      invitedByUserId: input.invitedByUserId ?? undefined,
+    };
+    runtimeArtifactShares.push(share);
+    return share;
+  }
+
+  const row = {
+    id: `share-${randomUUID()}`,
+    artifactId: input.artifactId,
+    email,
+    role: input.role,
+    createdAt: now,
+    invitedByUserId: input.invitedByUserId ?? null,
+  };
+
+  await getDb()
+    .insert(artifactShares)
+    .values(row)
+    .onConflictDoUpdate({
+      target: [artifactShares.artifactId, artifactShares.email],
+      set: {
+        role: input.role,
+        invitedByUserId: input.invitedByUserId ?? null,
+      },
+    });
+
+  const share = await findArtifactShare(input.artifactId, email);
+
+  if (!share) {
+    throw new Error('Artifact share was not saved.');
+  }
+
+  return share;
+}
+
+export async function removeArtifactShare(input: {
+  artifactId: string;
+  email: string;
+}): Promise<boolean> {
+  const email = normalizeShareEmail(input.email);
+
+  if (!email) {
+    return false;
+  }
+
+  if (!isDatabaseConfigured()) {
+    const index = runtimeArtifactShares.findIndex(
+      (share) => share.artifactId === input.artifactId && share.email === email,
+    );
+
+    if (index === -1) {
+      return false;
+    }
+
+    runtimeArtifactShares.splice(index, 1);
+    return true;
+  }
+
+  const deleted = await getDb()
+    .delete(artifactShares)
+    .where(
+      and(
+        eq(artifactShares.artifactId, input.artifactId),
+        eq(artifactShares.email, email),
+      ),
+    )
+    .returning({ id: artifactShares.id });
+
+  return deleted.length > 0;
+}
+
+export async function updateArtifactVisibility(input: {
+  artifactId: string;
+  visibility: ArtifactVisibility;
+}): Promise<Artifact | undefined> {
+  if (!isDatabaseConfigured()) {
+    const artifact = runtimeArtifacts.find(
+      (candidate) => candidate.id === input.artifactId,
+    );
+
+    if (!artifact) {
+      return undefined;
+    }
+
+    artifact.metadata.visibility = input.visibility;
+    return artifact;
+  }
+
+  await getDb()
+    .update(artifacts)
+    .set({ visibility: input.visibility })
+    .where(eq(artifacts.id, input.artifactId));
+
+  const [artifactRow] = await getDb()
+    .select()
+    .from(artifacts)
+    .where(eq(artifacts.id, input.artifactId))
+    .limit(1);
+
+  if (!artifactRow) {
+    return undefined;
+  }
+
+  const revisionRows = await getDb()
+    .select()
+    .from(artifactRevisions)
+    .where(eq(artifactRevisions.artifactId, input.artifactId));
+
+  return (await mapArtifactRows([artifactRow], revisionRows))[0];
 }
 
 export async function listReviewThreads(

@@ -49,6 +49,9 @@ components:
     ArtifactVisibility:
       type: string
       enum: [public, unlisted, private]
+    ArtifactShareRole:
+      type: string
+      enum: [viewer, commenter]
     ArtifactKind:
       type: string
       enum:
@@ -173,6 +176,24 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ArtifactRevision'
+    ArtifactShare:
+      type: object
+      required: [id, artifactId, email, role, createdAt]
+      properties:
+        id:
+          type: string
+        artifactId:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          $ref: '#/components/schemas/ArtifactShareRole'
+        createdAt:
+          type: string
+          format: date-time
+        invitedByUserId:
+          type: string
     ReviewAnchor:
       type: object
       required: [label]
@@ -508,6 +529,9 @@ components:
           type: string
         name:
           type: string
+        email:
+          type: string
+          format: email
         apiKeyId:
           type: string
         kind:
@@ -718,6 +742,223 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Artifact not found or not visible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags: [Artifacts]
+      summary: Update artifact visibility
+      description: Only the artifact owner can change general access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: artifactIdOrSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [visibility]
+              properties:
+                visibility:
+                  $ref: '#/components/schemas/ArtifactVisibility'
+      responses:
+        '200':
+          description: Updated artifact
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [artifact]
+                properties:
+                  artifact:
+                    $ref: '#/components/schemas/Artifact'
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Only the artifact owner can update visibility
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Artifact not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/artifacts/{artifactIdOrSlug}/shares:
+    get:
+      tags: [Artifacts]
+      summary: List artifact shares
+      description: Only the artifact owner can view sharing settings.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: artifactIdOrSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Artifact shares
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [shares]
+                properties:
+                  shares:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ArtifactShare'
+        '401':
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Only the artifact owner can view shares
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Artifact not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Artifacts]
+      summary: Invite an email to an artifact
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: artifactIdOrSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email:
+                  type: string
+                  format: email
+                role:
+                  $ref: '#/components/schemas/ArtifactShareRole'
+      responses:
+        '201':
+          description: Share created or updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [share]
+                properties:
+                  share:
+                    $ref: '#/components/schemas/ArtifactShare'
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Only the artifact owner can manage shares
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Artifact not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Artifacts]
+      summary: Remove an invited email from an artifact
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: artifactIdOrSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Share removed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Only the artifact owner can manage shares
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Artifact not found
           content:
             application/json:
               schema:

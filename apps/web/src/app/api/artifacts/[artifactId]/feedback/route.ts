@@ -4,7 +4,10 @@ import {
   formatAgentFeedbackPrompt,
 } from '@docscn/sdk';
 import { findArtifact, listReviewThreads } from '@docscn/db';
-import { getRequestPrincipal, hasBearerToken } from '../../../../../lib/publisher';
+import {
+  getRequestPrincipal,
+  hasBearerToken,
+} from '../../../../../lib/publisher';
 
 export async function GET(
   request: Request,
@@ -21,6 +24,7 @@ export async function GET(
   const artifact = await findArtifact(artifactId, {
     includeUnlisted: true,
     viewerUserId: principal?.userId,
+    viewerEmail: principal?.email,
   });
 
   if (!artifact) {

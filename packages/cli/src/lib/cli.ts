@@ -4,6 +4,8 @@ import { basename, extname } from 'node:path';
 import type {
   ClaimArtifactsResult,
   ArtifactKind,
+  ArtifactShare,
+  ArtifactShareRole,
   ArtifactVisibility,
   CreateArtifactInput,
   ReviewThreadStatus,
@@ -26,6 +28,7 @@ export const commands = [
   'login',
   'publish',
   'revise',
+  'share',
   'template',
   'thread',
   'version',
@@ -47,6 +50,7 @@ const cliArtifactKinds = [
   'custom-html',
 ] as const;
 const cliThreadStatusOptions = ['open', 'needs-revision', 'resolved'] as const;
+const cliShareRoleOptions = ['viewer', 'commenter'] as const;
 const valueFlags = new Set([
   '--anchor-label',
   '--anchor-x',
@@ -55,12 +59,14 @@ const valueFlags = new Set([
   '--author',
   '--body',
   '--description',
+  '--email',
   '--host',
   '--kind',
   '--output',
   '--requested-change',
   '--resolve',
   '--revision',
+  '--role',
   '--status',
   '--summary',
   '--title',
@@ -204,6 +210,14 @@ interface CommentResponse extends ApiErrorResponse {
   };
 }
 
+interface SharesResponse extends ApiErrorResponse {
+  shares?: ArtifactShare[];
+}
+
+interface ShareResponse extends ApiErrorResponse {
+  share?: ArtifactShare;
+}
+
 interface Credentials {
   apiKey: string;
   baseUrl: string;
@@ -291,6 +305,16 @@ function parseThreadStatus(value: string): ReviewThreadStatus {
 
   throw new Error(
     `Invalid status "${value}". Expected one of: ${cliThreadStatusOptions.join(', ')}`,
+  );
+}
+
+function parseShareRole(value: string): ArtifactShareRole {
+  if (cliShareRoleOptions.includes(value as ArtifactShareRole)) {
+    return value as ArtifactShareRole;
+  }
+
+  throw new Error(
+    `Invalid role "${value}". Expected one of: ${cliShareRoleOptions.join(', ')}`,
   );
 }
 
@@ -544,6 +568,7 @@ Usage:
   docscn template get <template-id> [--output artifact.html]
   docscn artifact get <artifact-id-or-slug> [--json]
   docscn artifact feedback <artifact-id-or-slug> [--json] [--revision <revision-id>]
+  docscn share <artifact-id-or-slug> [--email <email> --role <viewer|commenter>] [--remove]
   docscn revise <artifact-id-or-slug> artifact.html --summary <text> [--resolve <thread-id>]
   docscn thread create <artifact-id-or-slug> --title <text> --body <text>
   docscn comment <thread-id> --body <text>
@@ -559,6 +584,9 @@ Options:
   --output <file>          Write template HTML to a file.
   --summary <text>         Revision summary.
   --resolve <thread-id>    Mark a thread resolved when revising. Repeatable.
+  --email <email>          Email address for docscn share.
+  --role <role>            Share role: viewer or commenter. Defaults to viewer.
+  --remove                 Remove the email from an artifact share list.
   --json                   Print machine-readable JSON for supported commands.
 
 Examples:
@@ -567,6 +595,7 @@ Examples:
   docscn template get html-effectiveness-code-approaches --output artifact.html
   docscn publish report.html --host http://localhost:3000
   docscn publish report.html --visibility private
+  docscn share artifact-slug --email reviewer@example.com --role commenter
   docscn artifact get artifact-slug --json
   docscn artifact feedback artifact-slug --json
   docscn revise artifact-slug report.html --summary "Addressed open feedback" --resolve thread-123`;
@@ -826,6 +855,68 @@ export async function getArtifactFeedbackFromCli(args: string[]) {
   console.log(result.prompt);
 }
 
+export async function shareArtifactFromCli(args: string[]) {
+  const [artifactId] = getPositionals(args);
+
+  if (!artifactId) {
+    throw new Error(
+      'Usage: docscn share <artifact-id-or-slug> [--email <email> --role <viewer|commenter>] [--remove]',
+    );
+  }
+
+  const email = parseFlagValue(args, '--email')?.trim().toLowerCase();
+  const role = parseShareRole(parseFlagValue(args, '--role') ?? 'viewer');
+  const credentials = await resolveCredentials(args);
+  const path = `/api/artifacts/${encodeURIComponent(artifactId)}/shares`;
+
+  if (!email) {
+    const result = await apiFetch<SharesResponse>(credentials, path);
+
+    if (hasFlag(args, '--json')) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+
+    const shares = result?.shares ?? [];
+
+    if (!shares.length) {
+      console.log('No invited people yet.');
+      return;
+    }
+
+    for (const share of shares) {
+      console.log(`${share.email}  ${share.role}`);
+    }
+    return;
+  }
+
+  if (hasFlag(args, '--remove')) {
+    await apiFetch<{ ok?: boolean }>(credentials, path, {
+      method: 'DELETE',
+      body: JSON.stringify({ email }),
+    });
+
+    console.log(`Removed ${email}`);
+    return;
+  }
+
+  const result = await apiFetch<ShareResponse>(credentials, path, {
+    method: 'POST',
+    body: JSON.stringify({ email, role }),
+  });
+
+  if (!result?.share) {
+    throw new Error('Share response did not include share details.');
+  }
+
+  if (hasFlag(args, '--json')) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  console.log(`Shared with ${result.share.email} as ${result.share.role}`);
+}
+
 export async function reviseArtifactFromCli(args: string[]) {
   const [artifactId, filePath] = getPositionals(args);
   const summary = parseFlagValue(args, '--summary');
@@ -989,6 +1080,11 @@ export async function runDocscnCli(args = process.argv.slice(2)) {
 
   if (command === 'artifact' && rest[0] === 'feedback') {
     await getArtifactFeedbackFromCli(rest.slice(1));
+    return;
+  }
+
+  if (command === 'share') {
+    await shareArtifactFromCli(rest);
     return;
   }
 

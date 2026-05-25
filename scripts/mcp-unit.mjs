@@ -1,16 +1,18 @@
 import assert from 'node:assert/strict';
 
-const { docscnMcpToolNames, createDocscnMcpServer } = await import(
-  '../dist/packages/mcp/src/lib/server.js'
-);
-const { createDocscnApiClient } = await import(
-  '../dist/packages/mcp/src/lib/client.js'
-);
+const { docscnMcpToolNames, createDocscnMcpServer } =
+  await import('../dist/packages/mcp/src/lib/server.js');
+const { createDocscnApiClient } =
+  await import('../dist/packages/mcp/src/lib/client.js');
 
 assert.deepEqual(docscnMcpToolNames, [
   'publish_artifact',
   'list_artifacts',
   'get_artifact',
+  'list_artifact_shares',
+  'share_artifact',
+  'remove_artifact_share',
+  'update_artifact_visibility',
   'get_feedback',
   'submit_revision',
   'create_thread',
@@ -96,6 +98,29 @@ await assertRejectsWith(
 );
 
 await assertRejectsWith(
+  () => anonymousClient.listArtifactShares('artifact-example'),
+  /requires a docscn API key/,
+);
+
+await assertRejectsWith(
+  () =>
+    anonymousClient.shareArtifact({
+      artifactIdOrSlug: 'artifact-example',
+      email: 'reviewer@example.com',
+    }),
+  /requires a docscn API key/,
+);
+
+await assertRejectsWith(
+  () =>
+    anonymousClient.updateArtifactVisibility({
+      artifactIdOrSlug: 'artifact-example',
+      visibility: 'private',
+    }),
+  /requires a docscn API key/,
+);
+
+await assertRejectsWith(
   () =>
     anonymousClient.addComment({
       threadId: 'thread-example',
@@ -114,8 +139,7 @@ await assertRejectsWith(
 );
 
 await assertRejectsWith(
-  () =>
-    anonymousClient.claimArtifacts(),
+  () => anonymousClient.claimArtifacts(),
   /requires a docscn API key/,
 );
 

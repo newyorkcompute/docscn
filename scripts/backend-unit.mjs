@@ -19,14 +19,17 @@ async function jsonFetch(path, init = {}) {
   return { response, payload };
 }
 
-async function createSignedInCookie() {
+async function createSignedInCookie({
+  emailAddress = email,
+  name = 'Backend API Test',
+} = {}) {
   const signUp = await jsonFetch('/api/auth/sign-up/email', {
     method: 'POST',
     headers: { 'content-type': 'application/json', origin: base },
     body: JSON.stringify({
-      email,
+      email: emailAddress,
       password,
-      name: 'Backend API Test',
+      name,
     }),
   });
   const setCookie =
@@ -384,6 +387,132 @@ const artifact = await jsonFetch(`/api/artifacts/${artifactSlug}`, {
 });
 assert.equal(artifact.payload.artifact.slug, artifactSlug);
 
+const anonymousPrivateResponse = await fetch(
+  `${base}/api/artifacts/${artifactSlug}`,
+);
+assert.equal(anonymousPrivateResponse.status, 404);
+
+const invitedEmail = `backend-invited-${Date.now()}@docscn.local`;
+const invitedCookie = await createSignedInCookie({
+  emailAddress: invitedEmail,
+  name: 'Backend Invited User',
+});
+const invitedApiKey = await createApiKeyViaCliAuth(invitedCookie);
+
+const viewerShare = await jsonFetch(`/api/artifacts/${artifactSlug}/shares`, {
+  method: 'POST',
+  headers: authHeaders(apiKey),
+  body: JSON.stringify({ email: invitedEmail.toUpperCase(), role: 'viewer' }),
+});
+assert.equal(viewerShare.payload.share.email, invitedEmail);
+assert.equal(viewerShare.payload.share.role, 'viewer');
+
+const shares = await jsonFetch(`/api/artifacts/${artifactSlug}/shares`, {
+  headers: { authorization: `Bearer ${apiKey}` },
+});
+assert.equal(shares.payload.shares.length, 1);
+
+const invitedArtifact = await jsonFetch(`/api/artifacts/${artifactSlug}`, {
+  headers: { authorization: `Bearer ${invitedApiKey}` },
+});
+assert.equal(invitedArtifact.payload.artifact.slug, artifactSlug);
+
+const invitedList = await jsonFetch('/api/artifacts', {
+  headers: { authorization: `Bearer ${invitedApiKey}` },
+});
+assert.ok(
+  invitedList.payload.artifacts.some(
+    (candidate) => candidate.slug === artifactSlug,
+  ),
+);
+
+const viewerThread = await fetch(
+  `${base}/api/artifacts/${artifactSlug}/threads`,
+  {
+    method: 'POST',
+    headers: authHeaders(invitedApiKey),
+    body: JSON.stringify({
+      title: 'Viewer cannot comment',
+      body: 'This should be rejected.',
+      authorName: 'Backend Invited User',
+      status: 'open',
+    }),
+  },
+);
+assert.equal(viewerThread.status, 403);
+
+const commenterShare = await jsonFetch(
+  `/api/artifacts/${artifactSlug}/shares`,
+  {
+    method: 'POST',
+    headers: authHeaders(apiKey),
+    body: JSON.stringify({ email: invitedEmail, role: 'commenter' }),
+  },
+);
+assert.equal(commenterShare.payload.share.role, 'commenter');
+
+const invitedThread = await jsonFetch(
+  `/api/artifacts/${artifactSlug}/threads`,
+  {
+    method: 'POST',
+    headers: authHeaders(invitedApiKey),
+    body: JSON.stringify({
+      title: 'Invited commenter thread',
+      body: 'Commenter access should allow review threads.',
+      authorName: 'Backend Invited User',
+      status: 'open',
+    }),
+  },
+);
+assert.equal(invitedThread.payload.thread.status, 'open');
+
+const invitedRevision = await fetch(
+  `${base}/api/artifacts/${artifactSlug}/revisions`,
+  {
+    method: 'POST',
+    headers: authHeaders(invitedApiKey),
+    body: JSON.stringify({
+      html: '<!doctype html><html><body><main><h1>Blocked revision</h1></main></body></html>',
+      summary: 'Should not be accepted.',
+      authorName: 'Backend Invited User',
+      source: 'automation',
+    }),
+  },
+);
+assert.equal(invitedRevision.status, 403);
+
+const unlistedVisibility = await jsonFetch(`/api/artifacts/${artifactSlug}`, {
+  method: 'PATCH',
+  headers: authHeaders(apiKey),
+  body: JSON.stringify({ visibility: 'unlisted' }),
+});
+assert.equal(
+  unlistedVisibility.payload.artifact.metadata.visibility,
+  'unlisted',
+);
+
+const unlistedAnonymous = await jsonFetch(`/api/artifacts/${artifactSlug}`);
+assert.equal(unlistedAnonymous.payload.artifact.slug, artifactSlug);
+
+const privateVisibility = await jsonFetch(`/api/artifacts/${artifactSlug}`, {
+  method: 'PATCH',
+  headers: authHeaders(apiKey),
+  body: JSON.stringify({ visibility: 'private' }),
+});
+assert.equal(privateVisibility.payload.artifact.metadata.visibility, 'private');
+
+const removedShare = await jsonFetch(`/api/artifacts/${artifactSlug}/shares`, {
+  method: 'DELETE',
+  headers: authHeaders(apiKey),
+  body: JSON.stringify({ email: invitedEmail }),
+});
+assert.equal(removedShare.payload.ok, true);
+
+const removedAccess = await fetch(`${base}/api/artifacts/${artifactSlug}`, {
+  headers: { authorization: `Bearer ${invitedApiKey}` },
+});
+assert.equal(removedAccess.status, 404);
+
 const thread = await jsonFetch(`/api/artifacts/${artifactSlug}/threads`, {
   method: 'POST',
   headers: authHeaders(apiKey),
@@ -421,10 +550,11 @@ const feedback = await jsonFetch(`/api/artifacts/${artifactSlug}/feedback`, {
 });
 assert.equal(feedback.payload.bundle.artifact.slug, artifactSlug);
 assert.match(feedback.payload.prompt, /Backend API artifact/);
-assert.equal(feedback.payload.bundle.openThreads.length, 1);
-assert.equal(
-  feedback.payload.bundle.openThreads[0].id,
-  thread.payload.thread.id,
+assert.equal(feedback.payload.bundle.openThreads.length, 2);
+assert.ok(
+  feedback.payload.bundle.openThreads.some(
+    (candidate) => candidate.id === thread.payload.thread.id,
+  ),
 );
 
 const revision = await jsonFetch(`/api/artifacts/${artifactSlug}/revisions`, {
