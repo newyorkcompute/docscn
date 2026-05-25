@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
-import { createReviewThread, findArtifact } from '@docscn/db';
+import {
+  canCommentOnArtifact,
+  createReviewThread,
+  findArtifact,
+} from '@docscn/db';
 import type {
   ActorRole,
   CreateReviewThreadInput,
@@ -118,10 +122,24 @@ export async function POST(
   const artifact = await findArtifact(artifactId, {
     includeUnlisted: true,
     viewerUserId: principal.userId,
+    viewerEmail: principal.email,
   });
 
   if (!artifact) {
     return NextResponse.json({ error: 'Artifact not found.' }, { status: 404 });
+  }
+
+  if (
+    !(await canCommentOnArtifact(artifact, {
+      includeUnlisted: true,
+      viewerUserId: principal.userId,
+      viewerEmail: principal.email,
+    }))
+  ) {
+    return NextResponse.json(
+      { error: 'You need commenter access to review this artifact.' },
+      { status: 403 },
+    );
   }
 
   const body = (await request.json().catch(() => null)) as Record<

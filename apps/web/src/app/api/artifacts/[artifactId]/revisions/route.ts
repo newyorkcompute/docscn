@@ -48,6 +48,7 @@ export async function POST(
   const artifact = await findArtifact(artifactId, {
     includeUnlisted: true,
     viewerUserId: principal.userId,
+    viewerEmail: principal.email,
   });
 
   if (!artifact) {

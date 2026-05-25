@@ -14,12 +14,15 @@ import {
   MousePointer2,
   MessageSquareText,
   MoreVertical,
+  Share2,
   Type,
   X,
 } from 'lucide-react';
 import type {
   Artifact,
+  ArtifactAccessRole,
   ArtifactRevision,
+  ArtifactShare,
   ReviewAnchor,
   ReviewThread,
   ReviewThreadStatus,
@@ -37,6 +40,7 @@ import {
   type ArtifactAnnotationMode,
   type ArtifactViewportState,
 } from './artifact-frame';
+import { ShareDialog } from './share-dialog';
 import { ThemeToggle } from './theme-toggle';
 
 interface PendingAnchor extends ReviewAnchor {
@@ -207,14 +211,18 @@ export function ArtifactWorkspace({
   artifact: initialArtifact,
   canComment,
   canRevise,
+  accessRole,
   isAuthenticated,
+  shares,
   threads,
   artifactId,
 }: {
   artifact?: Artifact;
   canComment: boolean;
   canRevise: boolean;
+  accessRole?: ArtifactAccessRole;
   isAuthenticated: boolean;
+  shares: ArtifactShare[];
   threads: ReviewThread[];
   artifactId: string;
 }) {
@@ -250,6 +258,7 @@ export function ArtifactWorkspace({
   const [annotationMode, setAnnotationMode] =
     useState<ArtifactAnnotationMode>('idle');
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const [showCommentPins, setShowCommentPins] = useState(true);
   const [viewportRequestId, setViewportRequestId] = useState(0);
   const [artifactViewport, setArtifactViewport] =
@@ -321,6 +330,21 @@ export function ArtifactWorkspace({
   const feedbackPrompt = feedbackBundle
     ? formatAgentFeedbackPrompt(feedbackBundle)
     : '';
+  const isPrivateViewer =
+    accessRole === 'viewer' && artifact?.metadata.visibility === 'private';
+  const lockedCommentTitle = isPrivateViewer
+    ? 'You have view-only access.'
+    : isAuthenticated
+      ? 'Starter demos are view-only.'
+      : 'Sign in to comment and collaborate.';
+  const lockedCommentDescription = isPrivateViewer
+    ? 'Ask the owner for commenter access to leave review threads and replies.'
+    : isAuthenticated
+      ? 'Publish your own artifact to attach review threads and revisions.'
+      : 'Anonymous artifacts are easy to share. Login unlocks comments, revision workflows, private sharing, and future analytics.';
+  const lockedReplyPlaceholder = isPrivateViewer
+    ? 'View-only access'
+    : 'Sign in to reply';
 
   async function copyFeedback(value: string, label: string) {
     await navigator.clipboard.writeText(value);
@@ -616,6 +640,10 @@ export function ArtifactWorkspace({
         return;
       }
 
+      if (isShareOpen) {
+        return;
+      }
+
       if (activeThreadMenuId) {
         event.preventDefault();
         setActiveThreadMenuId(undefined);
@@ -660,6 +688,7 @@ export function ArtifactWorkspace({
     activeThreadPopoverId,
     annotationMode,
     isReviewOpen,
+    isShareOpen,
     pendingAnchor,
   ]);
 
@@ -886,6 +915,28 @@ export function ArtifactWorkspace({
             <GitCommitHorizontal className="h-[18px] w-[18px]" />
           </Button>
         </ToolbarTip>
+        {canRevise ? (
+          <ToolbarTip label="Share artifact">
+            <Button
+              aria-label="Open sharing settings"
+              className={cn(
+                'h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white',
+                isShareOpen && 'bg-white/15',
+              )}
+              size="sm"
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setAnnotationMode('idle');
+                setActiveThreadPopoverId(undefined);
+                setActiveThreadMenuId(undefined);
+                setIsShareOpen(true);
+              }}
+            >
+              <Share2 className="h-[18px] w-[18px]" />
+            </Button>
+          </ToolbarTip>
+        ) : null}
         <ToolbarTip align="right" label="Theme">
           <ThemeToggle
             className="h-9 rounded-full px-3 text-white hover:bg-white/10 hover:text-white"
@@ -930,6 +981,20 @@ export function ArtifactWorkspace({
           ) : null}
         </div>
       </div>
+
+      {isShareOpen ? (
+        <ShareDialog
+          artifactId={artifact.id}
+          artifactTitle={artifact.metadata.title}
+          initialShares={shares}
+          initialVisibility={artifact.metadata.visibility}
+          ownerLabel={artifact.metadata.author.name}
+          onChanged={() => {
+            router.refresh();
+          }}
+          onClose={() => setIsShareOpen(false)}
+        />
+      ) : null}
 
       {annotationMode === 'point' ? (
         <button
@@ -1058,9 +1123,7 @@ export function ArtifactWorkspace({
             className="mt-4 min-h-16 w-full resize-none rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35 focus:ring-2 focus:ring-primary"
             disabled={!canComment}
             placeholder={
-              canComment
-                ? 'Reply to this thread'
-                : 'Sign in to reply to review threads'
+              canComment ? 'Reply to this thread' : lockedReplyPlaceholder
             }
             value={commentBodies[activeThreadPopover.id] ?? ''}
             onChange={(event) =>
@@ -1269,23 +1332,19 @@ export function ArtifactWorkspace({
                 </div>
                 {!canComment ? (
                   <Card className="mt-4 border-primary/25 bg-primary/10 p-4">
-                    <p className="text-sm font-medium">
-                      {isAuthenticated
-                        ? 'Starter demos are view-only.'
-                        : 'Sign in to comment and collaborate.'}
-                    </p>
+                    <p className="text-sm font-medium">{lockedCommentTitle}</p>
                     <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      {isAuthenticated
-                        ? 'Publish your own artifact to attach review threads and revisions.'
-                        : 'Anonymous artifacts are easy to share. Login unlocks comments, revision workflows, private sharing, and future analytics.'}
+                      {lockedCommentDescription}
                     </p>
-                    <Button asChild className="mt-3" size="sm">
-                      <Link href={isAuthenticated ? '/publish' : '/sign-in'}>
-                        {isAuthenticated
-                          ? 'Publish your own'
-                          : 'Sign in to unlock'}
-                      </Link>
-                    </Button>
+                    {!isPrivateViewer ? (
+                      <Button asChild className="mt-3" size="sm">
+                        <Link href={isAuthenticated ? '/publish' : '/sign-in'}>
+                          {isAuthenticated
+                            ? 'Publish your own'
+                            : 'Sign in to unlock'}
+                        </Link>
+                      </Button>
+                    ) : null}
                   </Card>
                 ) : null}
                 <div className="mt-5 space-y-3">
@@ -1522,7 +1581,7 @@ export function ArtifactWorkspace({
                               placeholder={
                                 canComment
                                   ? 'Reply or add others with @'
-                                  : 'Sign in to reply'
+                                  : lockedReplyPlaceholder
                               }
                               value={commentBodies[thread.id] ?? ''}
                               onChange={(event) =>

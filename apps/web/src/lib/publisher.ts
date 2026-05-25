@@ -4,6 +4,7 @@ import { getRequestSession } from './session';
 export interface RequestPrincipal {
   userId: string;
   name?: string;
+  email?: string;
   apiKeyId?: string;
   kind: 'session' | 'api-key';
 }
@@ -32,6 +33,7 @@ export async function getRequestPrincipal(
       ? {
           userId: principal.userId,
           name: principal.name,
+          email: principal.email,
           apiKeyId: principal.apiKeyId,
           kind: 'api-key',
         }
@@ -44,6 +46,7 @@ export async function getRequestPrincipal(
     ? {
         userId: session.user.id,
         name: session.user.name,
+        email: session.user.email,
         kind: 'session',
       }
     : undefined;

@@ -107,7 +107,10 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    artifacts: await listArtifacts({ viewerUserId: principal?.userId }),
+    artifacts: await listArtifacts({
+      viewerUserId: principal?.userId,
+      viewerEmail: principal?.email,
+    }),
   });
 }
 

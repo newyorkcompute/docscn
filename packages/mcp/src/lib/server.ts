@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
@@ -23,15 +22,17 @@ const artifactKindSchema = z.enum([
 
 const visibilitySchema = z.enum(['public', 'unlisted', 'private']);
 
+const shareRoleSchema = z.enum(['viewer', 'commenter']);
+
 const threadStatusSchema = z.enum(['open', 'needs-revision', 'resolved']);
 
 const anchorKindSchema = z.enum(['point', 'text', 'element']);
 
-function jsonToolResult(value) {
+function jsonToolResult(value: unknown) {
   return {
     content: [
       {
-        type: 'text',
+        type: 'text' as const,
         text: JSON.stringify(value, null, 2),
       },
     ],
@@ -46,12 +47,8 @@ const publishArtifactShape = {
   html: z
     .string()
     .describe('Complete self-contained HTML document including <html>.'),
-  visibility: visibilitySchema
-    .optional()
-    .describe('Defaults to unlisted.'),
-  kind: artifactKindSchema
-    .optional()
-    .describe('Defaults to custom-html.'),
+  visibility: visibilitySchema.optional().describe('Defaults to unlisted.'),
+  kind: artifactKindSchema.optional().describe('Defaults to custom-html.'),
   authorName: z
     .string()
     .optional()
@@ -62,6 +59,26 @@ const getArtifactShape = {
   artifactIdOrSlug: z
     .string()
     .describe('Artifact id or slug from publish_artifact or list_artifacts.'),
+};
+
+const shareArtifactShape = {
+  artifactIdOrSlug: z.string().describe('Artifact id or slug to share.'),
+  email: z.string().email().describe('Email address to invite.'),
+  role: shareRoleSchema
+    .optional()
+    .describe('Defaults to viewer. Use commenter to allow review comments.'),
+};
+
+const removeArtifactShareShape = {
+  artifactIdOrSlug: z.string().describe('Artifact id or slug to update.'),
+  email: z.string().email().describe('Email address to remove.'),
+};
+
+const updateArtifactVisibilityShape = {
+  artifactIdOrSlug: z.string().describe('Artifact id or slug to update.'),
+  visibility: visibilitySchema.describe(
+    'New general access: public, unlisted, or private.',
+  ),
 };
 
 const getFeedbackShape = {
@@ -79,7 +96,9 @@ const submitRevisionShape = {
   html: z
     .string()
     .describe('Complete replacement HTML document including <html>.'),
-  summary: z.string().describe('Short summary of what changed in this revision.'),
+  summary: z
+    .string()
+    .describe('Short summary of what changed in this revision.'),
   resolvedThreadIds: z
     .array(z.string())
     .optional()
@@ -100,9 +119,7 @@ const createThreadShape = {
     .string()
     .optional()
     .describe('Display name for the reviewing agent.'),
-  status: threadStatusSchema
-    .optional()
-    .describe('Defaults to open.'),
+  status: threadStatusSchema.optional().describe('Defaults to open.'),
   requestedChange: z
     .string()
     .optional()
@@ -129,7 +146,9 @@ const createThreadShape = {
 };
 
 const addCommentShape = {
-  threadId: z.string().describe('Review thread id from get_artifact or get_feedback.'),
+  threadId: z
+    .string()
+    .describe('Review thread id from get_artifact or get_feedback.'),
   body: z.string().describe('Comment text.'),
   authorName: z
     .string()
@@ -185,7 +204,7 @@ export async function createDocscnMcpServer() {
         credentials.apiKey
           ? 'Authenticated with an API key. Full publish, review, revision, and claim flows are available.'
           : 'No API key found; publish_artifact can still create anonymous unlisted view-only artifacts and saves local claim receipts.',
-        'Use publish_artifact, list_artifacts, get_artifact, get_feedback, create_thread, add_comment, submit_revision, and update_thread_status for the full loop.',
+        'Use publish_artifact, list_artifacts, get_artifact, get_feedback, share_artifact, create_thread, add_comment, submit_revision, and update_thread_status for the full loop.',
         'Artifacts must include a complete <html> document. Prefer unlisted visibility unless the user asks otherwise.',
         'Public/private publishing, comments, threads, revisions, and claim_artifacts require login or DOCSCN_API_KEY.',
       ].join(' '),
@@ -210,7 +229,40 @@ export async function createDocscnMcpServer() {
     'get_artifact',
     'Fetch artifact metadata, revision history, and review threads.',
     getArtifactShape,
-    async (input) => jsonToolResult(await client.getArtifact(input.artifactIdOrSlug)),
+    async (input) =>
+      jsonToolResult(await client.getArtifact(input.artifactIdOrSlug)),
+  );
+
+  server.tool(
+    'list_artifact_shares',
+    'List invited people for an artifact. Only the artifact owner can view sharing settings. Requires authentication.',
+    getArtifactShape,
+    async (input) =>
+      jsonToolResult({
+        shares: await client.listArtifactShares(input.artifactIdOrSlug),
+      }),
+  );
+
+  server.tool(
+    'share_artifact',
+    'Invite an email address to a private artifact as viewer or commenter. Only the artifact owner can share. Requires authentication.',
+    shareArtifactShape,
+    async (input) => jsonToolResult(await client.shareArtifact(input)),
+  );
+
+  server.tool(
+    'remove_artifact_share',
+    'Remove an invited email address from an artifact. Only the artifact owner can remove access. Requires authentication.',
+    removeArtifactShareShape,
+    async (input) => jsonToolResult(await client.removeArtifactShare(input)),
+  );
+
+  server.tool(
+    'update_artifact_visibility',
+    'Update an artifact general access setting to public, unlisted, or private. Only the artifact owner can change visibility. Requires authentication.',
+    updateArtifactVisibilityShape,
+    async (input) =>
+      jsonToolResult(await client.updateArtifactVisibility(input)),
   );
 
   server.tool(
@@ -276,6 +328,10 @@ export const docscnMcpToolNames = [
   'publish_artifact',
   'list_artifacts',
   'get_artifact',
+  'list_artifact_shares',
+  'share_artifact',
+  'remove_artifact_share',
+  'update_artifact_visibility',
   'get_feedback',
   'submit_revision',
   'create_thread',

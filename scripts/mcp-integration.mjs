@@ -10,9 +10,8 @@ const configDir = await mkdtemp(join(tmpdir(), 'docscn-mcp-integration-'));
 
 process.env.DOCSCN_CONFIG_DIR = configDir;
 
-const { createDocscnApiClient } = await import(
-  '../dist/packages/mcp/src/lib/client.js'
-);
+const { createDocscnApiClient } =
+  await import('../dist/packages/mcp/src/lib/client.js');
 
 async function jsonFetch(path, init = {}) {
   const url = path.startsWith('http') ? path : `${base}${path}`;
@@ -27,14 +26,17 @@ async function jsonFetch(path, init = {}) {
   return { response, payload };
 }
 
-async function createSignedInCookie() {
+async function createSignedInCookie({
+  emailAddress = email,
+  name = 'MCP Integration Test',
+} = {}) {
   const signUp = await jsonFetch('/api/auth/sign-up/email', {
     method: 'POST',
     headers: { 'content-type': 'application/json', origin: base },
     body: JSON.stringify({
-      email,
+      email: emailAddress,
       password,
-      name: 'MCP Integration Test',
+      name,
     }),
   });
   const setCookie =
@@ -121,6 +123,53 @@ assert.equal(fetched.artifact.slug, owned.slug);
 assert.equal(fetched.artifact.revisions.length, 1);
 assert.equal(fetched.threads.length, 0);
 
+const invitedEmail = `mcp-invited-${Date.now()}@docscn.local`;
+const invitedCookie = await createSignedInCookie({
+  emailAddress: invitedEmail,
+  name: 'MCP Invited User',
+});
+const invitedApiKey = await createApiKeyViaCliAuth(invitedCookie);
+const invitedClient = createDocscnApiClient({
+  baseUrl: base,
+  apiKey: invitedApiKey,
+});
+
+const share = await client.shareArtifact({
+  artifactIdOrSlug: owned.slug,
+  email: invitedEmail,
+  role: 'commenter',
+});
+assert.equal(share.email, invitedEmail);
+assert.equal(share.role, 'commenter');
+
+const shareList = await client.listArtifactShares(owned.slug);
+assert.ok(
+  shareList.some(
+    (candidate) =>
+      candidate.email === invitedEmail && candidate.role === 'commenter',
+  ),
+);
+
+const invitedFetched = await invitedClient.getArtifact(owned.slug);
+assert.equal(invitedFetched.artifact.slug, owned.slug);
+
+const invitedThread = await invitedClient.createThread({
+  artifactIdOrSlug: owned.slug,
+  title: 'MCP invited commenter thread',
+  body: 'Commenter share should allow MCP review threads.',
+});
+assert.equal(invitedThread.status, 'open');
+
+await client.removeArtifactShare({
+  artifactIdOrSlug: owned.slug,
+  email: invitedEmail,
+});
+
+await assert.rejects(
+  () => invitedClient.getArtifact(owned.slug),
+  /Artifact not found/,
+);
+
 const thread = await client.createThread({
   artifactIdOrSlug: owned.slug,
   title: 'MCP integration thread',
@@ -158,8 +207,10 @@ assert.equal(updatedThread.comments.length, 2);
 
 const feedback = await client.getFeedback({ artifactIdOrSlug: owned.slug });
 assert.equal(feedback.bundle.artifact.slug, owned.slug);
-assert.equal(feedback.bundle.openThreads.length, 1);
-assert.equal(feedback.bundle.openThreads[0].id, thread.id);
+assert.equal(feedback.bundle.openThreads.length, 2);
+assert.ok(
+  feedback.bundle.openThreads.some((candidate) => candidate.id === thread.id),
+);
 assert.match(feedback.prompt, /MCP integration owned/);
 
 const resolved = await client.updateThreadStatus({

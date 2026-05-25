@@ -45,6 +45,7 @@ export async function PATCH(
   const artifact = await findArtifact(existingThread.artifactId, {
     includeUnlisted: true,
     viewerUserId: principal.userId,
+    viewerEmail: principal.email,
   });
 
   if (!artifact) {

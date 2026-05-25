@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -23,6 +23,7 @@ const {
   listTemplatesFromCli,
   publishArtifactFromCli,
   runDocscnCli,
+  shareArtifactFromCli,
 } = await import('../dist/packages/cli/src/lib/cli.js');
 
 function captureLogs(callback) {
@@ -98,6 +99,7 @@ const help = getCliHelp();
 assert.match(help, /docscn login/);
 assert.match(help, /docscn artifact get/);
 assert.match(help, /docscn artifact feedback/);
+assert.match(help, /docscn share/);
 assert.match(help, /docscn revise/);
 assert.match(help, /docscn template list/);
 assert.match(help, /docscn template get/);
@@ -193,6 +195,119 @@ await assertRejectsWith(
   () => publishArtifactFromCli([htmlPath, '--host', 'http://localhost:3000']),
   /self-contained HTML/,
 );
+
+await assertRejectsWith(
+  () =>
+    shareArtifactFromCli([
+      'artifact-unit',
+      '--host',
+      'http://localhost:3000',
+      '--email',
+      'reviewer@example.com',
+      '--role',
+      'editor',
+    ]),
+  /Invalid role/,
+);
+
+const cliShareState = [];
+const cliShareServer = createServer(async (request, response) => {
+  if (request.headers.authorization !== 'Bearer docscn_sk_unit') {
+    response.statusCode = 401;
+    response.setHeader('content-type', 'application/json');
+    response.end(JSON.stringify({ error: 'Invalid API key.' }));
+    return;
+  }
+
+  if (request.url === '/api/artifacts/artifact-unit/shares') {
+    response.setHeader('content-type', 'application/json');
+
+    if (request.method === 'GET') {
+      response.end(JSON.stringify({ shares: cliShareState }));
+      return;
+    }
+
+    const chunks = [];
+    for await (const chunk of request) {
+      chunks.push(chunk);
+    }
+    const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+
+    if (request.method === 'POST') {
+      const share = {
+        id: 'share-cli-unit',
+        artifactId: 'artifact-unit',
+        email: body.email,
+        role: body.role,
+        createdAt: new Date().toISOString(),
+      };
+      cliShareState.splice(0, cliShareState.length, share);
+      response.statusCode = 201;
+      response.end(JSON.stringify({ share }));
+      return;
+    }
+
+    if (request.method === 'DELETE') {
+      cliShareState.splice(0, cliShareState.length);
+      response.end(JSON.stringify({ ok: true }));
+      return;
+    }
+  }
+
+  response.statusCode = 404;
+  response.end('not found');
+});
+await new Promise((resolve) => cliShareServer.listen(0, '127.0.0.1', resolve));
+const cliShareAddress = cliShareServer.address();
+const cliShareHost = `http://127.0.0.1:${cliShareAddress.port}`;
+
+try {
+  const addShareLogs = await captureLogs(() =>
+    shareArtifactFromCli([
+      'artifact-unit',
+      '--host',
+      cliShareHost,
+      '--api-key',
+      'docscn_sk_unit',
+      '--email',
+      'Reviewer@Example.com',
+      '--role',
+      'commenter',
+    ]),
+  );
+  assert.match(addShareLogs.join('\n'), /reviewer@example.com as commenter/);
+
+  const listShareLogs = await captureLogs(() =>
+    shareArtifactFromCli([
+      'artifact-unit',
+      '--host',
+      cliShareHost,
+      '--api-key',
+      'docscn_sk_unit',
+      '--role',
+      'editor',
+    ]),
+  );
+  assert.match(listShareLogs.join('\n'), /reviewer@example.com {2}commenter/);
+
+  const removeShareLogs = await captureLogs(() =>
+    shareArtifactFromCli([
+      'artifact-unit',
+      '--host',
+      cliShareHost,
+      '--api-key',
+      'docscn_sk_unit',
+      '--email',
+      'reviewer@example.com',
+      '--remove',
+      '--role',
+      'editor',
+    ]),
+  );
+  assert.match(removeShareLogs.join('\n'), /Removed reviewer@example.com/);
+} finally {
+  await new Promise((resolve) => cliShareServer.close(resolve));
+}
 
 const logs = await captureLogs(() => runDocscnCli(['help']));
 assert.ok(logs.join('\n').includes('Host, share, and collaborate'));

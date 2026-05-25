@@ -1,5 +1,9 @@
 export type ArtifactVisibility = 'public' | 'private' | 'unlisted';
 
+export type ArtifactShareRole = 'viewer' | 'commenter';
+
+export type ArtifactAccessRole = 'owner' | ArtifactShareRole;
+
 export type ArtifactKind =
   | 'incident-timeline'
   | 'migration-plan'
@@ -61,6 +65,15 @@ export interface Artifact {
   metadata: ArtifactMetadata;
   currentRevisionId: string;
   revisions: ArtifactRevision[];
+}
+
+export interface ArtifactShare {
+  id: string;
+  artifactId: string;
+  email: string;
+  role: ArtifactShareRole;
+  createdAt: string;
+  invitedByUserId?: string;
 }
 
 export interface ReviewAnchor {
@@ -199,6 +212,7 @@ export interface ApiKeyPrincipal {
   apiKeyId: string;
   userId: string;
   name: string;
+  email?: string;
 }
 
 export interface CliLoginRequest {
