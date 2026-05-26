@@ -12,6 +12,10 @@ export interface DocscnCliConfig {
   defaultHost: string;
   profiles: Record<string, DocscnCliProfile>;
   anonymousClaims?: Record<string, AnonymousClaimReceipt[]>;
+  updateCheck?: {
+    checkedAt: string;
+    latestVersion?: string;
+  };
 }
 
 export function normalizeHost(value: string) {
@@ -72,6 +76,7 @@ export async function saveDefaultProfile(input: DocscnCliProfile) {
       },
     },
     anonymousClaims: existing?.anonymousClaims,
+    updateCheck: existing?.updateCheck,
   });
 }
 
@@ -95,6 +100,7 @@ export async function saveAnonymousClaimReceipt(
         receipt,
       ],
     },
+    updateCheck: existing?.updateCheck,
   });
 }
 

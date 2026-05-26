@@ -20,6 +20,7 @@ import {
   saveAnonymousClaimReceipt,
   saveDefaultProfile,
 } from './config.js';
+import { maybeShowUpdateNotice, updateCliFromCli } from './update.js';
 import { docscnCliVersion } from './version.js';
 
 export { docscnCliVersion };
@@ -34,6 +35,7 @@ export const commands = [
   'share',
   'template',
   'thread',
+  'update',
   'version',
   'whoami',
 ] as const;
@@ -659,6 +661,7 @@ Usage:
   docscn login [--host <url>]
   docscn whoami [--host <url>]
   docscn publish artifact.html [options]
+  docscn update [--check] [--version <version>]
   docscn template list [--json]
   docscn template get <template-id> [--output artifact.html]
   docscn artifact get <artifact-id-or-slug> [--json]
@@ -682,6 +685,8 @@ Options:
   --email <email>          Email address for docscn share.
   --role <role>            Share role: viewer or commenter. Defaults to viewer.
   --remove                 Remove the email from an artifact share list.
+  --check                  Check for a CLI update without installing it.
+  --version <version>      Install a specific CLI release with docscn update.
   --json                   Print machine-readable JSON for supported commands.
 
 Examples:
@@ -689,6 +694,7 @@ Examples:
   docscn login --host ${defaultDocscnHost}
   docscn template list
   docscn template get html-effectiveness-code-approaches --output artifact.html
+  docscn update --check
   docscn publish artifact.html
   docscn publish report.html --visibility private
   docscn share artifact-slug --email reviewer@example.com --role commenter
@@ -1150,6 +1156,13 @@ export async function runDocscnCli(args = process.argv.slice(2)) {
     console.log(getCliHelp());
     return;
   }
+
+  if (command === 'update') {
+    await updateCliFromCli(rest);
+    return;
+  }
+
+  await maybeShowUpdateNotice(command);
 
   if (command === 'login') {
     await loginFromCli(rest);

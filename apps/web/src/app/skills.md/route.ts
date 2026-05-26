@@ -61,6 +61,8 @@ Interactive artifacts should include export/copy (JSON, markdown, diff, settings
 ## CLI commands
 
     docscn whoami --host ${origin}
+    docscn update --check
+    docscn update
     docscn publish artifact.html --host ${origin} [--visibility unlisted|public|private] [--kind custom-html]
     docscn artifact feedback <id-or-slug> [--json] [--revision <id>] --host ${origin}
     docscn artifact get <id-or-slug> --json --host ${origin}
