@@ -52,6 +52,81 @@ jobs:
       - name: Test affected unit targets
         run: npm run ci:affected:unit -- --base="$NX_BASE" --head="$NX_HEAD"
 
+  unit-coverage:
+    name: Unit coverage
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup-node-nx
+
+      - name: Generate unit coverage
+        run: npm run coverage:unit
+
+      - name: Upload unit coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-coverage
+          path: coverage/unit/
+          if-no-files-found: ignore
+
+      - name: Update PR coverage comment
+        if: success()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('node:fs');
+
+            const marker = '<!-- docscn-coverage-comment -->';
+            const body = fs.readFileSync('coverage/unit/coverage-comment.md', 'utf8');
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existingComment = comments.find((comment) =>
+              comment.body?.includes(marker),
+            );
+
+            try {
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner,
+                  repo,
+                  comment_id: existingComment.id,
+                  body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number,
+                  body,
+                });
+              }
+            } catch (error) {
+              if (error.status === 403) {
+                core.warning(`Coverage generated, but the workflow token cannot update PR comments: ${error.message}`);
+                return;
+              }
+
+              throw error;
+            }
+
   integration-and-e2e:
     name: Integration and E2E
     runs-on: ubuntu-latest
