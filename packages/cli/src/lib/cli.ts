@@ -36,7 +36,7 @@ export const commands = [
 ] as const;
 
 export type DocscnCommand = (typeof commands)[number];
-export const docscnCliVersion = '0.0.1';
+export const docscnCliVersion = '0.3.0';
 const defaultDocscnHost = 'https://docscn.ai';
 
 const cliVisibilityOptions = ['public', 'unlisted', 'private'] as const;
