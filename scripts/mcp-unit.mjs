@@ -1,9 +1,21 @@
 import assert from 'node:assert/strict';
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 
 const { docscnMcpToolNames, createDocscnMcpServer } =
   await import('../dist/packages/mcp/src/lib/server.js');
 const { createDocscnApiClient } =
   await import('../dist/packages/mcp/src/lib/client.js');
+const {
+  findProfileForHost,
+  getAnonymousClaimReceipts,
+  getConfigPath,
+  normalizeHost,
+  readCliConfig,
+  resolveDocscnCredentials,
+  saveAnonymousClaimReceipt,
+} = await import('../dist/packages/mcp/src/lib/credentials.js');
 
 assert.deepEqual(docscnMcpToolNames, [
   'publish_artifact',
@@ -157,5 +169,71 @@ await assertRejectsWith(
     }),
   /self-contained document/,
 );
+
+const mcpConfigDir = await mkdtemp(join(tmpdir(), 'docscn-mcp-unit-'));
+process.env.DOCSCN_CONFIG_DIR = mcpConfigDir;
+
+assert.equal(normalizeHost('https://docscn.ai///'), 'https://docscn.ai');
+assert.ok(getConfigPath().includes(mcpConfigDir));
+
+const previousMcpUrl = process.env.DOCSCN_URL;
+const previousMcpKey = process.env.DOCSCN_API_KEY;
+delete process.env.DOCSCN_API_KEY;
+process.env.DOCSCN_URL = 'https://staging.docscn.ai/';
+
+try {
+  const envOnlyCredentials = await resolveDocscnCredentials();
+  assert.equal(envOnlyCredentials.baseUrl, 'https://staging.docscn.ai');
+  assert.equal(envOnlyCredentials.apiKey, undefined);
+
+  delete process.env.DOCSCN_API_KEY;
+  const configPath = getConfigPath();
+  await mkdir(dirname(configPath), { recursive: true });
+  await writeFile(
+    configPath,
+    `${JSON.stringify({
+      defaultHost: 'https://staging.docscn.ai',
+      profiles: {
+        default: {
+          apiKey: 'docscn_sk_mcp_profile',
+          host: 'https://staging.docscn.ai',
+        },
+      },
+    })}\n`,
+  );
+
+  const config = await readCliConfig();
+  assert.equal(
+    findProfileForHost(config, 'https://staging.docscn.ai/')?.apiKey,
+    'docscn_sk_mcp_profile',
+  );
+
+  const resolved = await resolveDocscnCredentials();
+  assert.equal(resolved.apiKey, 'docscn_sk_mcp_profile');
+  assert.equal(resolved.baseUrl, 'https://staging.docscn.ai');
+
+  await saveAnonymousClaimReceipt('https://staging.docscn.ai/', {
+    artifactId: 'artifact-mcp-claim',
+    slug: 'mcp-claim-unit',
+    title: 'MCP claim unit',
+    claimToken: 'docscn_claim_mcp_unit',
+    createdAt: new Date().toISOString(),
+  });
+  assert.equal(
+    (await getAnonymousClaimReceipts('https://staging.docscn.ai')).length,
+    1,
+  );
+} finally {
+  if (previousMcpUrl) {
+    process.env.DOCSCN_URL = previousMcpUrl;
+  } else {
+    delete process.env.DOCSCN_URL;
+  }
+  if (previousMcpKey) {
+    process.env.DOCSCN_API_KEY = previousMcpKey;
+  } else {
+    delete process.env.DOCSCN_API_KEY;
+  }
+}
 
 console.log('mcp unit ok');
