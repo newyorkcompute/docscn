@@ -31,6 +31,23 @@ docscn login --host https://docscn.ai
 docscn whoami
 ```
 
+## Updating
+
+Installed release binaries can update themselves from GitHub Releases:
+
+```bash
+docscn update --check
+docscn update
+```
+
+`docscn update` downloads the matching platform binary, verifies it against
+`SHA256SUMS`, and replaces the current executable. To install a specific release
+or roll back, pass a tag or version:
+
+```bash
+docscn update --version v0.3.0
+```
+
 Defaults:
 
 - `DOCSCN_URL`, saved config, or `https://docscn.ai`

@@ -234,6 +234,13 @@ docscn publish artifact.html --host https://docscn.ai
 docscn login --host https://docscn.ai   # optional: claim ownership and collaborate
 ```
 
+Check for CLI updates, or install the latest release in place:
+
+```bash
+docscn update --check
+docscn update
+```
+
 Local development with the installed CLI:
 
 ```bash

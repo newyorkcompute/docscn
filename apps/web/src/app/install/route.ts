@@ -135,7 +135,7 @@ Next steps:
 Run this when you want ownership, comments, revisions, private sharing, or API keys:
   docscn login --host $host
 
-To update later, rerun this installer.
+To update later, run "docscn update" or rerun this installer.
 NEXT
 `;
 }

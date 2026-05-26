@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
@@ -114,6 +115,7 @@ assert.match(help, /docscn artifact get/);
 assert.match(help, /docscn artifact feedback/);
 assert.match(help, /docscn share/);
 assert.match(help, /docscn revise/);
+assert.match(help, /docscn update/);
 assert.match(help, /docscn template list/);
 assert.match(help, /docscn template get/);
 assert.match(help, /https:\/\/docscn\.ai/);
@@ -527,6 +529,84 @@ assert.match(
   versionLogs.join('\n'),
   new RegExp(`docscn ${cliPackageVersion.replaceAll('.', '\\.')}`),
 );
+
+const updateAssetName = `docscn-${process.platform}-${
+  process.arch === 'x64' ? 'x64' : process.arch
+}`;
+const replacementBinary = Buffer.from(
+  '#!/usr/bin/env bash\nprintf "docscn 9.9.9\\n"\n',
+);
+const replacementChecksum = createHash('sha256')
+  .update(replacementBinary)
+  .digest('hex');
+const releaseServer = createServer((request, response) => {
+  if (request.url === '/latest') {
+    response.setHeader('content-type', 'application/json');
+    response.end(JSON.stringify({ tag_name: 'v9.9.9' }));
+    return;
+  }
+
+  if (request.url === `/download/${updateAssetName}`) {
+    response.setHeader('content-type', 'application/octet-stream');
+    response.end(replacementBinary);
+    return;
+  }
+
+  if (request.url === '/download/SHA256SUMS') {
+    response.setHeader('content-type', 'text/plain');
+    response.end(`${replacementChecksum}  ${updateAssetName}\n`);
+    return;
+  }
+
+  response.statusCode = 404;
+  response.end('not found');
+});
+await new Promise((resolve) => releaseServer.listen(0, '127.0.0.1', resolve));
+const releaseAddress = releaseServer.address();
+const releaseBaseUrl = `http://127.0.0.1:${releaseAddress.port}`;
+const updateBinaryPath = join(configDir, 'docscn-current');
+const previousReleaseMetadataUrl = process.env.DOCSCN_RELEASE_METADATA_URL;
+const previousReleaseDownloadBaseUrl =
+  process.env.DOCSCN_RELEASE_DOWNLOAD_BASE_URL;
+const previousUpdateBinaryPath = process.env.DOCSCN_UPDATE_BINARY_PATH;
+
+try {
+  await writeFile(updateBinaryPath, 'old docscn binary');
+  process.env.DOCSCN_RELEASE_METADATA_URL = `${releaseBaseUrl}/latest`;
+  process.env.DOCSCN_RELEASE_DOWNLOAD_BASE_URL = `${releaseBaseUrl}/download`;
+  process.env.DOCSCN_UPDATE_BINARY_PATH = updateBinaryPath;
+
+  const updateCheckLogs = await captureLogs(() =>
+    runDocscnCli(['update', '--check']),
+  );
+  assert.match(updateCheckLogs.join('\n'), /9\.9\.9 is available/);
+  assert.equal(await readFile(updateBinaryPath, 'utf8'), 'old docscn binary');
+
+  const updateLogs = await captureLogs(() => runDocscnCli(['update']));
+  assert.match(updateLogs.join('\n'), /Updated docscn/);
+  assert.deepEqual(await readFile(updateBinaryPath), replacementBinary);
+} finally {
+  if (previousReleaseMetadataUrl) {
+    process.env.DOCSCN_RELEASE_METADATA_URL = previousReleaseMetadataUrl;
+  } else {
+    delete process.env.DOCSCN_RELEASE_METADATA_URL;
+  }
+
+  if (previousReleaseDownloadBaseUrl) {
+    process.env.DOCSCN_RELEASE_DOWNLOAD_BASE_URL =
+      previousReleaseDownloadBaseUrl;
+  } else {
+    delete process.env.DOCSCN_RELEASE_DOWNLOAD_BASE_URL;
+  }
+
+  if (previousUpdateBinaryPath) {
+    process.env.DOCSCN_UPDATE_BINARY_PATH = previousUpdateBinaryPath;
+  } else {
+    delete process.env.DOCSCN_UPDATE_BINARY_PATH;
+  }
+
+  await new Promise((resolve) => releaseServer.close(resolve));
+}
 
 await assertRejectsWith(
   () => runDocscnCli(['not-a-command']),

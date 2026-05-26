@@ -167,6 +167,9 @@ After deploy:
 curl https://docscn.example.com/install -fsS | bash
 ```
 
+Update the installed CLI later with `docscn update` or by rerunning the
+installer.
+
 4. Publish a test artifact:
 
 ```bash
