@@ -6,6 +6,10 @@ Minimal CLI for publishing self-contained HTML artifacts to a docscn server.
 
 Run `nx build cli` to build the library.
 
+Bump the CLI version only in `package.json`. Dev builds read that file at
+runtime; release binaries inject the same value at bundle time via
+`scripts/build-cli-release.mjs`.
+
 ## Quick Start
 
 ```bash

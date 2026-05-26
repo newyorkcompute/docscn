@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { chmod, mkdir, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -81,8 +81,20 @@ async function main() {
   await mkdir(bundleDir, { recursive: true });
   await mkdir(releasesDir, { recursive: true });
 
+  const cliPackage = JSON.parse(
+    await readFile(join(root, 'packages', 'cli', 'package.json'), 'utf8'),
+  );
+  const cliVersion = cliPackage.version;
+
+  if (typeof cliVersion !== 'string' || !cliVersion) {
+    throw new Error('packages/cli/package.json is missing a version field.');
+  }
+
   await build({
     bundle: true,
+    define: {
+      DOCSCN_CLI_VERSION: JSON.stringify(cliVersion),
+    },
     entryPoints: [join(root, 'packages', 'cli', 'src', 'release-entry.ts')],
     format: 'cjs',
     outfile: bundlePath,
