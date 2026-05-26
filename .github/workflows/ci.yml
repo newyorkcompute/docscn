@@ -16,6 +16,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Set up workspace
         uses: ./.github/actions/setup-node-nx
 
@@ -36,6 +41,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Set up workspace
         uses: ./.github/actions/setup-node-nx
 
@@ -48,6 +58,11 @@ jobs:
     needs: [static-checks, unit-tests]
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Set up workspace
         uses: ./.github/actions/setup-node-nx
 
