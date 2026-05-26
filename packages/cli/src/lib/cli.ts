@@ -811,7 +811,7 @@ export async function publishArtifactFromCli(args: string[]) {
   return {
     anonymous: !options.apiKey,
     artifactId: result.result.artifactId,
-    claimReceiptSaved: Boolean(result.result.claimToken),
+    claimReceiptSaved: !options.apiKey && Boolean(result.result.claimToken),
     nextCommands: !options.apiKey
       ? [`docscn login --host ${options.baseUrl}`]
       : [`open ${buildArtifactUrl(options.baseUrl, result.result.url)}`],
@@ -1051,13 +1051,13 @@ export async function reviseArtifactFromCli(args: string[]) {
     },
   );
 
-  if (!result?.revision) {
-    throw new Error('Revision response did not include revision details.');
-  }
-
   if (hasFlag(args, '--json')) {
     console.log(JSON.stringify(result, null, 2));
     return;
+  }
+
+  if (!result?.revision) {
+    throw new Error('Revision response did not include revision details.');
   }
 
   console.log(`Revision ${result.revision.id}`);
