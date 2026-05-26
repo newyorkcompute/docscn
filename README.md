@@ -24,8 +24,17 @@ interfaces, and PR review artifacts.
 
 docscn is inspired by the idea that HTML is often a better artifact format than
 Markdown for agent-generated work: richer structure, easier sharing, and more
-readable review surfaces. That framing comes in part from Anthropic's
-[Using Claude Code: The unreasonable effectiveness of HTML](https://claude.com/blog/using-claude-code-the-unreasonable-effectiveness-of-html).
+readable review surfaces.
+
+### Inspiration
+
+The public template library and much of our copy build on the “HTML over
+markdown for agent artifacts” thread:
+
+- [Using Claude Code: The unreasonable effectiveness of HTML](https://claude.com/blog/using-claude-code-the-unreasonable-effectiveness-of-html) — Anthropic’s post on why agents should ship self-contained HTML instead of walls of markdown
+- [The unreasonable effectiveness of HTML — examples](https://thariqs.github.io/html-effectiveness/) — [Thariq Karanick](https://x.com/trq212)’s companion gallery of 20 browser-open `.html` demos (exploration, PR review, design systems, decks, editors, and more)
+- [Thariq’s post on X](https://x.com/trq212/status/2052809885763747935) — the thread that kicked off the examples site and the broader conversation
+- [@trq212 on X](https://x.com/trq212) — follow-up writing on the same theme
 
 Within Coinbase, we also run an internal service for sharing these kinds of
 HTML artifacts across teams. docscn is the open-source version of that pattern:
