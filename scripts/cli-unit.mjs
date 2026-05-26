@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
@@ -6,6 +7,13 @@ import { join } from 'node:path';
 
 const configDir = await mkdtemp(join(tmpdir(), 'docscn-cli-unit-'));
 process.env.DOCSCN_CONFIG_DIR = configDir;
+
+const cliPackageVersion = JSON.parse(
+  readFileSync(
+    new URL('../packages/cli/package.json', import.meta.url),
+    'utf8',
+  ),
+).version;
 
 const {
   findProfileForHost,
@@ -18,6 +26,7 @@ const {
   saveDefaultProfile,
 } = await import('../dist/packages/cli/src/lib/config.js');
 const {
+  docscnCliVersion,
   getArtifactFeedbackFromCli,
   getArtifactFromCli,
   getCliHelp,
@@ -27,6 +36,8 @@ const {
   runDocscnCli,
   shareArtifactFromCli,
 } = await import('../dist/packages/cli/src/lib/cli.js');
+
+assert.equal(docscnCliVersion, cliPackageVersion);
 
 function captureLogs(callback) {
   const originalLog = console.log;
@@ -512,7 +523,10 @@ const logs = await captureLogs(() => runDocscnCli(['help']));
 assert.ok(logs.join('\n').includes('Host, share, and collaborate'));
 
 const versionLogs = await captureLogs(() => runDocscnCli(['version']));
-assert.match(versionLogs.join('\n'), /docscn 0\.3\.0/);
+assert.match(
+  versionLogs.join('\n'),
+  new RegExp(`docscn ${cliPackageVersion.replaceAll('.', '\\.')}`),
+);
 
 await assertRejectsWith(
   () => runDocscnCli(['not-a-command']),
