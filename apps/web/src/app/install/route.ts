@@ -1,3 +1,5 @@
+import { getRequestOrigin } from '../../lib/request-origin';
+
 const releaseRepository = 'newyorkcompute/docscn';
 
 function shellSingleQuote(value: string) {
@@ -138,8 +140,8 @@ NEXT
 `;
 }
 
-export function GET(request: Request) {
-  const origin = new URL(request.url).origin;
+export async function GET() {
+  const origin = await getRequestOrigin();
 
   return new Response(buildInstallScript(origin), {
     headers: {
