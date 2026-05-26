@@ -12,13 +12,16 @@ exact scope.
 
 ## Now
 
-Focus: make self-hosting and first-run adoption feel polished.
+Focus: launch polish and first-run clarity for hosted and self-hosted users.
 
+- [x] Hosted demo at [docscn.ai](https://docscn.ai)
+- [x] `curl | bash` installer with GitHub Release binaries (CLI v0.3.0+)
+- [x] CLI `template list` / `template get` backed by the public template library
 - [x] Production self-hosting docs and deployment examples
+- [x] Example artifact gallery and `/templates` browser ([#3](https://github.com/newyorkcompute/docscn/issues/3))
+- [x] Dashboard empty state and onboarding flow ([#4](https://github.com/newyorkcompute/docscn/issues/4))
 - [ ] README screenshot / demo GIF of the artifact viewer ([#2](https://github.com/newyorkcompute/docscn/issues/2))
-- [x] Example artifact gallery for agents and new users ([#3](https://github.com/newyorkcompute/docscn/issues/3))
-- [x] Better empty states when persistent mode has no published artifacts ([#4](https://github.com/newyorkcompute/docscn/issues/4))
-- [ ] Hosted demo at `docscn.ai`
+- [ ] Social preview image (`og:image`) for link shares
 
 ## Next
 

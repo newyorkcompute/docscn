@@ -3,6 +3,8 @@
 [![CI](https://github.com/newyorkcompute/docscn/actions/workflows/ci.yml/badge.svg)](https://github.com/newyorkcompute/docscn/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/newyorkcompute/docscn)](https://github.com/newyorkcompute/docscn/blob/main/LICENSE)
 
+**Live demo:** [docscn.ai](https://docscn.ai) · [Template library](https://docscn.ai/templates)
+
 docscn is an open-source platform for hosting, sharing, and collaborating on
 AI-generated HTML artifacts. Publish interactive plans, reports, diagrams,
 prototypes, and docs from agents, share them at stable URLs, review them with
@@ -30,6 +32,26 @@ HTML artifacts across teams. docscn is the open-source version of that pattern:
 a place to host artifacts at stable URLs, review them visually, and send
 structured feedback back into the next revision.
 
+## Quick start (hosted)
+
+```bash
+curl https://docscn.ai/install -fsS | bash
+docscn template list
+docscn template get html-effectiveness-code-approaches --output artifact.html
+docscn publish artifact.html --host https://docscn.ai
+```
+
+Open the published URL, or sign in when you want ownership, comments, revisions,
+private sharing, or API keys:
+
+```bash
+docscn login --host https://docscn.ai
+```
+
+Browse templates in the browser at [docscn.ai/templates](https://docscn.ai/templates).
+Agents can read [docscn.ai/skills.md](https://docscn.ai/skills.md) for the full
+workflow.
+
 ## Monorepo
 
 This repo uses Nx with npm workspaces.
@@ -48,7 +70,7 @@ packages/
   config/     Shared configuration and environment contracts
 ```
 
-## Local Development
+## Local development
 
 Fastest path, using the built-in mock/runtime fallback:
 
@@ -78,25 +100,9 @@ npm run typecheck
 npm run format
 ```
 
-## Self-Hosted Quick Start
+## Self-hosted quick start
 
 For local development with Docker Postgres and MinIO:
-
-```bash
-npm install
-npm run setup:local
-npm run dev:persistent
-```
-
-For production deployment, see [docs/self-hosting.md](./docs/self-hosting.md).
-
-docscn is designed to run locally with replaceable open-source infrastructure:
-Postgres for metadata, MinIO/S3-compatible storage for artifact HTML, and Better
-Auth for sessions. The app is safe to run without configured services: if
-`DATABASE_URL` is missing, it falls back to in-process published artifacts plus
-the AI-native seed examples.
-
-To run the persistent stack locally:
 
 ```bash
 npm install
@@ -119,13 +125,21 @@ MinIO is exposed at `http://localhost:9000`, with its console at
 Local service commands:
 
 ```bash
-npm run db:up         # start local Docker Postgres + MinIO
-npm run db:down       # stop local Docker services
-npm run db:generate   # create migrations from packages/db/src/lib/schema.ts
-npm run db:migrate    # apply migrations using .env.local
-npm run db:studio     # open Drizzle Studio using .env.local
+npm run db:up          # start local Docker Postgres + MinIO
+npm run db:down        # stop local Docker services
+npm run db:generate    # create migrations from packages/db/src/lib/schema.ts
+npm run db:migrate     # apply migrations using .env.local
+npm run db:studio      # open Drizzle Studio using .env.local
 npm run dev:persistent # run Next.js with .env.local loaded explicitly
 ```
+
+For production deployment, see [docs/self-hosting.md](./docs/self-hosting.md).
+
+docscn is designed to run locally with replaceable open-source infrastructure:
+Postgres for metadata, MinIO/S3-compatible storage for artifact HTML, and Better
+Auth for sessions. The app is safe to run without configured services: if
+`DATABASE_URL` is missing, it falls back to in-process published artifacts plus
+the AI-native seed examples.
 
 To run the app with the local Docker services explicitly:
 
@@ -139,7 +153,7 @@ S3_SECRET_ACCESS_KEY='docscn-local-secret' \
 npm run dev
 ```
 
-## Portable Stack
+## Portable stack
 
 The core stack is intentionally OSS-friendly and provider-portable:
 
@@ -161,10 +175,14 @@ The core stack is intentionally OSS-friendly and provider-portable:
 No core data path depends on a single hosted vendor. Hosted defaults can be
 convenient, but the interfaces are meant to be replaceable.
 
-## MVP Features
+Copy `.env.example` to `.env.local` when wiring real services.
+
+## Features
 
 - Polished light/dark landing page for hosting, sharing, and collaboration.
-- Dashboard with AI-native artifact examples.
+- Public template library (Thariq Karanick HTML-effectiveness collection) with
+  CLI `template list` / `template get` and a `/templates` browser.
+- Dashboard with AI-native artifact examples and a getting-started empty state.
 - Better Auth email/password foundation with owner-aware artifact publishing.
 - Anonymous unlisted publishing with automatic recovery for 90 days after
   sign-in, plus hashed API keys for owned agent and CLI publishing through
@@ -187,42 +205,31 @@ convenient, but the interfaces are meant to be replaceable.
   review threads, revisions, claims, and identity.
 - Public `/skills.md` endpoint that tells agents how to interact with docscn.
 - OpenAPI spec at `/openapi.json` for REST integrations.
+- `curl | bash` installer backed by [GitHub Releases](https://github.com/newyorkcompute/docscn/releases)
+  (`docscn-darwin-*`, `docscn-linux-*`).
 
-## Self-Hosting Direction
-
-The MVP now includes the first persistence layer and remains designed for an
-open-source, self-hostable architecture:
-
-- Postgres with Drizzle ORM.
-- Better Auth for login and public/private artifacts.
-- S3-compatible storage for artifact HTML and assets.
-- Future Redis-compatible queues/cache for automation and scheduled reports.
-- Docker Compose friendly local services.
-- Cloud-hosted friendly deployments on replaceable providers such as Neon,
-  Upstash, Cloudflare R2, and Vercel.
-
-Copy `.env.example` to `.env.local` when wiring real services later.
-
-## Agent-First CLI
+## Agent-first CLI
 
 docscn is designed so agents operate through the CLI after reading
 `/skills.md`. The browser remains the human-owned surface for account creation
 and approval, while the CLI stores an API key locally at
 `~/.docscn/config.json`.
 
-For the hosted service, the fastest path is anonymous publish first:
+Hosted workflow:
 
 ```bash
 curl https://docscn.ai/install -fsS | bash
+docscn template list
 docscn template get html-effectiveness-code-approaches --output artifact.html
-docscn publish artifact.html
-docscn login --host https://docscn.ai # optional: claim ownership and collaborate
+docscn publish artifact.html --host https://docscn.ai
+docscn login --host https://docscn.ai   # optional: claim ownership and collaborate
 ```
 
-For local development with the installed CLI:
+Local development with the installed CLI:
 
 ```bash
 curl http://localhost:3000/install -fsS | bash
+docscn template list
 docscn publish artifact.html --host http://localhost:3000
 docscn login --host http://localhost:3000
 docscn whoami --host http://localhost:3000
@@ -232,6 +239,7 @@ When hacking on the CLI source directly, use the workspace command:
 
 ```bash
 npm run cli -- --version
+npm run cli -- template list
 npm run cli -- publish artifact.html --host http://localhost:3000
 ```
 
@@ -272,6 +280,10 @@ DOCSCN_API_KEY=docscn_sk_... npm run cli -- publish report.html \
   --author "Cursor agent"
 ```
 
+CLI releases: bump `packages/cli/package.json`, tag `v*`, and push to trigger the
+[Release CLI](.github/workflows/release-cli.yml) workflow. See
+[packages/cli/README.md](./packages/cli/README.md).
+
 ## MCP server
 
 For MCP-native clients (Cursor, Claude Desktop), use the docscn MCP server:
@@ -280,12 +292,13 @@ For MCP-native clients (Cursor, Claude Desktop), use the docscn MCP server:
 npm run mcp
 ```
 
-It exposes the full docscn REST API as MCP tools over stdio (see [docs/mcp.md](./docs/mcp.md)).
-See [docs/mcp.md](./docs/mcp.md) for configuration examples.
+It exposes the full docscn REST API as MCP tools over stdio. See
+[docs/mcp.md](./docs/mcp.md) for configuration examples.
 
-REST clients can use the OpenAPI spec at `/openapi.json` (source: `packages/sdk/openapi.yaml`).
+REST clients can use the OpenAPI spec at `/openapi.json` (source:
+`packages/sdk/openapi.yaml`).
 
-## Tests And Smoke
+## Tests and smoke
 
 The test suite covers the agent/API/CLI contract plus browser E2E coverage for
 the highest-risk user flows.
@@ -313,18 +326,14 @@ Contributions are welcome. Start with:
 
 - [CONTRIBUTING.md](./CONTRIBUTING.md) for local setup and PR expectations
 - [CHANGELOG.md](./CHANGELOG.md) for release history
+- [ROADMAP.md](./ROADMAP.md) for project direction
 - [docs/architecture.md](./docs/architecture.md) for the system overview
 - [docs/mcp.md](./docs/mcp.md) for MCP server setup
 - [docs/self-hosting.md](./docs/self-hosting.md) for production deployment
-- [ROADMAP.md](./ROADMAP.md) for project direction
 - [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) for community standards
 - [SECURITY.md](./SECURITY.md) for vulnerability reporting
-- [examples/artifacts/](./examples/artifacts/) for sample HTML to publish locally
-- `/templates` in the web app for browsing the grouped template library
-- `/artifacts/html-effectiveness-code-approaches`,
-  `/artifacts/html-effectiveness-code-review-pr`, and
-  `/artifacts/html-effectiveness-prompt-tuner` in the web app for previewing
-  starter artifacts
+- [examples/artifacts/](./examples/artifacts/) for the template manifest and sample HTML
+- [docscn.ai/templates](https://docscn.ai/templates) for browsing the public template library
 
 Useful contributor commands:
 
