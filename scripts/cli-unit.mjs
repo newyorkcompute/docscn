@@ -511,4 +511,80 @@ try {
 const logs = await captureLogs(() => runDocscnCli(['help']));
 assert.ok(logs.join('\n').includes('Host, share, and collaborate'));
 
+const versionLogs = await captureLogs(() => runDocscnCli(['version']));
+assert.match(versionLogs.join('\n'), /docscn 0\.0\.1/);
+
+await assertRejectsWith(
+  () => runDocscnCli(['not-a-command']),
+  /Unknown command/,
+);
+
+await assertRejectsWith(
+  () =>
+    publishArtifactFromCli([
+      goodHtmlPath,
+      '--host',
+      'http://localhost:3000',
+      '--visibility',
+      'not-a-visibility',
+    ]),
+  /Invalid visibility/,
+);
+
+await assertRejectsWith(
+  () =>
+    publishArtifactFromCli([
+      goodHtmlPath,
+      '--host',
+      'http://localhost:3000',
+      '--kind',
+      'not-a-kind',
+    ]),
+  /Invalid kind/,
+);
+
+await assertRejectsWith(
+  () => getArtifactFromCli(['--host', 'http://localhost:3000']),
+  /Missing artifact id or slug/,
+);
+
+const whoamiServer = createServer((request, response) => {
+  if (request.url === '/api/me') {
+    response.setHeader('content-type', 'application/json');
+    response.end(
+      JSON.stringify({
+        principal: {
+          userId: 'user-whoami-unit',
+          name: 'CLI Whoami Unit',
+          apiKeyId: 'key-whoami-unit',
+          kind: 'api-key',
+        },
+      }),
+    );
+    return;
+  }
+
+  response.statusCode = 404;
+  response.end('not found');
+});
+await new Promise((resolve) => whoamiServer.listen(0, '127.0.0.1', resolve));
+const whoamiAddress = whoamiServer.address();
+const whoamiHost = `http://127.0.0.1:${whoamiAddress.port}`;
+
+try {
+  const whoamiLogs = await captureLogs(() =>
+    runDocscnCli([
+      'whoami',
+      '--host',
+      whoamiHost,
+      '--api-key',
+      'docscn_sk_unit',
+    ]),
+  );
+  assert.match(whoamiLogs.join('\n'), /CLI Whoami Unit/);
+  assert.match(whoamiLogs.join('\n'), /Principal: api-key/);
+} finally {
+  await new Promise((resolve) => whoamiServer.close(resolve));
+}
+
 console.log('cli unit ok');

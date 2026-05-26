@@ -12,7 +12,20 @@
         "outputPath": "dist/packages/sdk",
         "main": "packages/sdk/src/index.ts",
         "tsConfig": "packages/sdk/tsconfig.lib.json",
-        "assets": ["packages/sdk/*.md", "packages/sdk/openapi.yaml", "packages/sdk/openapi.json"]
+        "assets": [
+          "packages/sdk/*.md",
+          "packages/sdk/openapi.yaml",
+          "packages/sdk/openapi.json"
+        ]
+      }
+    },
+    "unit": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "cache": true,
+      "inputs": ["default", "^default", "{workspaceRoot}/scripts/sdk-unit.mjs"],
+      "options": {
+        "command": "node scripts/sdk-unit.mjs"
       }
     }
   }
