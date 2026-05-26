@@ -18,6 +18,7 @@ export default async function PublishPage() {
   ]);
   const installCommand = `curl ${origin}/install -fsS | bash`;
   const loginCommand = `docscn login --host ${origin}`;
+  const templateCommand = `docscn template get minimal --output artifact.html`;
   const publishCommand = `docscn publish artifact.html --host ${origin}`;
 
   return (
@@ -52,9 +53,9 @@ export default async function PublishPage() {
                     CLI quickstart
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Install once, authenticate when you need ownership or
-                    private artifacts, then publish from Cursor, Claude,
-                    scheduled reports, scripts, or MCP workflows.
+                    Install once, publish an unlisted artifact immediately, and
+                    authenticate when you need ownership, comments, revisions,
+                    private sharing, or automation keys.
                   </p>
                 </div>
               </div>
@@ -62,8 +63,9 @@ export default async function PublishPage() {
               <div className="mt-6 grid gap-3">
                 {[
                   ['Install docscn', installCommand],
-                  ['Sign in from the CLI', loginCommand],
+                  ['Copy a starter artifact', templateCommand],
                   ['Publish an HTML artifact', publishCommand],
+                  ['Claim ownership when ready', loginCommand],
                 ].map(([label, command]) => (
                   <div
                     className="grid gap-3 rounded-xl border border-border bg-background/45 p-3 md:grid-cols-[1fr_auto] md:items-center"

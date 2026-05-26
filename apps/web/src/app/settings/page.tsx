@@ -45,9 +45,11 @@ export default async function SettingsPage() {
                   Agent prompt
                 </p>
                 <code className="mt-3 block text-sm leading-6 text-foreground">
-                  Read /skills.md, install docscn from /install if needed, run
-                  docscn login, and publish your self-contained HTML artifact.
-                  Collaborators can review it visually from the artifact URL.
+                  Read /skills.md, install docscn from /install if needed,
+                  publish your self-contained HTML artifact, and run docscn
+                  login when you need ownership, comments, revisions, or private
+                  sharing. Collaborators can review it visually from the
+                  artifact URL.
                 </code>
               </div>
             </Card>

@@ -210,13 +210,22 @@ docscn is designed so agents operate through the CLI after reading
 and approval, while the CLI stores an API key locally at
 `~/.docscn/config.json`.
 
+For the hosted service, the fastest path is anonymous publish first:
+
+```bash
+curl https://docscn.ai/install -fsS | bash
+docscn template get minimal --output artifact.html
+docscn publish artifact.html
+docscn login --host https://docscn.ai # optional: claim ownership and collaborate
+```
+
 For local development with the installed CLI:
 
 ```bash
 curl http://localhost:3000/install -fsS | bash
+docscn publish artifact.html --host http://localhost:3000
 docscn login --host http://localhost:3000
 docscn whoami --host http://localhost:3000
-docscn publish artifact.html --host http://localhost:3000
 ```
 
 When hacking on the CLI source directly, use the workspace command:
@@ -233,6 +242,7 @@ Agents should never ask for the user's password.
 Agent workflow commands:
 
 ```bash
+docscn artifact feedback <artifact-id-or-slug> --host http://localhost:3000
 docscn artifact get <artifact-id-or-slug> --json --host http://localhost:3000
 docscn revise <artifact-id-or-slug> revised.html \
   --summary "Addressed review feedback" \
@@ -260,14 +270,6 @@ DOCSCN_API_KEY=docscn_sk_... npm run cli -- publish report.html \
   --visibility unlisted \
   --kind custom-html \
   --author "Cursor agent"
-```
-
-The hosted install shape is:
-
-```bash
-curl https://docscn.ai/install -fsS | bash
-docscn login --host https://docscn.ai
-docscn publish artifact.html --host https://docscn.ai
 ```
 
 ## MCP server
