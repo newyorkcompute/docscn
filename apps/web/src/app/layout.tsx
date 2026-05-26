@@ -47,12 +47,21 @@ export const metadata: Metadata = {
     title: 'docscn',
     description:
       'Open-source platform for hosting, sharing, and collaborating on AI-generated HTML artifacts.',
+    images: [
+      {
+        url: '/cover.jpg',
+        width: 1280,
+        height: 672,
+        alt: 'docscn — publish, review, and revise HTML artifacts',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'docscn',
     description:
       'Open-source platform for hosting, sharing, and collaborating on AI-generated HTML artifacts.',
+    images: ['/cover.jpg'],
   },
 };
 
