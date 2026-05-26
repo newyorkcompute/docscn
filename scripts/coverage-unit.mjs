@@ -145,8 +145,9 @@ function buildCoverageComment(summary) {
     }
   }
 
-  const commitLine = process.env.GITHUB_SHA
-    ? `Commit: \`${process.env.GITHUB_SHA.slice(0, 12)}\``
+  const commitSha = process.env.PR_HEAD_SHA || process.env.GITHUB_SHA;
+  const commitLine = commitSha
+    ? `Commit: \`${commitSha.slice(0, 12)}\``
     : 'Generated locally.';
   const runUrl = githubRunUrl();
   const runLine = runUrl ? `Workflow run: ${runUrl}` : undefined;

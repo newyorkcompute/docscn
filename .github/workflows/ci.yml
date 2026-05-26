@@ -71,6 +71,8 @@ jobs:
 
       - name: Generate unit coverage
         run: npm run coverage:unit
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 
       - name: Upload unit coverage report
         if: always()
@@ -87,8 +89,8 @@ jobs:
           script: |
             const fs = require('node:fs');
 
-            const marker = '<!-- docscn-coverage-comment -->';
             const body = fs.readFileSync('coverage/unit/coverage-comment.md', 'utf8');
+            const marker = body.split('\n')[0];
             const { owner, repo } = context.repo;
             const issue_number = context.payload.pull_request.number;
 
