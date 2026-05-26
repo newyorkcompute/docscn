@@ -109,6 +109,8 @@ assert.equal(
 );
 
 const help = getCliHelp();
+assert.match(help, /░█▀▄░█▀█░█▀▀░█▀▀░█▀▀░█▀█/);
+assert.match(help, /publish {2}→ {2}review {2}→ {2}revise/);
 assert.match(help, /docscn login/);
 assert.match(help, /docscn artifact get/);
 assert.match(help, /docscn artifact feedback/);
@@ -520,6 +522,7 @@ try {
 }
 
 const logs = await captureLogs(() => runDocscnCli(['help']));
+assert.match(logs.join('\n'), /░█▀▄░█▀█░█▀▀░█▀▀░█▀▀░█▀█/);
 assert.ok(logs.join('\n').includes('Host, share, and collaborate'));
 
 const versionLogs = await captureLogs(() => runDocscnCli(['version']));

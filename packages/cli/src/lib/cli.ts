@@ -20,6 +20,7 @@ import {
   saveAnonymousClaimReceipt,
   saveDefaultProfile,
 } from './config.js';
+import { DOCSCN_ASCII_BANNER } from './banner.js';
 import { docscnCliVersion } from './version.js';
 
 export { docscnCliVersion };
@@ -650,7 +651,7 @@ async function claimSavedAnonymousArtifacts(credentials: Credentials) {
 }
 
 export function getCliHelp() {
-  return `docscn
+  return `${DOCSCN_ASCII_BANNER}
 
 Host, share, and collaborate on AI-generated HTML artifacts.
 

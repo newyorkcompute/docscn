@@ -1,3 +1,15 @@
+```text
+                    ╔════════════════════════════════╗
+                    ║                                ║
+                    ║  ░█▀▄░█▀█░█▀▀░█▀▀░█▀▀░█▀█      ║
+                    ║  ░█░█░█░█░█░░░▀▀█░█░░░█░█      ║
+                    ║  ░▀▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀░▀      ║
+                    ║                                ║
+                    ║   publish  →  review  →  revise ║
+                    ║                                ║
+                    ╚════════════════════════════════╝
+```
+
 # docscn
 
 [![CI](https://github.com/newyorkcompute/docscn/actions/workflows/ci.yml/badge.svg)](https://github.com/newyorkcompute/docscn/actions/workflows/ci.yml)
