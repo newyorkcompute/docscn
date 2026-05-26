@@ -34,7 +34,7 @@ The public template library builds on two posts about shipping HTML instead of
 markdown for agent artifacts:
 
 - [Using Claude Code: The unreasonable effectiveness of HTML](https://claude.com/blog/using-claude-code-the-unreasonable-effectiveness-of-html) — Anthropic
-- [The unreasonable effectiveness of HTML — examples](https://thariqs.github.io/html-effectiveness/) — Thariq Karanick’s companion gallery of browser-open `.html` demos
+- [The unreasonable effectiveness of HTML — examples](https://thariqs.github.io/html-effectiveness/) — Thariq Shihipar’s companion gallery of browser-open `.html` demos
 
 Within Coinbase, we also run an internal service for sharing these kinds of
 HTML artifacts across teams. docscn is the open-source version of that pattern:
@@ -189,7 +189,7 @@ Copy `.env.example` to `.env.local` when wiring real services.
 ## Features
 
 - Polished light/dark landing page for hosting, sharing, and collaboration.
-- Public template library (Thariq Karanick HTML-effectiveness collection) with
+- Public template library (Thariq Shihipar HTML-effectiveness collection) with
   CLI `template list` / `template get` and a `/templates` browser.
 - Dashboard with AI-native artifact examples and a getting-started empty state.
 - Better Auth email/password foundation with owner-aware artifact publishing.
