@@ -9,7 +9,7 @@ export const DOCSCN_ASCII_BANNER = `
                     ║  ░█░█░█░█░█░░░▀▀█░█░░░█░█      ║
                     ║  ░▀▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀░▀      ║
                     ║                                ║
-                    ║   publish  →  review  →  revise ║
+                    ║  publish  →  review  →  revise ║
                     ║                                ║
                     ╚════════════════════════════════╝
 `.trimEnd();
