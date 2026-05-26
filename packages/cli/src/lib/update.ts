@@ -11,11 +11,11 @@ import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { readCliConfig, writeCliConfig } from './config.js';
 import { docscnCliVersion } from './version.js';
+import { defaultDocscnHost, hasFlag, parseFlagValue } from './args.js';
 
 const releaseRepository = 'newyorkcompute/docscn';
 const updateCheckTimeoutMs = 1500;
 const updateNoticeIntervalMs = 24 * 60 * 60 * 1000;
-const defaultDocscnHost = 'https://docscn.ai';
 
 interface GitHubReleaseResponse {
   tag_name?: string;
@@ -30,20 +30,6 @@ interface CliUpdateCheck {
 interface CliUpdateResult extends CliUpdateCheck {
   assetName: string;
   binaryPath: string;
-}
-
-function parseFlagValue(args: string[], name: string) {
-  const index = args.indexOf(name);
-
-  if (index === -1) {
-    return undefined;
-  }
-
-  return args[index + 1];
-}
-
-function hasFlag(args: string[], name: string) {
-  return args.includes(name);
 }
 
 function normalizeVersion(value: string) {

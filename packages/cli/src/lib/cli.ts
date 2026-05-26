@@ -22,6 +22,7 @@ import {
 } from './config.js';
 import { maybeShowUpdateNotice, updateCliFromCli } from './update.js';
 import { docscnCliVersion } from './version.js';
+import { defaultDocscnHost, hasFlag, parseFlagValue } from './args.js';
 
 export { docscnCliVersion };
 
@@ -41,8 +42,6 @@ export const commands = [
 ] as const;
 
 export type DocscnCommand = (typeof commands)[number];
-
-const defaultDocscnHost = 'https://docscn.ai';
 
 const cliVisibilityOptions = ['public', 'unlisted', 'private'] as const;
 const cliArtifactKinds = [
@@ -247,20 +246,6 @@ interface PublishTarget {
   apiKey?: string;
   apiKeySource?: ApiKeySource;
   baseUrl: string;
-}
-
-function parseFlagValue(args: string[], name: string) {
-  const index = args.indexOf(name);
-
-  if (index === -1) {
-    return undefined;
-  }
-
-  return args[index + 1];
-}
-
-function hasFlag(args: string[], name: string) {
-  return args.includes(name);
 }
 
 function collectFlagValues(args: string[], name: string) {
