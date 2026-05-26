@@ -131,11 +131,8 @@ async function fetchWithTimeout(url: string, timeoutMs: number) {
   }
 }
 
-async function fetchLatestVersion() {
-  const response = await fetchWithTimeout(
-    getReleaseMetadataUrl(),
-    updateCheckTimeoutMs,
-  );
+async function fetchLatestVersion(timeoutMs = updateCheckTimeoutMs) {
+  const response = await fetchWithTimeout(getReleaseMetadataUrl(), timeoutMs);
   const payload = (await response
     .json()
     .catch(() => null)) as GitHubReleaseResponse | null;
@@ -229,8 +226,10 @@ async function replaceBinary(currentPath: string, nextPath: string) {
   await rm(backupPath, { force: true });
 }
 
-export async function checkForCliUpdate(): Promise<CliUpdateCheck> {
-  const latestVersion = await fetchLatestVersion();
+export async function checkForCliUpdate(
+  timeoutMs?: number,
+): Promise<CliUpdateCheck> {
+  const latestVersion = await fetchLatestVersion(timeoutMs);
 
   return {
     currentVersion: docscnCliVersion,
@@ -255,7 +254,7 @@ export async function updateCliFromCli(
             normalizeVersion(requestedVersion),
           ) !== 0,
       }
-    : await checkForCliUpdate();
+    : await checkForCliUpdate(30000);
 
   if (checkOnly) {
     if (json) {
