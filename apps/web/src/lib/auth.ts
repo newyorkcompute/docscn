@@ -14,20 +14,28 @@ import { getAppOrigin } from './app-origin';
 const localDevSecret =
   'docscn-local-development-secret-change-before-production';
 
+const buildTimePlaceholderSecret =
+  'docscn-ephemeral-next-build-secret-not-for-runtime';
+
 function resolveAuthSecret() {
-  const secret = process.env['BETTER_AUTH_SECRET'];
+  const secret = process.env['BETTER_AUTH_SECRET']?.trim();
 
   if (secret) {
     return secret;
   }
 
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error(
-      'BETTER_AUTH_SECRET is required in production. Set a long random value before starting the app.',
-    );
+  if (process.env.NODE_ENV !== 'production') {
+    return localDevSecret;
   }
 
-  return localDevSecret;
+  // `next build` runs with NODE_ENV=production before runtime env is available.
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return buildTimePlaceholderSecret;
+  }
+
+  throw new Error(
+    'BETTER_AUTH_SECRET is required in production. Set a long random value before starting the app.',
+  );
 }
 
 const isProduction = process.env.NODE_ENV === 'production';

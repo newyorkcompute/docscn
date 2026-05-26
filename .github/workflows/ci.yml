@@ -14,6 +14,9 @@ jobs:
   static-checks:
     name: Static checks
     runs-on: ubuntu-latest
+    env:
+      # `next build` uses NODE_ENV=production; real deploys must set this secret.
+      BETTER_AUTH_SECRET: ci-github-actions-build-placeholder-32-chars-min
 
     steps:
       - name: Check out repository

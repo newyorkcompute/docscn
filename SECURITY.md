@@ -52,8 +52,8 @@ Out of scope:
 
 Self-hosted operators should:
 
-- Set a strong `BETTER_AUTH_SECRET` (required in production — the app will not
-  start without it)
+- Set a strong `BETTER_AUTH_SECRET` (required in production at runtime — the app
+  will not start without it; CI builds may use a placeholder)
 - Keep Postgres and object storage credentials private
 - Treat API keys like passwords and rotate them when compromised
 - Run docscn behind HTTPS in production
