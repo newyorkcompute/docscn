@@ -16,28 +16,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Set Nx base and head
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "NX_BASE=origin/${{ github.base_ref }}" >> "$GITHUB_ENV"
-          else
-            echo "NX_BASE=${{ github.event.before }}" >> "$GITHUB_ENV"
-          fi
-          echo "NX_HEAD=HEAD" >> "$GITHUB_ENV"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Set up workspace
+        uses: ./.github/actions/setup-node-nx
 
       - name: Lint affected projects
         run: npm run ci:affected:lint -- --base="$NX_BASE" --head="$NX_HEAD"
@@ -56,51 +36,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Set Nx base and head
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "NX_BASE=origin/${{ github.base_ref }}" >> "$GITHUB_ENV"
-          else
-            echo "NX_BASE=${{ github.event.before }}" >> "$GITHUB_ENV"
-          fi
-          echo "NX_HEAD=HEAD" >> "$GITHUB_ENV"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Set up workspace
+        uses: ./.github/actions/setup-node-nx
 
       - name: Test affected unit targets
         run: npm run ci:affected:unit -- --base="$NX_BASE" --head="$NX_HEAD"
 
-  integration:
-    name: Backend API integration
+  integration-and-e2e:
+    name: Integration and E2E
     runs-on: ubuntu-latest
     needs: [static-checks, unit-tests]
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Set up workspace
+        uses: ./.github/actions/setup-node-nx
 
       - name: Prepare persistent local stack
         run: npm run setup:local
@@ -126,53 +75,14 @@ jobs:
       - name: Run MCP integration tests
         run: npm run test:mcp:integration
 
-      - name: Stop web app
-        if: always()
-        run: |
-          if [ -f /tmp/docscn-dev.pid ]; then
-            kill "$(cat /tmp/docscn-dev.pid)" || true
-          fi
-
-  browser-e2e:
-    name: Browser E2E
-    runs-on: ubuntu-latest
-    needs: [static-checks, unit-tests]
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
+      - name: Restore Playwright browsers
+        uses: actions/cache@v4
         with:
-          fetch-depth: 0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-
-      - name: Prepare persistent local stack
-        run: npm run setup:local
-
-      - name: Start web app
-        run: |
-          npm run dev:persistent > /tmp/docscn-dev.log 2>&1 &
-          echo $! > /tmp/docscn-dev.pid
-          for attempt in $(seq 1 60); do
-            if curl -sf http://localhost:3000 > /dev/null; then
-              echo "Web app ready"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "Web app failed to start"
-          cat /tmp/docscn-dev.log
-          exit 1
 
       - name: Run Playwright E2E tests
         run: npm run test:e2e

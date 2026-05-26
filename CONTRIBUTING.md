@@ -181,9 +181,21 @@ Open a PR against `main` and fill out
 - **Notes** — migrations, env vars, breaking changes, deferrals, follow-ups
 
 CI runs three jobs on pull requests: static checks (affected lint/build,
-formatting, OpenAPI sync) and affected unit tests in parallel, then a backend
-integration job with Postgres and MinIO. The workflow uses npm's package cache
-through `actions/setup-node`; it does not cache `node_modules`.
+formatting, OpenAPI sync) and affected unit tests in parallel, then integration
+and Playwright E2E in a single job (Postgres, MinIO, dev server, API/MCP tests,
+then browser tests).
+
+Caching in [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
+
+- **npm** — `actions/setup-node` restores packages from `package-lock.json`
+- **Nx affected** — only lint/build/unit targets for changed projects and deps
+- **Nx task cache** — `.nx/cache` is restored and saved via `actions/cache` on
+  each job (shared key across runs when inputs are unchanged)
+- **Playwright** — browser binaries under `~/.cache/ms-playwright` are cached
+  between E2E runs
+
+Locally, mirror the affected slice before opening a PR with
+`npm run ci:affected -- --base=origin/main --head=HEAD`.
 
 ## Reporting security issues
 
