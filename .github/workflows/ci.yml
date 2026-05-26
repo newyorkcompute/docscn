@@ -36,6 +36,9 @@ jobs:
       - name: Check OpenAPI sync
         run: npm run openapi:check
 
+      - name: Audit dependencies
+        run: npm run audit:ci
+
   unit-tests:
     name: Unit tests
     runs-on: ubuntu-latest

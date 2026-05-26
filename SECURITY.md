@@ -52,7 +52,31 @@ Out of scope:
 
 Self-hosted operators should:
 
-- Set a strong `BETTER_AUTH_SECRET`
+- Set a strong `BETTER_AUTH_SECRET` (required in production — the app will not
+  start without it)
 - Keep Postgres and object storage credentials private
 - Treat API keys like passwords and rotate them when compromised
 - Run docscn behind HTTPS in production
+- Terminate TLS at a reverse proxy that strips or overwrites untrusted
+  `X-Forwarded-For` values before they reach the app
+
+Local `docker-compose.yml` uses weak default credentials and publishes database
+and object-storage ports for development only. Do not expose those ports on
+untrusted networks.
+
+## Platform controls
+
+- **HTTP headers:** The Next.js app shell sets `X-Content-Type-Options`,
+  `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, a minimal
+  `Content-Security-Policy`, and `Strict-Transport-Security` in production.
+  User artifact HTML is still rendered in a separate sandboxed iframe document;
+  tightening app CSP does not sanitize artifact content.
+- **Auth callbacks:** Sign-in redirect targets are restricted to same-site
+  relative paths.
+- **CLI device login:** User codes are 16 hex characters; approve and poll
+  endpoints are rate limited.
+- **HTML size:** Publish and revision payloads are limited to 1 MB UTF-8.
+- **Artifact listing:** Visibility rules are unchanged; list queries filter in
+  the database instead of loading all rows.
+- **CI:** Dependabot, `npm audit` (high severity and above), and CodeQL run on
+  the repository.

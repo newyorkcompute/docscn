@@ -152,6 +152,15 @@ function authHeaders(apiKey) {
 const cookie = await createSignedInCookie();
 const apiKey = await createApiKeyViaCliAuth(cookie);
 
+const anonymousListResponse = await fetch(`${base}/api/artifacts`);
+assert.equal(anonymousListResponse.status, 200);
+const anonymousList = await anonymousListResponse.json();
+assert.ok(
+  anonymousList.artifacts.every(
+    (artifact) => artifact.metadata.visibility === 'public',
+  ),
+);
+
 const me = await jsonFetch('/api/me', {
   headers: { authorization: `Bearer ${apiKey}` },
 });
@@ -380,6 +389,51 @@ const published = await jsonFetch('/api/artifacts', {
   }),
 });
 const artifactSlug = published.payload.result.slug;
+
+const oversizedRevision = await fetch(
+  `${base}/api/artifacts/${artifactSlug}/revisions`,
+  {
+    method: 'POST',
+    headers: authHeaders(apiKey),
+    body: JSON.stringify({
+      html: `<!doctype html><html><body>${'x'.repeat(1024 * 1024)}</body></html>`,
+      summary: 'Should be rejected.',
+      authorName: 'Backend API agent',
+      source: 'automation',
+    }),
+  },
+);
+assert.equal(oversizedRevision.status, 413);
+
+const approveRateIp = `cli-approve-rate-${Date.now()}`;
+const approveRateCookie = await createSignedInCookie({
+  emailAddress: `cli-approve-rate-${Date.now()}@docscn.local`,
+  name: 'CLI Approve Rate Test',
+});
+for (let index = 0; index < 10; index += 1) {
+  const response = await fetch(`${base}/api/cli/auth/approve`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie: approveRateCookie,
+      origin: base,
+      'x-forwarded-for': approveRateIp,
+    },
+    body: JSON.stringify({ userCode: 'NOTFOUND1' }),
+  });
+  assert.equal(response.status, 400);
+}
+const approveRateLimited = await fetch(`${base}/api/cli/auth/approve`, {
+  method: 'POST',
+  headers: {
+    'content-type': 'application/json',
+    cookie: approveRateCookie,
+    origin: base,
+    'x-forwarded-for': approveRateIp,
+  },
+  body: JSON.stringify({ userCode: 'NOTFOUND2' }),
+});
+assert.equal(approveRateLimited.status, 429);
 assert.ok(artifactSlug);
 
 const artifact = await jsonFetch(`/api/artifacts/${artifactSlug}`, {

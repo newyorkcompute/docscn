@@ -32,17 +32,17 @@ Optional but recommended:
 
 Copy `.env.example` to your deployment environment and set every value below.
 
-| Variable               | Required | Description                              |
-| ---------------------- | -------- | ---------------------------------------- |
-| `NEXT_PUBLIC_APP_URL`  | yes      | Public app URL used in the browser       |
-| `BETTER_AUTH_URL`      | yes      | Same public URL Better Auth should trust |
-| `BETTER_AUTH_SECRET`   | yes      | Random secret, at least 32 characters    |
-| `DATABASE_URL`         | yes      | Postgres connection string               |
-| `S3_ENDPOINT`          | yes\*    | S3-compatible endpoint URL               |
-| `S3_REGION`            | yes\*    | Provider region                          |
-| `S3_BUCKET`            | yes\*    | Bucket for artifact HTML                 |
-| `S3_ACCESS_KEY_ID`     | yes\*    | Object storage access key                |
-| `S3_SECRET_ACCESS_KEY` | yes\*    | Object storage secret key                |
+| Variable               | Required | Description                                                                                        |
+| ---------------------- | -------- | -------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_APP_URL`  | yes      | Public app URL used in the browser                                                                 |
+| `BETTER_AUTH_URL`      | yes      | Same public URL Better Auth should trust                                                           |
+| `BETTER_AUTH_SECRET`   | yes      | Random secret, at least 32 characters (required in production — the app exits on startup if unset) |
+| `DATABASE_URL`         | yes      | Postgres connection string                                                                         |
+| `S3_ENDPOINT`          | yes\*    | S3-compatible endpoint URL                                                                         |
+| `S3_REGION`            | yes\*    | Provider region                                                                                    |
+| `S3_BUCKET`            | yes\*    | Bucket for artifact HTML                                                                           |
+| `S3_ACCESS_KEY_ID`     | yes\*    | Object storage access key                                                                          |
+| `S3_SECRET_ACCESS_KEY` | yes\*    | Object storage secret key                                                                          |
 
 \* All five `S3_*` variables must be set together. If any are missing, revision
 HTML is stored inline in Postgres instead of object storage.

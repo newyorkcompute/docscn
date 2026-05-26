@@ -9,16 +9,38 @@ import {
   user,
   verification,
 } from '@docscn/db';
+import { getAppOrigin } from './app-origin';
 
 const localDevSecret =
   'docscn-local-development-secret-change-before-production';
 
+function resolveAuthSecret() {
+  const secret = process.env['BETTER_AUTH_SECRET'];
+
+  if (secret) {
+    return secret;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'BETTER_AUTH_SECRET is required in production. Set a long random value before starting the app.',
+    );
+  }
+
+  return localDevSecret;
+}
+
+const isProduction = process.env.NODE_ENV === 'production';
+
 export const auth = betterAuth({
-  baseURL:
-    process.env['BETTER_AUTH_URL'] ??
-    process.env['NEXT_PUBLIC_APP_URL'] ??
-    'http://localhost:3000',
-  secret: process.env['BETTER_AUTH_SECRET'] ?? localDevSecret,
+  baseURL: getAppOrigin(),
+  secret: resolveAuthSecret(),
+  advanced: {
+    defaultCookieAttributes: {
+      secure: isProduction,
+      sameSite: 'lax',
+    },
+  },
   database: isDatabaseConfigured()
     ? drizzleAdapter(getDb(), {
         provider: 'pg',

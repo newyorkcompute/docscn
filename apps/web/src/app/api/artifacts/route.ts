@@ -8,51 +8,27 @@ import {
   type IntegrationSource,
   visibilityOptions,
 } from '@docscn/sdk';
+import {
+  artifactHtmlMaxBytes,
+  getUtf8ByteLength,
+} from '../../../lib/artifact-limits';
 import { getRequestPrincipal, hasBearerToken } from '../../../lib/publisher';
+import { getClientIp, hitRateLimit } from '../../../lib/rate-limit';
 
-const anonymousHtmlMaxBytes = 1024 * 1024;
 const anonymousPublishLimit = 20;
 const anonymousPublishWindowMs = 60 * 60 * 1000;
-const anonymousPublishBuckets = new Map<
-  string,
-  { count: number; resetAt: number }
->();
 
 function isString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-function getClientIp(request: Request) {
-  return (
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.headers.get('x-real-ip') ||
-    'unknown'
-  );
-}
-
-function getUtf8ByteLength(value: string) {
-  return new TextEncoder().encode(value).length;
-}
-
 function hitAnonymousPublishLimit(request: Request) {
   const key = getClientIp(request);
-  const now = Date.now();
-  const bucket = anonymousPublishBuckets.get(key);
-
-  if (!bucket || bucket.resetAt <= now) {
-    anonymousPublishBuckets.set(key, {
-      count: 1,
-      resetAt: now + anonymousPublishWindowMs,
-    });
-    return false;
-  }
-
-  if (bucket.count >= anonymousPublishLimit) {
-    return true;
-  }
-
-  bucket.count += 1;
-  return false;
+  return hitRateLimit(
+    `anonymous-publish:${key}`,
+    anonymousPublishLimit,
+    anonymousPublishWindowMs,
+  );
 }
 
 function parseCreateArtifactInput(
@@ -132,17 +108,14 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!principal) {
-    if (getUtf8ByteLength(input.html) > anonymousHtmlMaxBytes) {
-      return NextResponse.json(
-        {
-          error:
-            'Anonymous artifacts must be 1 MB or smaller. Sign in to publish larger artifacts.',
-        },
-        { status: 413 },
-      );
-    }
+  if (getUtf8ByteLength(input.html) > artifactHtmlMaxBytes) {
+    return NextResponse.json(
+      { error: 'HTML must be 1 MB or smaller.' },
+      { status: 413 },
+    );
+  }
 
+  if (!principal) {
     if (hitAnonymousPublishLimit(request)) {
       return NextResponse.json(
         {

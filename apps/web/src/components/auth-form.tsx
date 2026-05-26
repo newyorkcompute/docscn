@@ -5,13 +5,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Shell } from '@docscn/ui';
 import { authClient } from '../lib/auth-client';
+import { sanitizeCallbackUrl } from '../lib/safe-callback-url';
 
 interface AuthFormProps {
   callbackURL?: string;
   mode: 'sign-in' | 'sign-up';
 }
 
-export function AuthForm({ callbackURL = '/dashboard', mode }: AuthFormProps) {
+export function AuthForm({
+  callbackURL: callbackURLProp,
+  mode,
+}: AuthFormProps) {
+  const callbackURL = sanitizeCallbackUrl(callbackURLProp);
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

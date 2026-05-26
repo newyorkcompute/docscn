@@ -2099,6 +2099,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "CLI login poll rate limit reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2149,6 +2159,16 @@
           },
           "401": {
             "description": "Sign in required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "CLI login approval rate limit reached",
             "content": {
               "application/json": {
                 "schema": {
