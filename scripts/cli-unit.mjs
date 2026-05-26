@@ -512,7 +512,7 @@ const logs = await captureLogs(() => runDocscnCli(['help']));
 assert.ok(logs.join('\n').includes('Host, share, and collaborate'));
 
 const versionLogs = await captureLogs(() => runDocscnCli(['version']));
-assert.match(versionLogs.join('\n'), /docscn 0\.0\.1/);
+assert.match(versionLogs.join('\n'), /docscn 0\.3\.0/);
 
 await assertRejectsWith(
   () => runDocscnCli(['not-a-command']),
