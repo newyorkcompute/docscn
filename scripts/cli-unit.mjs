@@ -320,6 +320,81 @@ try {
   await new Promise((resolve) => cliPublishServer.close(resolve));
 }
 
+const cliAuthenticatedServer = createServer(async (request, response) => {
+  assert.equal(request.headers.authorization, 'Bearer docscn_sk_unit');
+
+  if (request.url === '/api/artifacts' && request.method === 'POST') {
+    response.statusCode = 201;
+    response.setHeader('content-type', 'application/json');
+    response.end(
+      JSON.stringify({
+        result: {
+          artifactId: 'artifact-auth-unit',
+          slug: 'cli-auth-unit',
+          url: '/artifacts/cli-auth-unit',
+          revisionId: 'revision-auth-unit',
+          claimToken: 'docscn_claim_should_not_save',
+        },
+      }),
+    );
+    return;
+  }
+
+  if (
+    request.url === '/api/artifacts/revise-json-unit/revisions' &&
+    request.method === 'POST'
+  ) {
+    response.setHeader('content-type', 'application/json');
+    response.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  response.statusCode = 404;
+  response.end('not found');
+});
+await new Promise((resolve) =>
+  cliAuthenticatedServer.listen(0, '127.0.0.1', resolve),
+);
+const cliAuthenticatedAddress = cliAuthenticatedServer.address();
+const cliAuthenticatedHost = `http://127.0.0.1:${cliAuthenticatedAddress.port}`;
+
+try {
+  const authenticatedPublishLogs = await captureLogs(() =>
+    runDocscnCli([
+      'publish',
+      goodHtmlPath,
+      '--host',
+      cliAuthenticatedHost,
+      '--api-key',
+      'docscn_sk_unit',
+      '--title',
+      'Authenticated JSON unit',
+      '--json',
+    ]),
+  );
+  const authenticatedPublish = JSON.parse(authenticatedPublishLogs.join('\n'));
+  assert.equal(authenticatedPublish.anonymous, false);
+  assert.equal(authenticatedPublish.claimReceiptSaved, false);
+
+  const revisionLogs = await captureLogs(() =>
+    runDocscnCli([
+      'revise',
+      'revise-json-unit',
+      goodHtmlPath,
+      '--host',
+      cliAuthenticatedHost,
+      '--api-key',
+      'docscn_sk_unit',
+      '--summary',
+      'Exercise JSON response',
+      '--json',
+    ]),
+  );
+  assert.equal(JSON.parse(revisionLogs.join('\n')).ok, true);
+} finally {
+  await new Promise((resolve) => cliAuthenticatedServer.close(resolve));
+}
+
 await assertRejectsWith(
   () =>
     shareArtifactFromCli([

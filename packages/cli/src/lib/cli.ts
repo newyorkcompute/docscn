@@ -791,8 +791,11 @@ export async function publishArtifactFromCli(args: string[]) {
     throw new Error('Publish response did not include artifact details.');
   }
 
+  const claimReceiptSaved =
+    !options.apiKey && Boolean(result.result.claimToken);
+
   if (!options.apiKey) {
-    if (result.result.claimToken) {
+    if (claimReceiptSaved && result.result.claimToken) {
       await saveAnonymousClaimReceipt(options.baseUrl, {
         artifactId: result.result.artifactId,
         slug: result.result.slug,
@@ -811,7 +814,7 @@ export async function publishArtifactFromCli(args: string[]) {
   return {
     anonymous: !options.apiKey,
     artifactId: result.result.artifactId,
-    claimReceiptSaved: !options.apiKey && Boolean(result.result.claimToken),
+    claimReceiptSaved,
     nextCommands: !options.apiKey
       ? [`docscn login --host ${options.baseUrl}`]
       : [`open ${buildArtifactUrl(options.baseUrl, result.result.url)}`],
