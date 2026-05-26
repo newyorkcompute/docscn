@@ -31,6 +31,8 @@
     "test:mcp:integration": "nx build mcp && node scripts/mcp-integration.mjs",
     "openapi:sync": "node scripts/sync-openapi.mjs",
     "openapi:check": "node scripts/check-openapi-sync.mjs",
+    "audit:ci": "npm audit --audit-level=high",
+    "test:safe-callback": "node scripts/safe-callback-url-unit.mjs",
     "typecheck": "tsc -p apps/web/tsconfig.json --noEmit",
     "smoke:agent": "nx build cli && node scripts/agent-smoke.mjs",
     "format": "nx format:write",

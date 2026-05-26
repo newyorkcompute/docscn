@@ -275,7 +275,7 @@ function createCliDeviceCode() {
 }
 
 function createCliUserCode() {
-  return randomBytes(4).toString('hex').toUpperCase();
+  return randomBytes(8).toString('hex').toUpperCase();
 }
 
 function hashCliDeviceCode(deviceCode: string) {
@@ -685,22 +685,54 @@ export async function pollCliLoginRequest(
   return { status: 'approved', apiKey, token };
 }
 
+function buildListArtifactsVisibilityFilter(
+  options: ArtifactAccessContext,
+  sharedArtifactIds: Set<string>,
+) {
+  const conditions = [eq(artifacts.visibility, 'public')];
+
+  if (options.viewerUserId) {
+    conditions.push(eq(artifacts.ownerUserId, options.viewerUserId));
+  }
+
+  if (options.includeUnlisted) {
+    conditions.push(eq(artifacts.visibility, 'unlisted'));
+  }
+
+  if (sharedArtifactIds.size > 0) {
+    conditions.push(
+      and(
+        eq(artifacts.visibility, 'private'),
+        inArray(artifacts.id, [...sharedArtifactIds]),
+      )!,
+    );
+  }
+
+  return or(...conditions)!;
+}
+
 export async function listArtifacts(
   options: ArtifactAccessOptions = {},
 ): Promise<Artifact[]> {
   const sharedArtifactIds = await getSharedArtifactIds(options.viewerEmail);
+  const accessContext: ArtifactAccessContext = {
+    ...options,
+    sharedArtifactIds,
+  };
 
   if (!isDatabaseConfigured()) {
     return [...runtimeArtifacts, ...getMockArtifacts()].filter((artifact) =>
-      canViewArtifact(artifact, { ...options, sharedArtifactIds }),
+      canViewArtifact(artifact, accessContext),
     );
   }
 
   const db = getDb();
-  const artifactRows = await db.select().from(artifacts);
-  const visibleArtifactRows = artifactRows.filter((artifact) =>
-    canViewArtifactRow(artifact, { ...options, sharedArtifactIds }),
-  );
+  const visibleArtifactRows = await db
+    .select()
+    .from(artifacts)
+    .where(
+      buildListArtifactsVisibilityFilter(accessContext, sharedArtifactIds),
+    );
 
   if (!visibleArtifactRows.length) {
     return [];

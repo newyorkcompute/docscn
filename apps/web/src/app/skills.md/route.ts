@@ -56,7 +56,7 @@ Interactive artifacts should include export/copy (JSON, markdown, diff, settings
 - **Owner features** (revise, threads, comment, private, share, visibility): session or API key required.
 - **Private artifacts:** owner (+ invited emails) only. **Shares do not send email**—access applies immediately.
 - **Read:** public/unlisted readable without auth; private needs owner or invite.
-- **Limits:** oversized anonymous HTML → \`413\`; rate limit → \`429\`. Report status + JSON \`error\`; do not retry blindly.
+- **Limits:** HTML over 1 MB → \`413\`; anonymous publish rate limit → \`429\`. Report status + JSON \`error\`; do not retry blindly.
 
 ## CLI commands
 

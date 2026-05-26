@@ -6,6 +6,10 @@ import {
 } from '@docscn/db';
 import type { IntegrationSource, SubmitRevisionInput } from '@docscn/sdk';
 import {
+  artifactHtmlMaxBytes,
+  getUtf8ByteLength,
+} from '../../../../../lib/artifact-limits';
+import {
   getRequestPrincipal,
   hasBearerToken,
 } from '../../../../../lib/publisher';
@@ -77,6 +81,13 @@ export async function POST(
     return NextResponse.json(
       { error: 'Invalid artifact revision payload.' },
       { status: 400 },
+    );
+  }
+
+  if (getUtf8ByteLength(body.html) > artifactHtmlMaxBytes) {
+    return NextResponse.json(
+      { error: 'HTML must be 1 MB or smaller.' },
+      { status: 413 },
     );
   }
 

@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { approveCliLoginRequest } from '@docscn/db';
+import { getClientIp, hitRateLimit } from '../../../../../lib/rate-limit';
 import { getRequestSession } from '../../../../../lib/session';
+
+const cliApproveLimit = 10;
+const cliApproveWindowMs = 10 * 60 * 1000;
 
 function isUserCode(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -13,6 +17,26 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: 'Sign in to approve CLI login.' },
       { status: 401 },
+    );
+  }
+
+  const clientIp = getClientIp(request);
+
+  if (
+    hitRateLimit(
+      `cli-approve:ip:${clientIp}`,
+      cliApproveLimit,
+      cliApproveWindowMs,
+    ) ||
+    hitRateLimit(
+      `cli-approve:user:${session.user.id}`,
+      cliApproveLimit,
+      cliApproveWindowMs,
+    )
+  ) {
+    return NextResponse.json(
+      { error: 'CLI login approval rate limit reached. Try again later.' },
+      { status: 429 },
     );
   }
 

@@ -1335,6 +1335,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: CLI login poll rate limit reached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/cli/auth/approve:
     post:
       tags: [Auth]
@@ -1364,6 +1370,12 @@ paths:
                     enum: [approved, expired, not-found, already-consumed]
         '401':
           description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: CLI login approval rate limit reached
           content:
             application/json:
               schema:
