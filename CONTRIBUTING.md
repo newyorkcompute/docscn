@@ -189,8 +189,10 @@ Caching in [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
 
 - **npm** — `actions/setup-node` restores packages from `package-lock.json`
 - **Nx affected** — only lint/build/unit targets for changed projects and deps
-- **Nx task cache** — `.nx/cache` is restored and saved via `actions/cache` on
-  each job (shared key across runs when inputs are unchanged)
+- **Nx task cache** — `.nx/cache` is cached per CI job (`static-checks`,
+  `unit-tests`, `integration-and-e2e`) so parallel jobs each save their own task
+  outputs; restore-keys also allow a partial hit from another job in the same
+  workflow when inputs are unchanged
 - **Playwright** — browser binaries under `~/.cache/ms-playwright` are cached
   between E2E runs
 
