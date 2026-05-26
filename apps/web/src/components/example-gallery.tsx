@@ -20,10 +20,12 @@ export function ExampleGallery({
   examples,
   heading = 'Example artifacts',
   description = 'Preview these self-contained HTML files locally, then publish one to start the review loop.',
+  showHeader = true,
 }: {
   examples: ExampleArtifactDefinition[];
   heading?: string;
   description?: string;
+  showHeader?: boolean;
 }) {
   const groups = exampleArtifactCategories
     .map((category) => ({
@@ -36,14 +38,16 @@ export function ExampleGallery({
 
   return (
     <section className="space-y-6" id="example-gallery">
-      <div>
-        <h2 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
-          {heading}
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          {description}
-        </p>
-      </div>
+      {showHeader ? (
+        <div>
+          <h2 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
+            {heading}
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
+        </div>
+      ) : null}
 
       <div className="grid gap-8">
         {groups.map((group) => (

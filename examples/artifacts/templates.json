@@ -4,11 +4,6 @@
   "templatesRoot": "examples/artifacts",
   "categories": [
     {
-      "id": "docscn-starters",
-      "title": "docscn starters",
-      "description": "Templates created for testing docscn publish, review, and revision flows."
-    },
-    {
       "id": "exploration-planning",
       "title": "Exploration & Planning",
       "description": "Compare approaches, explore directions, and turn a decision into a plan."
@@ -55,86 +50,6 @@
     }
   ],
   "templates": [
-    {
-      "id": "minimal",
-      "title": "Minimal publish test",
-      "description": "The smallest useful artifact for verifying CLI install, login, and publish.",
-      "kind": "custom-html",
-      "filename": "minimal.html",
-      "category": "docscn-starters"
-    },
-    {
-      "id": "incident-timeline",
-      "title": "Checkout latency incident timeline",
-      "description": "Dark incident report with timeline events, impact metrics, and toggleable evidence.",
-      "kind": "incident-timeline",
-      "filename": "incident-timeline.html",
-      "category": "docscn-starters"
-    },
-    {
-      "id": "migration-plan",
-      "title": "Next.js cache migration plan",
-      "description": "Four-lane migration board for converting cache boundaries with rollout safety.",
-      "kind": "migration-plan",
-      "filename": "migration-plan.html",
-      "category": "docscn-starters"
-    },
-    {
-      "id": "eval-dashboard",
-      "title": "Agent evaluation dashboard",
-      "description": "Generated dashboard with pass rate, latency, and scenario score table.",
-      "kind": "generated-dashboard",
-      "filename": "eval-dashboard.html",
-      "category": "docscn-starters"
-    },
-    {
-      "id": "pr-review",
-      "title": "PR review summary",
-      "description": "Review checklist, severity labels, and diff highlights for a sample pull request.",
-      "kind": "pr-review",
-      "filename": "pr-review.html",
-      "category": "docscn-starters"
-    },
-    {
-      "id": "design-directions",
-      "title": "Visual design directions",
-      "description": "Three rendered product directions side by side for fast design review.",
-      "kind": "ui-prototype",
-      "filename": "design-directions.html",
-      "category": "docscn-starters"
-    },
-    {
-      "id": "module-map",
-      "title": "Module map",
-      "description": "Architecture explainer with entry points, hot paths, and data flow.",
-      "kind": "architecture-explainer",
-      "filename": "module-map.html",
-      "category": "docscn-starters"
-    },
-    {
-      "id": "animation-sandbox",
-      "title": "Animation sandbox",
-      "description": "Interactive motion tuning artifact with duration, easing, and copyable CSS.",
-      "kind": "animated-report",
-      "filename": "animation-sandbox.html",
-      "category": "docscn-starters"
-    },
-    {
-      "id": "slide-deck",
-      "title": "Arrow-key slide deck",
-      "description": "Meeting-ready HTML presentation with keyboard navigation and no build step.",
-      "kind": "custom-html",
-      "filename": "slide-deck.html",
-      "category": "docscn-starters"
-    },
-    {
-      "id": "prompt-tuner",
-      "title": "Prompt tuner",
-      "description": "Custom editor for tuning a prompt template and copying the rendered result.",
-      "kind": "ui-prototype",
-      "filename": "prompt-tuner.html",
-      "category": "docscn-starters"
-    },
     {
       "id": "html-effectiveness-code-approaches",
       "title": "Three code approaches",

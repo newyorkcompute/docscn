@@ -214,7 +214,7 @@ For the hosted service, the fastest path is anonymous publish first:
 
 ```bash
 curl https://docscn.ai/install -fsS | bash
-docscn template get minimal --output artifact.html
+docscn template get html-effectiveness-code-approaches --output artifact.html
 docscn publish artifact.html
 docscn login --host https://docscn.ai # optional: claim ownership and collaborate
 ```
@@ -321,9 +321,8 @@ Contributions are welcome. Start with:
 - [SECURITY.md](./SECURITY.md) for vulnerability reporting
 - [examples/artifacts/](./examples/artifacts/) for sample HTML to publish locally
 - `/templates` in the web app for browsing the grouped template library
-- `/artifacts/minimal`, `/artifacts/incident-timeline`,
-  `/artifacts/design-directions`, `/artifacts/module-map`,
-  `/artifacts/html-effectiveness-code-approaches`, and
+- `/artifacts/html-effectiveness-code-approaches`,
+  `/artifacts/html-effectiveness-code-review-pr`, and
   `/artifacts/html-effectiveness-prompt-tuner` in the web app for previewing
   starter artifacts
 

@@ -747,7 +747,10 @@ export function ArtifactWorkspace({
     : undefined;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
+    <div
+      className="relative min-h-screen overflow-hidden"
+      style={{ background: 'var(--app-field)' }}
+    >
       <div className={artifactSurfaceClass}>
         <ArtifactFrame
           annotationBridgeId={annotationBridgeId}

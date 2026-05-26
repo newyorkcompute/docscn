@@ -28,7 +28,7 @@ CLI template commands:
     docscn template list
     docscn template get html-effectiveness-code-approaches --output artifact.html
 
-Template source files: \`examples/artifacts/\` in the repo. Agents should inspect these files when they have a repo checkout, or use \`docscn template get\` when they only have an installed CLI. Copy or adapt a template, then publish the resulting self-contained HTML. Starter artifacts can also be opened in the workspace at \`${origin}/artifacts/minimal\`, \`${origin}/artifacts/incident-timeline\`, \`${origin}/artifacts/design-directions\`, \`${origin}/artifacts/module-map\`, \`${origin}/artifacts/html-effectiveness-code-approaches\`, and \`${origin}/artifacts/html-effectiveness-prompt-tuner\`.
+Template source files: \`examples/artifacts/html-effectiveness/\` in the repo. Agents should inspect these files when they have a repo checkout, or use \`docscn template get\` when they only have an installed CLI. Copy or adapt a template, then publish the resulting self-contained HTML. Starter artifacts can also be opened in the workspace at \`${origin}/artifacts/html-effectiveness-code-approaches\`, \`${origin}/artifacts/html-effectiveness-code-review-pr\`, \`${origin}/artifacts/html-effectiveness-visual-designs\`, and \`${origin}/artifacts/html-effectiveness-prompt-tuner\`.
 
 ## Environment variables
 
@@ -96,7 +96,7 @@ Example (abbreviated):
       color: var(--fg);
     }
 
-Reference implementations: \`examples/artifacts/*.html\` in the repo (e.g. \`minimal.html\`, \`pr-review.html\`, \`prompt-tuner.html\`) plus the Apache-2.0 licensed HTML effectiveness templates mirrored in \`examples/artifacts/html-effectiveness/\`.
+Reference implementations: the Apache-2.0 licensed HTML effectiveness templates mirrored in \`examples/artifacts/html-effectiveness/\`.
 
 Use responsive layouts so artifacts are readable in narrow and wide viewports. Prefer semantic HTML, keyboard-friendly controls, readable font sizes, and sufficient color contrast.
 
@@ -192,20 +192,12 @@ Verify credentials:
 
 Publish from a checkout of the repo:
 
-    docscn publish examples/artifacts/minimal.html --host ${origin}
-    docscn publish examples/artifacts/incident-timeline.html --host ${origin}
-    docscn publish examples/artifacts/migration-plan.html --host ${origin}
-    docscn publish examples/artifacts/eval-dashboard.html --host ${origin}
-    docscn publish examples/artifacts/pr-review.html --host ${origin}
-    docscn publish examples/artifacts/design-directions.html --host ${origin}
-    docscn publish examples/artifacts/module-map.html --host ${origin}
-    docscn publish examples/artifacts/animation-sandbox.html --host ${origin}
-    docscn publish examples/artifacts/slide-deck.html --host ${origin}
-    docscn publish examples/artifacts/prompt-tuner.html --host ${origin}
     docscn publish examples/artifacts/html-effectiveness/01-exploration-code-approaches.html --host ${origin}
+    docscn publish examples/artifacts/html-effectiveness/03-code-review-pr.html --host ${origin}
+    docscn publish examples/artifacts/html-effectiveness/12-incident-report.html --host ${origin}
     docscn publish examples/artifacts/html-effectiveness/20-editor-prompt-tuner.html --host ${origin}
 
-These are useful smoke tests for install, login, publish, review, and revise flows. The HTML effectiveness templates are grouped at \`${origin}/templates\` by Exploration & Planning, Code Review & Understanding, Design, Prototyping, Illustrations & Diagrams, Decks, Research & Learning, Reports, and Custom Editing Interfaces.
+The HTML effectiveness templates are grouped at \`${origin}/templates\` by Exploration & Planning, Code Review & Understanding, Design, Prototyping, Illustrations & Diagrams, Decks, Research & Learning, Reports, and Custom Editing Interfaces.
 
 ## Raw API authentication
 

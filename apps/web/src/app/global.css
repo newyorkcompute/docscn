@@ -280,27 +280,13 @@ iframe {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(
-      118deg,
-      transparent 46%,
-      color-mix(in oklch, var(--primary) 5%, transparent) 46%,
-      color-mix(in oklch, var(--primary) 3%, transparent) 58%,
-      transparent 58%
-    ),
-    linear-gradient(
-      color-mix(in oklch, var(--border) 28%, transparent) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      color-mix(in oklch, var(--border) 28%, transparent) 1px,
-      transparent 1px
-    );
-  background-size:
-    auto,
-    32px 32px,
-    32px 32px;
+  background: linear-gradient(
+    118deg,
+    transparent 46%,
+    color-mix(in oklch, var(--primary) 5%, transparent) 46%,
+    color-mix(in oklch, var(--primary) 3%, transparent) 58%,
+    transparent 58%
+  );
   mask-image: radial-gradient(ellipse 85% 72% at 38% 18%, black, transparent);
   opacity: 0.7;
 }

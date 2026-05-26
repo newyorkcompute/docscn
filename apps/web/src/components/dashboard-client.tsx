@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import type { Artifact } from '@docscn/sdk';
 import type { ExampleArtifactDefinition } from '../lib/example-artifacts';
 import { Badge, Button, Card, Shell } from '@docscn/ui';
@@ -9,6 +9,13 @@ import { AnonymousClaimSync } from './anonymous-claim-sync';
 import { AppPageHeader } from './app-page-header';
 import { CopyCommandButton } from './copy-command-button';
 import { ExampleGallery } from './example-gallery';
+
+const FEATURED_STARTER_IDS = [
+  'html-effectiveness-code-approaches',
+  'html-effectiveness-code-review-pr',
+  'html-effectiveness-visual-designs',
+  'html-effectiveness-prompt-tuner',
+];
 
 export function DashboardClient({
   artifacts,
@@ -21,13 +28,25 @@ export function DashboardClient({
   isAuthenticated: boolean;
   origin: string;
 }) {
-  const publishCommand = `docscn publish artifact.html --host ${origin}`;
   const isEmpty = artifacts.length === 0;
-  const starterExamples = examples.filter(
-    (example) => example.id !== 'minimal',
+
+  const installCommand = `curl ${origin}/install -fsS | bash`;
+  const templateCommand =
+    'docscn template get html-effectiveness-code-approaches --output artifact.html';
+  const publishCommand = `docscn publish artifact.html --host ${origin}`;
+
+  const steps = [
+    { label: 'Install the CLI', command: installCommand },
+    { label: 'Grab a starter template', command: templateCommand },
+    { label: 'Publish to a review URL', command: publishCommand },
+  ];
+
+  const featuredExamples = examples.filter((e) =>
+    FEATURED_STARTER_IDS.includes(e.id),
   );
+
   const description = isEmpty
-    ? 'Publish your first HTML artifact from an agent or CLI workflow.'
+    ? 'Install the CLI and publish your first HTML artifact in under a minute.'
     : `${artifacts.length} visible artifact${
         artifacts.length === 1 ? '' : 's'
       } in this workspace.`;
@@ -47,30 +66,52 @@ export function DashboardClient({
           </>
         }
         description={description}
-        eyebrow="artifact workspace"
-        title="Your artifacts"
+        eyebrow={isEmpty ? 'getting started' : 'artifact workspace'}
+        title={isEmpty ? 'Publish your first artifact' : 'Your artifacts'}
       />
 
       {isEmpty ? (
         <Card className="feature-card p-6 md:p-8">
-          <Badge tone="outline">empty workspace</Badge>
+          <Badge tone="outline">getting started</Badge>
           <h2 className="mt-4 font-display text-2xl font-semibold tracking-tight">
-            No artifacts yet
+            Three commands to your first review URL
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Copy the CLI command and run it from an agent workflow to get a
-            stable review URL.
+            Install the CLI, grab a template, and publish — all from the
+            terminal or an agent workflow.
           </p>
-          <div className="mt-6 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
-            <code className="app-code-panel overflow-x-auto rounded-xl p-3 font-mono text-xs text-foreground">
-              {publishCommand}
-            </code>
-            <CopyCommandButton command={publishCommand} label="Copy CLI" />
-          </div>
-          <div className="mt-6">
+          <ol className="mt-6 grid gap-3">
+            {steps.map((step, i) => (
+              <li
+                className="grid gap-3 rounded-xl border border-border bg-background/45 p-3 md:grid-cols-[1fr_auto] md:items-center"
+                key={step.label}
+              >
+                <div className="min-w-0">
+                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                    <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full border border-primary/25 bg-primary/10 font-mono text-[0.6rem] text-primary">
+                      {i + 1}
+                    </span>
+                    {step.label}
+                  </p>
+                  <code className="mt-2 block overflow-x-auto font-mono text-xs text-foreground">
+                    {step.command}
+                  </code>
+                </div>
+                <CopyCommandButton command={step.command} label="Copy" />
+              </li>
+            ))}
+          </ol>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button asChild>
-              <Link href="/publish">Open publishing guide</Link>
+              <Link href="/publish">
+                Open publishing guide <ArrowRight className="h-4 w-4" />
+              </Link>
             </Button>
+            {!isAuthenticated && (
+              <Button asChild variant="outline">
+                <Link href="/sign-in">Sign in to claim artifacts</Link>
+              </Button>
+            )}
           </div>
         </Card>
       ) : (
@@ -108,11 +149,20 @@ export function DashboardClient({
       )}
 
       {isEmpty ? (
-        <ExampleGallery
-          description="Open a starter template in the workspace, then publish your own version from an agent."
-          examples={starterExamples}
-          heading="Starter templates"
-        />
+        <div className="space-y-4">
+          <ExampleGallery
+            description="Pick a starter, open it in the workspace, and publish your own version."
+            examples={featuredExamples}
+            heading="Featured templates"
+          />
+          <div className="flex justify-center">
+            <Button asChild variant="outline">
+              <Link href="/templates">
+                Browse all templates <ArrowUpRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
       ) : (
         <Card className="feature-card p-6">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">

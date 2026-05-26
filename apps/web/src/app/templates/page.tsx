@@ -21,11 +21,7 @@ export default function TemplatesPage() {
             title="HTML templates"
           />
 
-          <ExampleGallery
-            description="Grouped by the kinds of work HTML artifacts replace: planning, review, design, prototypes, diagrams, decks, reports, and custom editors."
-            examples={exampleArtifacts}
-            heading="Starter templates"
-          />
+          <ExampleGallery examples={exampleArtifacts} showHeader={false} />
         </Shell>
       </main>
     </>

@@ -685,7 +685,7 @@ Examples:
   docscn publish report.html
   docscn login --host ${defaultDocscnHost}
   docscn template list
-  docscn template get minimal --output artifact.html
+  docscn template get html-effectiveness-code-approaches --output artifact.html
   docscn publish artifact.html
   docscn publish report.html --visibility private
   docscn share artifact-slug --email reviewer@example.com --role commenter

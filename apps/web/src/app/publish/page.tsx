@@ -18,7 +18,7 @@ export default async function PublishPage() {
   ]);
   const installCommand = `curl ${origin}/install -fsS | bash`;
   const loginCommand = `docscn login --host ${origin}`;
-  const templateCommand = `docscn template get minimal --output artifact.html`;
+  const templateCommand = `docscn template get html-effectiveness-code-approaches --output artifact.html`;
   const publishCommand = `docscn publish artifact.html --host ${origin}`;
 
   return (
