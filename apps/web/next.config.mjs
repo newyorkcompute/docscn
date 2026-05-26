@@ -12,7 +12,8 @@ const securityHeaders = [
   },
   {
     key: 'Content-Security-Policy',
-    value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+    value:
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
   },
 ];
 
@@ -31,6 +32,12 @@ const nextConfig = {
   nx: {},
   async headers() {
     return [
+      {
+        source: '/artifacts/:path*',
+        headers: securityHeaders.filter(
+          (h) => h.key !== 'Content-Security-Policy',
+        ),
+      },
       {
         source: '/(.*)',
         headers: securityHeaders,

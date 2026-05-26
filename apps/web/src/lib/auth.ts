@@ -29,7 +29,7 @@ function resolveAuthSecret() {
   }
 
   // `next build` runs with NODE_ENV=production before runtime env is available.
-  if (process.env.NEXT_PHASE === 'phase-production-build') {
+  if (process.env['NEXT_PHASE'] === 'phase-production-build') {
     return buildTimePlaceholderSecret;
   }
 
