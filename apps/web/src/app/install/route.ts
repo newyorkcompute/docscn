@@ -129,7 +129,7 @@ cat <<NEXT
 
 Next steps:
   docscn template list
-  docscn template get minimal --output artifact.html
+  docscn template get html-effectiveness-code-approaches --output artifact.html
   docscn publish artifact.html --host $host
 
 Run this when you want ownership, comments, revisions, private sharing, or API keys:

@@ -3,7 +3,6 @@ import type { ArtifactKind } from '@docscn/sdk';
 import templatesManifest from '../../../../examples/artifacts/templates.json';
 
 export type ExampleArtifactCategoryId =
-  | 'docscn-starters'
   | 'exploration-planning'
   | 'code-review-understanding'
   | 'design'

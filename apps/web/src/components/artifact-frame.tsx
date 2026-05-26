@@ -493,6 +493,35 @@ function buildArtifactThemeBootScript(initialTheme: ArtifactTheme) {
 `;
 }
 
+function buildTemplateAppSurfaceStyle() {
+  return `
+  :root {
+    --docscn-app-background: oklch(0.975 0.014 78);
+    --docscn-app-card: oklch(0.995 0.006 78);
+    --docscn-app-field: color-mix(
+      in oklch,
+      var(--docscn-app-background) 90%,
+      var(--docscn-app-card)
+    );
+    --docscn-template-bg: var(--docscn-app-field) !important;
+    --bg: var(--docscn-app-field) !important;
+    --ivory: var(--docscn-app-field) !important;
+    background: var(--docscn-app-field) !important;
+  }
+
+  html.dark,
+  html[data-docscn-theme='dark'] {
+    --docscn-app-background: oklch(0.145 0.022 268);
+    --docscn-app-card: oklch(0.185 0.024 268);
+  }
+
+  html,
+  body {
+    background: var(--docscn-app-field) !important;
+  }
+`;
+}
+
 function injectAnnotationBridge(
   html: string,
   bridgeId: string | undefined,
@@ -511,13 +540,21 @@ function injectAnnotationBridge(
     annotationMode,
     initialTheme,
   ).replace(/<\/script/gi, '<\\/script')}</script>`;
+  const templateSurfaceStyle = /data-docscn-template-theme/i.test(html)
+    ? `<style data-docscn-app-template-surface>${buildTemplateAppSurfaceStyle()}</style>`
+    : '';
   const themedHtml = /<head([^>]*)>/i.test(html)
     ? html.replace(/<head([^>]*)>/i, `<head$1>${themeScript}`)
     : `${themeScript}${html}`;
+  const surfacedHtml = templateSurfaceStyle
+    ? /<\/head>/i.test(themedHtml)
+      ? themedHtml.replace(/<\/head>/i, `${templateSurfaceStyle}</head>`)
+      : `${templateSurfaceStyle}${themedHtml}`
+    : themedHtml;
 
-  return /<\/body>/i.test(themedHtml)
-    ? themedHtml.replace(/<\/body>/i, `${script}</body>`)
-    : `${themedHtml}${script}`;
+  return /<\/body>/i.test(surfacedHtml)
+    ? surfacedHtml.replace(/<\/body>/i, `${script}</body>`)
+    : `${surfacedHtml}${script}`;
 }
 
 function getResolvedArtifactTheme(): ArtifactTheme {
@@ -813,10 +850,11 @@ export function ArtifactFrame({
       ) : null}
       {initialArtifactTheme ? (
         <iframe
-          className={cn('h-[680px] w-full bg-background', iframeClassName)}
+          className={cn('h-[680px] w-full', iframeClassName)}
           ref={iframeRef}
           sandbox="allow-scripts allow-forms"
           srcDoc={srcDoc}
+          style={{ background: 'var(--app-field)' }}
           title={title}
           onLoad={() => {
             postAnnotationMode();
@@ -830,8 +868,9 @@ export function ArtifactFrame({
       ) : (
         <div
           aria-label={`Loading ${title}`}
-          className={cn('h-[680px] w-full bg-background', iframeClassName)}
+          className={cn('h-[680px] w-full', iframeClassName)}
           role="status"
+          style={{ background: 'var(--app-field)' }}
         />
       )}
     </div>

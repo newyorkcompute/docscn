@@ -55,7 +55,7 @@ export default async function ArtifactPage({
   );
 
   return (
-    <main>
+    <main className="app-page">
       <ArtifactWorkspace
         artifact={artifact}
         artifactId={artifactId}

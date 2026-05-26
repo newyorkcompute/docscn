@@ -388,6 +388,10 @@
   }
 }
 
+.home-manifest-recommended {
+  background: color-mix(in oklch, var(--primary) 5%, transparent);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .home-manifest-link:hover {
     background: color-mix(in oklch, var(--primary) 8%, transparent);
@@ -423,7 +427,7 @@
   font-size: 0.72rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: color-mix(in oklch, var(--muted-foreground) 88%, transparent);
+  color: var(--muted-foreground);
   transition: color 160ms ease;
 }
 

@@ -10,7 +10,7 @@ Run `nx build cli` to build the library.
 
 ```bash
 docscn template list
-docscn template get minimal --output artifact.html
+docscn template get html-effectiveness-code-approaches --output artifact.html
 docscn publish artifact.html
 ```
 

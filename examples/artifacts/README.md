@@ -2,26 +2,10 @@
 
 Self-contained HTML files for testing publish, review, and revision flows.
 
-This directory includes docscn-native starter artifacts and a mirrored copy of
-the Apache-2.0 licensed
+The public template library is powered by a mirrored copy of the Apache-2.0 licensed
 [`ThariqS/html-effectiveness`](https://github.com/ThariqS/html-effectiveness)
 template set. The upstream license and README are preserved in
 `html-effectiveness/`.
-
-## docscn starters
-
-| File                     | Kind                   | Description                                                       |
-| ------------------------ | ---------------------- | ----------------------------------------------------------------- |
-| `minimal.html`           | custom-html            | Smallest possible publish smoke test                              |
-| `incident-timeline.html` | incident-timeline      | Incident timeline with metrics sidebar (light/dark)               |
-| `migration-plan.html`    | migration-plan         | Four-lane migration board (light/dark)                            |
-| `eval-dashboard.html`    | generated-dashboard    | Eval metrics cards and scenario table (light/dark)                |
-| `pr-review.html`         | pr-review              | PR review summary with checklist and diff highlights (light/dark) |
-| `design-directions.html` | ui-prototype           | Side-by-side visual directions for product review (light/dark)    |
-| `module-map.html`        | architecture-explainer | Module map with entry points and flow diagram (light/dark)        |
-| `animation-sandbox.html` | animated-report        | Motion tuning sandbox with copyable CSS (light/dark)              |
-| `slide-deck.html`        | custom-html            | Arrow-key HTML slide deck (light/dark)                            |
-| `prompt-tuner.html`      | ui-prototype           | Prompt template editor with live rendered output (light/dark)     |
 
 ## HTML effectiveness templates
 
@@ -38,7 +22,8 @@ template set. The upstream license and README are preserved in
 | Custom Editing Interfaces   | `18-editor-triage-board.html`, `19-editor-feature-flags.html`, `20-editor-prompt-tuner.html`               |
 
 Browse previews locally in the artifact workspace, for example
-`/artifacts/minimal`, `/artifacts/incident-timeline`, or
+`/artifacts/html-effectiveness-code-approaches`,
+`/artifacts/html-effectiveness-code-review-pr`, or
 `/artifacts/html-effectiveness-prompt-tuner`, after starting the web app.
 
 `templates.json` is the shared manifest for the web template library and the
@@ -48,8 +33,8 @@ GitHub-backed CLI template commands.
 
 ```bash
 docscn template list
-docscn template get incident-timeline --output incident-timeline.html
-docscn publish incident-timeline.html --host http://localhost:3000
+docscn template get html-effectiveness-code-approaches --output artifact.html
+docscn publish artifact.html --host http://localhost:3000
 docscn login --host http://localhost:3000 # optional: claim ownership
 ```
 

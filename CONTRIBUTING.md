@@ -49,7 +49,7 @@ Use the workspace CLI instead of the release installer when developing locally:
 
 ```bash
 npm run cli -- login --host http://localhost:3000
-npm run cli -- publish examples/artifacts/minimal.html --host http://localhost:3000
+npm run cli -- publish examples/artifacts/html-effectiveness/01-exploration-code-approaches.html --host http://localhost:3000
 ```
 
 ## Project layout

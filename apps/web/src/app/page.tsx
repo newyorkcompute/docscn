@@ -6,12 +6,19 @@ import {
   BookOpenText,
   Braces,
   Code2,
+  FileSearch,
+  Layers,
   MessageSquare,
+  MousePointerClick,
   PackageCheck,
+  Palette,
   PanelsTopLeft,
   PlugZap,
   RefreshCcw,
   Server,
+  Share2,
+  SlidersHorizontal,
+  Sparkles,
 } from 'lucide-react';
 import { Button, Shell } from '@docscn/ui';
 import { GITHUB_REPO_URL } from '../lib/constants';
@@ -54,12 +61,14 @@ export default async function Index() {
       path: '/publish',
       body: 'Install the CLI, copy the publish command, and point agents at the right workflow.',
       Icon: PanelsTopLeft,
+      recommended: true,
     },
     {
       title: 'Agent instructions',
       path: '/skills.md',
       body: 'Teach coding agents how to publish, read feedback, and revise.',
       Icon: BookOpenText,
+      recommended: true,
     },
     {
       title: 'API automation',
@@ -112,16 +121,14 @@ export default async function Index() {
                 and revise <em>AI HTML artifacts</em>
               </h1>
               <p className="home-lede home-reveal home-delay-2 mt-6">
-                docscn gives agent-generated HTML a stable URL, a visual review
-                surface, and feedback agents can use for the next revision.
-                Publish without an account; sign in when you need ownership or
-                private sharing.
+                Give agent-generated HTML a stable URL, a visual review surface,
+                and feedback the next agent run can act on.
               </p>
 
               <div className="home-stat-strip home-reveal home-delay-3 mt-7">
-                <span className="home-stat">stable URLs</span>
-                <span className="home-stat">visual comments</span>
-                <span className="home-stat">agent feedback</span>
+                <span className="home-stat">one permalink per artifact</span>
+                <span className="home-stat">review in the browser</span>
+                <span className="home-stat">agents read your feedback</span>
               </div>
 
               <div className="home-reveal home-delay-4 mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -138,6 +145,16 @@ export default async function Index() {
                 >
                   <Link href="/skills.md">
                     Agent guide <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  className="text-foreground/75 hover:text-foreground"
+                  size="lg"
+                  variant="ghost"
+                >
+                  <Link href="/templates">
+                    See examples <ArrowUpRight className="h-4 w-4" />
                   </Link>
                 </Button>
               </div>
@@ -163,11 +180,12 @@ export default async function Index() {
 
                 <HeroInstallTerminal className="home-terminal mt-5" />
                 <p className="mt-4 text-xs leading-5 text-muted-foreground">
-                  After install, run{' '}
+                  Publish without an account; sign in when you need ownership or
+                  private sharing. Run{' '}
                   <code className="rounded-md border border-border bg-background/70 px-1.5 py-0.5 font-mono text-foreground">
                     docscn help
                   </code>{' '}
-                  to see publish, template, review, and revision commands.
+                  to see all commands.
                 </p>
               </div>
             </aside>
@@ -205,25 +223,136 @@ export default async function Index() {
           <aside className="home-html-note">
             <p className="home-kicker">Why HTML?</p>
             <p className="mt-4 max-w-3xl font-display text-2xl font-semibold leading-tight tracking-tight md:text-3xl">
-              Agents are increasingly producing rich, visual HTML instead of
-              long markdown files.
+              Agents are producing rich, visual HTML instead of long markdown
+              files.{' '}
+              <a
+                className="text-primary underline-offset-4 hover:underline"
+                href="https://claude.com/blog/using-claude-code-the-unreasonable-effectiveness-of-html"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                HTML is unreasonably effective
+              </a>
+              &mdash;docscn gives it a home.
             </p>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-              docscn is the missing place to host those files, share them with a
-              stable link, review the rendered page, and send feedback back into
-              the next agent run. The idea is inspired in part by
-              Anthropic&apos;s{' '}
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  Icon: Layers,
+                  title: 'Information density',
+                  body: 'Tables, CSS, SVG, code snippets, and interactive elements in one file. Almost any information an agent can read, it can represent as HTML.',
+                },
+                {
+                  Icon: FileSearch,
+                  title: 'Visual clarity',
+                  body: 'Nobody reads a 100-line markdown file. HTML lets agents organize information with tabs, illustrations, and navigation so you actually review it.',
+                },
+                {
+                  Icon: Share2,
+                  title: 'Ease of sharing',
+                  body: 'Browsers render HTML natively. Share a link, not an attachment. The chance of someone reading your spec or report goes way up.',
+                },
+                {
+                  Icon: SlidersHorizontal,
+                  title: 'Two-way interactions',
+                  body: 'Sliders, knobs, editable fields. HTML lets you interact with the document and copy changes back into the next agent prompt.',
+                },
+              ].map((item) => (
+                <div
+                  className="rounded-xl border border-border/50 bg-background/30 p-4"
+                  key={item.title}
+                >
+                  <item.Icon className="h-5 w-5 text-primary" />
+                  <p className="mt-3 font-display text-sm font-semibold tracking-tight">
+                    {item.title}
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    {item.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-6 text-xs leading-5 text-muted-foreground">
+              Inspired by Thariq Shihipar&apos;s{' '}
               <a
                 className="font-medium text-primary underline-offset-4 hover:underline"
                 href="https://claude.com/blog/using-claude-code-the-unreasonable-effectiveness-of-html"
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                unreasonable effectiveness of HTML
-              </a>
-              .
+                &ldquo;The unreasonable effectiveness of HTML&rdquo;
+              </a>{' '}
+              on the Claude Code blog.
             </p>
           </aside>
+        </Shell>
+
+        <Shell className="home-scroll-reveal pb-16">
+          <div className="home-section-head mb-8 max-w-2xl">
+            <p className="home-kicker">Use cases</p>
+            <h2>What agents build as HTML.</h2>
+            <p className="text-sm leading-7 text-muted-foreground">
+              Every use case from the blog post has a matching starter template
+              you can publish right now.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                Icon: Sparkles,
+                title: 'Specs, planning & exploration',
+                body: 'Brainstorm directions, compare approaches side by side, and write implementation plans with mockups and data flow diagrams.',
+                href: '/templates',
+              },
+              {
+                Icon: Code2,
+                title: 'Code review & understanding',
+                body: 'Render diffs with margin annotations, color-code findings by severity, and map module architecture as spatial diagrams.',
+                href: '/templates',
+              },
+              {
+                Icon: Palette,
+                title: 'Design & prototypes',
+                body: 'Sketch design systems, tune animations with sliders, and prototype clickable flows — all in the medium they ship in.',
+                href: '/templates',
+              },
+              {
+                Icon: FileSearch,
+                title: 'Reports, research & learning',
+                body: 'Synthesize status reports, incident timelines, concept explainers, and slide decks agents can generate from your data sources.',
+                href: '/templates',
+              },
+              {
+                Icon: MousePointerClick,
+                title: 'Custom editing interfaces',
+                body: 'Draggable triage boards, feature flag editors, prompt tuners — throwaway UIs purpose-built for one piece of data, with a copy button at the end.',
+                href: '/templates',
+              },
+            ].map((useCase) => (
+              <Link
+                className="home-bento-card home-scroll-reveal group"
+                href={useCase.href}
+                key={useCase.title}
+              >
+                <span className="inline-flex rounded-md border border-primary/25 bg-primary/10 p-2">
+                  <useCase.Icon className="h-5 w-5 text-primary" />
+                </span>
+                <h3 className="mt-4 font-display text-lg font-semibold tracking-tight">
+                  {useCase.title}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  {useCase.body}
+                </p>
+                <span className="mt-4 inline-flex items-center gap-1 font-mono text-xs text-primary">
+                  Browse templates{' '}
+                  <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </span>
+              </Link>
+            ))}
+          </div>
         </Shell>
 
         <Shell className="home-scroll-reveal pb-24 pt-4">
@@ -241,7 +370,11 @@ export default async function Index() {
             <div className="home-manifest-grid">
               {agentIntegrations.map((item) => (
                 <Link
-                  className="home-manifest-link group"
+                  className={`home-manifest-link group${
+                    'recommended' in item && item.recommended
+                      ? ' home-manifest-recommended'
+                      : ''
+                  }`}
                   href={item.path}
                   key={item.path}
                   rel={
@@ -258,6 +391,11 @@ export default async function Index() {
                     <p className="font-medium text-foreground transition group-hover:text-primary">
                       {item.title}
                     </p>
+                    {'recommended' in item && item.recommended && (
+                      <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 font-mono text-[0.6rem] uppercase tracking-widest text-primary">
+                        start here
+                      </span>
+                    )}
                   </div>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
                     {item.body}

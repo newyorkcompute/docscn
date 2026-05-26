@@ -170,8 +170,8 @@ curl https://docscn.example.com/install -fsS | bash
 4. Publish a test artifact:
 
 ```bash
-docscn template get minimal --output minimal.html
-docscn publish minimal.html --host https://docscn.example.com
+docscn template get html-effectiveness-code-approaches --output artifact.html
+docscn publish artifact.html --host https://docscn.example.com
 docscn login --host https://docscn.example.com
 docscn whoami --host https://docscn.example.com
 ```
