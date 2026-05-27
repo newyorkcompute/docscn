@@ -7,8 +7,6 @@
 
 **Live demo:** [docscn.ai](https://docscn.ai) · [Template library](https://docscn.ai/templates)
 
-![docscn artifact viewer showing an incident timeline in the canvas, annotation toolbar, and review sidebar](./docs/images/artifact-viewer.png)
-
 docscn is an open-source platform for hosting, sharing, and collaborating on
 AI-generated HTML artifacts. Publish interactive plans, reports, diagrams,
 prototypes, and docs from agents, share them at stable URLs, review them with
