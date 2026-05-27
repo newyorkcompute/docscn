@@ -120,7 +120,41 @@ npm run build
 The web app is configured with Next.js `output: 'standalone'`, which produces a
 self-contained server bundle suitable for containers or VM deployment.
 
-### Managed platform (Vercel or similar)
+### Production on Vercel
+
+docscn runs on Vercel as a Next.js standalone app. After the security hardening
+release, **production will not start** unless `BETTER_AUTH_SECRET` is set at
+runtime (a missing secret surfaces as HTTP 500 and
+`BETTER_AUTH_SECRET is required in production` in function logs).
+
+1. Import or connect the GitHub repository in Vercel.
+2. Add **Production** environment variables (Project → Settings → Environment
+   Variables):
+
+| Variable              | Example                                 | Notes                                                       |
+| --------------------- | --------------------------------------- | ----------------------------------------------------------- |
+| `BETTER_AUTH_SECRET`  | output of `openssl rand -base64 48`     | **Required.** At least 32 characters.                       |
+| `BETTER_AUTH_URL`     | `https://docscn.example.com`            | Must match the public URL users visit.                      |
+| `NEXT_PUBLIC_APP_URL` | `https://docscn.example.com`            | Same origin as `BETTER_AUTH_URL`.                           |
+| `DATABASE_URL`        | Neon / Supabase / RDS connection string | Required for auth, artifacts, and CLI login.                |
+| `S3_*` (all five)     | R2, S3, or Tigris credentials           | Optional as a set; omit all five to store HTML in Postgres. |
+
+3. Run migrations against the production database (see [Database setup](#database-setup)).
+4. Deploy, or **Redeploy** the latest production deployment after changing secrets
+   so serverless functions pick up new values.
+
+For **Preview** deployments, repeat the same variables using each preview URL for
+`BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL`, or previews will fail auth the same
+way production did.
+
+Verify after deploy:
+
+```bash
+curl -sI https://docscn.example.com | head -1
+# HTTP/2 200
+```
+
+### Other managed platforms
 
 1. Connect the repository.
 2. Set all required environment variables in the project settings.
@@ -249,6 +283,12 @@ exists.
 
 `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` must match the public URL users
 visit, including scheme (`https://`).
+
+### Site returns HTTP 500 after deploy
+
+Check function logs for `BETTER_AUTH_SECRET is required in production`. Add
+`BETTER_AUTH_SECRET` to the deployment environment (Production and Preview on
+Vercel), then redeploy.
 
 ### Migrations fail on startup
 

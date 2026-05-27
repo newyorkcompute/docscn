@@ -20,7 +20,7 @@ Focus: launch polish and first-run clarity for hosted and self-hosted users.
 - [x] Production self-hosting docs and deployment examples
 - [x] Example artifact gallery and `/templates` browser ([#3](https://github.com/newyorkcompute/docscn/issues/3))
 - [x] Dashboard empty state and onboarding flow ([#4](https://github.com/newyorkcompute/docscn/issues/4))
-- [ ] README screenshot / demo GIF of the artifact viewer ([#2](https://github.com/newyorkcompute/docscn/issues/2))
+- [x] README screenshot / demo GIF of the artifact viewer ([#2](https://github.com/newyorkcompute/docscn/issues/2))
 - [x] Social preview image (`og:image`) for link shares
 
 ## Next
