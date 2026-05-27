@@ -113,6 +113,10 @@
     "typescript-eslint": "^8.59.4"
   },
   "nx": {},
+  "overrides": {
+    "brace-expansion": "^5.0.6",
+    "tmp": "^0.2.6"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
