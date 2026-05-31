@@ -6,7 +6,7 @@
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1045.0",
+    "@aws-sdk/client-s3": "^3.1057.0",
     "tslib": "^2.3.0"
   }
 }
