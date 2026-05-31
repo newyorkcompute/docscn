@@ -90,7 +90,7 @@
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.0.0",
-    "@yao-pkg/pkg": "^6.19.0",
+    "@yao-pkg/pkg": "^6.20.0",
     "c8": "^11.0.0",
     "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.10",
